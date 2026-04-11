@@ -54,6 +54,7 @@ export function useQuestionerBuilder() {
       ? availableSteps[Math.min(stepIndex.current, availableSteps.length - 1)]
       : null;
 
+  //[pr] menampilakn info kuesioner aktif & pengecekan tanggal aktif dari list
   /* ================= LOAD DATA ================= */
   async function loadQuestion(): Promise<any[]> {
     return new Promise((resolve) => {
