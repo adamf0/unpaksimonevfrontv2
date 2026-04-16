@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import apiCall from "../../Common/External/APICall";
 import { useToast } from "../../Common/Context/ToastContext";
 import { BaseResultState } from "../../Common/Attribut/BaseResultState";
@@ -15,20 +15,18 @@ export type QueryState = BaseQuery & {
   nama_prodi: string;
 };
 
-export type TemplateState = BaseResultState<any>;
-
 export function useTemplateAnswer() {
-  const { stateQuestion } = useTemplateQuestionContext();
+  const { questionState } = useTemplateQuestionContext();
   const { pushToast } = useToast();
 
-  const [state, setState] = useState<TemplateState>({
+  const [answerState, setAnswerState] = useState<BaseResultState<any>>({
     data: [],
     total: 0,
     loading: false,
     selected: null,
   });
 
-  const [query, setQuery] = useState<QueryState>({
+  const [answerQuery, setAnswerQuery] = useState<QueryState>({
     page: 1,
     limit: 10,
     search: "",
@@ -47,31 +45,30 @@ export function useTemplateAnswer() {
         .add("role", "role")
         .add("nama_fakultas", "nama_fakultas", "like")
         .add("nama_prodi", "nama_prodi", "like"),
-    [],
+    []
   );
 
-  /** 🔥 SYNC SELECTED → QUERY */
   useEffect(() => {
-    if (!stateQuestion.selected) return;
+    if (!questionState.selected) return;
 
-    setQuery((prev) => ({
+    setAnswerQuery((prev) => ({
       ...prev,
-      uuidtemplate: stateQuestion.selected.uuid,
+      uuidtemplate: questionState.selected.uuid,
       page: 1,
     }));
-  }, [stateQuestion.selected]);
+  }, [questionState.selected]);
 
   async function loadData(q: QueryState) {
     if (!q.uuidtemplate) return;
 
-    setState((p) => ({ ...p, loading: true }));
+    setAnswerState((p) => ({ ...p, loading: true }));
 
     try {
       const filters = filterBuilder.build(q);
 
       const res = await apiCall.get("/templatejawabans", {
         params: {
-          mode: "paging",
+          mode: "all",
           page: q.page,
           limit: q.limit,
           search: q.search,
@@ -79,7 +76,7 @@ export function useTemplateAnswer() {
         },
       });
 
-      setState((p) => ({
+      setAnswerState((p) => ({
         ...p,
         data: res.data?.data ?? [],
         total: res.data?.total ?? 0,
@@ -87,27 +84,26 @@ export function useTemplateAnswer() {
     } catch (err: any) {
       pushToast(err?.response?.data?.message || "Error");
     } finally {
-      setState((p) => ({ ...p, loading: false }));
+      setAnswerState((p) => ({ ...p, loading: false }));
     }
   }
 
-  /** 🔥 AUTO LOAD */
   useEffect(() => {
     clearTimeout(debounceRef.current);
 
-    const snapshot = { ...query };
+    const snapshot = { ...answerQuery };
 
     debounceRef.current = setTimeout(() => {
       loadData(snapshot);
     }, 300);
 
     return () => clearTimeout(debounceRef.current);
-  }, [query]);
+  }, [answerQuery]);
 
   return {
-    state,
-    setState,
-    query,
-    setQuery,
+    answerState,
+    setAnswerState,
+    answerQuery,
+    setAnswerQuery,
   };
 }

@@ -1,10 +1,22 @@
 import { isEmpty } from "../Service/utility";
 
 export class FilterBuilder<T extends Record<string, any>> {
-  private rules: { key: keyof T; field: string; op?: string, transform?: (val: any) => any; }[] = [];
+  private rules: {
+    key: keyof T;
+    field: string;
+    op?: string;
+    transform?: (val: any) => any;
+    skip?: boolean;
+  }[] = [];
 
-  add(key: keyof T, field: string, op: string = "eq", transform?: (val: any) => any) {
-    this.rules.push({ key, field, op, transform });
+  add(
+    key: keyof T,
+    field: string,
+    op: string = "eq",
+    transform?: (val: any) => any,
+    skip: boolean = false
+  ) {
+    this.rules.push({ key, field, op, transform, skip });
     return this;
   }
 
@@ -24,6 +36,8 @@ export class FilterBuilder<T extends Record<string, any>> {
   }
 
   countFilled(query: T): number {
-    return this.rules.filter((r) => this.isFilled(query[r.key])).length;
+    return this.rules.filter(
+      (r) => !r.skip && this.isFilled(query[r.key])
+    ).length;
   }
 }

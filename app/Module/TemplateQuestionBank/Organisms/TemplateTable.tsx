@@ -8,6 +8,7 @@ import { CreatedByLabel } from "../Atoms/CreatedByLabel";
 import { ActionTableAdapter } from "../../Common/Adapter/ActionTableAdapter";
 import { useTemplateQuestionContext } from "../Context/TemplateQuestionProvider";
 import { isEmpty } from "../../Common/Service/utility";
+import { TemplateState } from "../Hook/useTemplate";
 
 interface Props {
   data: any[];
@@ -15,7 +16,7 @@ interface Props {
 }
 
 export function TemplateTable({ data, loading = false }: Props) {
-  const { setStateQuestion } = useTemplateQuestionContext();
+  const { setQuestionState } = useTemplateQuestionContext();
 
   const datas: TemplateItem[] = (data || []).map((item: any) => {
     console.log(item)
@@ -35,8 +36,8 @@ export function TemplateTable({ data, loading = false }: Props) {
       status:
         item.Status == "delete" || !isEmpty(item?.DeletedAt)
           ? "deleted"
-          : item.status,
-      createdBy: item.CreatedBy,
+          : item.Status,
+      createdBy: item?.CreatedBy ?? "(admin)",
     };
   });
 
@@ -51,7 +52,7 @@ export function TemplateTable({ data, loading = false }: Props) {
         className: "hover:text-primary",
         onClick: () => {
           console.log("draf", item);
-          setStateQuestion((prev: any) => ({
+          setQuestionState((prev: TemplateState) => ({
             ...prev,
             selected: item,
           }));
@@ -63,7 +64,7 @@ export function TemplateTable({ data, loading = false }: Props) {
         className: "!text-green-700 hover:text-primary",
         onClick: () => {
           console.log("active", item);
-          setStateQuestion((prev: any) => ({
+          setQuestionState((prev: TemplateState) => ({
             ...prev,
             selected: item,
           }));
@@ -75,7 +76,7 @@ export function TemplateTable({ data, loading = false }: Props) {
         className: "!text-blue-700 hover:text-primary",
         onClick: () => {
           console.log("recovery", item);
-          setStateQuestion((prev: any) => ({
+          setQuestionState((prev: TemplateState) => ({
             ...prev,
             selected: item,
           }));
@@ -87,7 +88,7 @@ export function TemplateTable({ data, loading = false }: Props) {
         className: "hover:text-primary",
         onClick: () => {
           console.log("edit", item);
-          setStateQuestion((prev: any) => ({
+          setQuestionState((prev: TemplateState) => ({
             ...prev,
             selected: item,
           }));
@@ -99,7 +100,7 @@ export function TemplateTable({ data, loading = false }: Props) {
         className: "hover:text-error",
         onClick: () => {
           console.log("delete", item);
-          setStateQuestion((prev: any) => ({
+          setQuestionState((prev: TemplateState) => ({
             ...prev,
             selected: item,
           }));

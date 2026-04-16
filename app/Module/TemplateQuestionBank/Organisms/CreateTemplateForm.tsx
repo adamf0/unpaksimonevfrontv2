@@ -20,17 +20,17 @@ export function CreateTemplateForm() {
     register,
     formState: { errors },
   } = useFormContext();
-  const { stateQuestion, setQueryQuestion } = useTemplateQuestionContext();
+  const { questionState, setQuestionQuery } = useTemplateQuestionContext();
 
   /** =========================
    * OPTIONS
    * ========================= */
-  const bankOptions = adaptSelectOptions(stateQuestion.dataBank, {
+  const bankOptions = adaptSelectOptions(questionState.dataBank, {
     valueKey: "UUID",
     labelKey: "Judul",
   });
 
-  const kategoriOptions = adaptSelectOptions(stateQuestion.dataKategori, {
+  const kategoriOptions = adaptSelectOptions(questionState.dataKategori, {
     valueKey: "UUID",
     labelKey: "NamaKategori",
   });
@@ -52,7 +52,7 @@ export function CreateTemplateForm() {
                 value={field.value}
                 onChange={(val) => {
                   field.onChange(val);
-                  setQueryQuestion((prev: any) => ({
+                  setQuestionQuery((prev: any) => ({
                     ...prev,
                     banksoal: val ?? null,
                   }));

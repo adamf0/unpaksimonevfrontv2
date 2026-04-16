@@ -1,13 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { useFormContext, useFieldArray } from "react-hook-form";
+import { useFormContext } from "react-hook-form";
+
 import Icon from "../../Common/Components/Atoms/Icon";
+import Button from "../../Common/Components/Atoms/Button";
 import AnimatedButton from "../../Common/Components/Molecules/AnimatedButton";
 import { InputField } from "../../Common/Components/Molecules/InputField";
-import Button from "../../Common/Components/Atoms/Button";
+
 import OptionSkeleton from "../Atoms/OptionSkeleton";
 import { FormValues } from "./TemplateQuestionFormWrapper";
+
 import apiCall from "../../Common/External/APICall";
 import { useTemplateQuestionContext } from "../Context/TemplateQuestionProvider";
 
@@ -23,11 +26,11 @@ export default function CreateTemplateChoiceForm({
   onReset: () => void;
   isEdit: boolean;
 }) {
-  const { register, formState } = useFormContext<FormValues>();
-  const {stateQuestion} = useTemplateQuestionContext();
+  const { register, formState, watch, setValue } = useFormContext<FormValues>();
 
-  const { watch, setValue } = useFormContext<FormValues>(); 
-  const options = watch("options") || [];
+  const { questionState } = useTemplateQuestionContext();
+
+  const options = watch("options") ?? [];
 
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [addingCount, setAddingCount] = useState(0);
@@ -36,7 +39,8 @@ export default function CreateTemplateChoiceForm({
    * TOAST
    * ========================= */
   const pushToast = (message: string) => {
-    const id = Date.now(); // aman karena client-only (tidak SSR)
+    const id = Date.now();
+
     setToasts((prev) => [...prev, { id, message }]);
 
     setTimeout(() => {
@@ -45,12 +49,14 @@ export default function CreateTemplateChoiceForm({
   };
 
   /** =========================
-   * ADD OPTION (FIXED)
+   * ADD OPTION
    * ========================= */
-  const addOption = async (isFree:boolean = false) => {
+  const addOption = async (isFree: boolean = false) => {
+    const selected = questionState?.selected;
+
     if (isFree) {
       const hasFreeText = options.some(
-        (opt) => String(opt?.payload?.IsFreeText) === "1"
+        (opt) => String(opt?.payload?.IsFreeText) === "1",
       );
 
       if (hasFreeText) {
@@ -58,26 +64,25 @@ export default function CreateTemplateChoiceForm({
         return;
       }
     }
-    if(stateQuestion?.selected?.tipe=="rating" && !isFree){
+
+    if (selected?.tipe === "rating" && !isFree) {
       pushToast("rating tidak boleh di tambah");
+      return;
+    }
+
+    if (!selected?.uuid) {
+      pushToast("Template pertanyaan belum dipilih");
       return;
     }
 
     setAddingCount((prev) => prev + 1);
 
     try {
-      const templateUUID = stateQuestion?.selected?.uuid;
-
-      if (!templateUUID) {
-        pushToast("Template pertanyaan belum dipilih");
-        return;
-      }
-
       const formData = new FormData();
-      formData.append("template_pertanyaan", templateUUID);
-      formData.append("jawaban", isFree? "lainnya":"masukkan jawabannya");
-      // formData.append("nilai", "0");
-      formData.append("isFreeText", isFree? "1":"0");
+
+      formData.append("template_pertanyaan", selected.uuid);
+      formData.append("jawaban", isFree ? "lainnya" : "masukkan jawabannya");
+      formData.append("isFreeText", isFree ? "1" : "0");
 
       const res = await apiCall.post("/templatejawaban", formData, {
         headers: {
@@ -87,17 +92,16 @@ export default function CreateTemplateChoiceForm({
 
       const newUUID = res.data?.uuid;
 
-      // 🔥 inject ke form state
       const newOptions = [
         ...options,
         {
           uuid: newUUID,
-          label: isFree? "lainnya":"masukkan jawabannya",
+          label: isFree ? "lainnya" : "masukkan jawabannya",
           payload: {
             UUID: newUUID,
-            Jawaban: isFree? "lainnya":"masukkan jawabannya",
+            Jawaban: isFree ? "lainnya" : "masukkan jawabannya",
             Nilai: 0,
-            IsFreeText: isFree? "1":"0",
+            IsFreeText: isFree ? "1" : "0",
           },
         },
       ];
@@ -122,7 +126,6 @@ export default function CreateTemplateChoiceForm({
     }
 
     try {
-      console.log(item);
       if (item?.value) {
         await apiCall.delete(`/templatejawaban/${item.value}`, {
           headers: {
@@ -162,8 +165,8 @@ export default function CreateTemplateChoiceForm({
         <div className="flex items-center gap-2">
           <Button
             type="button"
-            onClick={()=>addOption()}
             className="flex items-center gap-2 text-primary text-sm font-bold hover:text-primary/50"
+            onClick={() => addOption()}
           >
             <Icon name="add_circle" />
             Opsi
@@ -171,8 +174,8 @@ export default function CreateTemplateChoiceForm({
 
           <Button
             type="button"
-            onClick={()=>addOption(true)}
             className="flex items-center gap-2 text-primary text-sm font-bold hover:text-primary/50"
+            onClick={() => addOption(true)}
           >
             <Icon name="add_circle" />
             Free Text
@@ -180,7 +183,7 @@ export default function CreateTemplateChoiceForm({
         </div>
       </div>
 
-      {/* LIST OPTIONS */}
+      {/* OPTIONS LIST */}
       <div className="space-y-3 overflow-x-auto">
         {options.map((field, index) => (
           <div key={index} className="flex gap-4 items-center">
@@ -189,15 +192,17 @@ export default function CreateTemplateChoiceForm({
             </span>
 
             <InputField
-              id={`option-${index}`} // ✅ FIX: gunakan index (stabil)
+              id={`option-${index}`}
               placeholder="Isi opsi..."
-              inputClassName={`p-3 ${field?.payload?.IsFreeText as boolean? "!bg-gree-500":""}`}
+              inputClassName={`p-3 ${
+                field?.payload?.IsFreeText === "1" ? "!bg-gree-500" : ""
+              }`}
               wrapperClassName="flex-1"
-              disabled={field?.payload?.IsFreeText as boolean || stateQuestion?.selected?.tipe=="rating"}
-              register={register(
-                `options.${index}.label` as const,
-                // {required: "Opsi tidak boleh kosong",}
-              )}
+              disabled={
+                field?.payload?.IsFreeText === "1" ||
+                questionState?.selected?.tipe === "rating"
+              }
+              register={register(`options.${index}.label` as const)}
             />
 
             <AnimatedButton
@@ -215,7 +220,7 @@ export default function CreateTemplateChoiceForm({
         ))}
       </div>
 
-      {/* SUBMIT BUTTON */}
+      {/* ACTIONS */}
       <div className="mt-8 flex gap-2 justify-end">
         <AnimatedButton
           type="submit"

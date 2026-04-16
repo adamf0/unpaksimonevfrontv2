@@ -3,17 +3,26 @@
 import { createContext, useContext } from "react";
 import { useTemplateAnswer } from "../Hook/useTemplateAnswer";
 
-const TemplateAnswareContext = createContext<any>(null);
+const TemplateAnswerContext =
+  createContext<ReturnType<typeof useTemplateAnswer> | null>(null);
 
-export function TemplateAnswareProvider({ children }: any) {
-  const value = useTemplateAnswer(); 
+export function TemplateAnswerProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const value = useTemplateAnswer();
+
   return (
-    <TemplateAnswareContext.Provider value={value}>
+    <TemplateAnswerContext.Provider value={value}>
       {children}
-    </TemplateAnswareContext.Provider>
+    </TemplateAnswerContext.Provider>
   );
 }
 
-export function useTemplateAnswareContext() {
-  return useContext(TemplateAnswareContext);
+export function useTemplateAnswerContext() {
+  const ctx = useContext(TemplateAnswerContext);
+  if (!ctx)
+    throw new Error("useTemplateAnswerContext must be used within Provider");
+  return ctx;
 }

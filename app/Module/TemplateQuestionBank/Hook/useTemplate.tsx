@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import apiCall from "../../Common/External/APICall";
-import { handleCloudflareError } from "../../Common/Error/axiosErrorHandler";
 import { useToast } from "../../Common/Context/ToastContext";
 import { BaseResultState } from "../../Common/Attribut/BaseResultState";
 import { BaseQuery } from "../../Common/Attribut/BaseQuery";
@@ -12,7 +11,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export type QueryState = BaseQuery & {
   role: string;
-  banksoal: string | null; // ✅ FIX
+  banksoal: any;
   kategori?: string | null;
   pertanyaan: string;
   tipepilihan: string;
@@ -45,7 +44,7 @@ const initialQueryState: QueryState = {
 export function useTemplate() {
   const { pushToast } = useToast();
 
-  const [stateQuestion, setStateQuestion] = useState<TemplateState>({
+  const [questionState, setQuestionState] = useState<TemplateState>({
     data: [],
     dataBank: [],
     dataKategori: [],
@@ -54,12 +53,12 @@ export function useTemplate() {
     selected: null,
   });
 
-  const [queryQuestion, setQueryQuestion] =
+  const [questionQuery, setQuestionQuery] =
     useState<QueryState>(initialQueryState);
 
-  const [openQuestion, setOpenQuestion] = useState(false);
-  const debounceRef = useRef<any>(null);
+  const [isFilterOpen, setFilterOpen] = useState(false);
 
+  const debounceRef = useRef<any>(null);
   const kategoriESRef = useRef<EventSource | null>(null);
   const bankESRef = useRef<EventSource | null>(null);
 
@@ -69,29 +68,30 @@ export function useTemplate() {
         .add("role", "role")
         .add("nama_fakultas", "nama_fakultas", "like")
         .add("nama_prodi", "nama_prodi", "like")
-        .add("banksoal", "uuidbanksoal", "eq", (val) => val?.value),
-    [],
+        .add("banksoal", "uuidbanksoal", "eq", (val) => val?.value, true),
+    []
   );
 
   async function loadData() {
-    if (!queryQuestion.banksoal) return;
+    if (!questionQuery.banksoal) return;
 
-    setStateQuestion((p) => ({ ...p, loading: true }));
+    setQuestionState((p) => ({ ...p, loading: true }));
 
     try {
-      const filters = filterBuilder.build(queryQuestion); // ✅ FIX
+      const filters = filterBuilder.build(questionQuery);
 
       const res = await apiCall.get("/templatepertanyaans", {
         params: {
           mode: "paging",
-          page: queryQuestion.page,
-          limit: queryQuestion.limit,
-          search: queryQuestion.search,
+          page: questionQuery.page,
+          limit: questionQuery.limit,
+          search: questionQuery.search,
           filters,
         },
       });
 
-      setStateQuestion((p) => ({
+      console.log(res.data?.data)
+      setQuestionState((p) => ({
         ...p,
         data: res.data?.data ?? [],
         total: res.data?.total ?? 0,
@@ -99,7 +99,7 @@ export function useTemplate() {
     } catch (error: any) {
       pushToast(error?.response?.data?.message || "Error");
     } finally {
-      setStateQuestion((p) => ({ ...p, loading: false }));
+      setQuestionState((p) => ({ ...p, loading: false }));
     }
   }
 
@@ -107,11 +107,10 @@ export function useTemplate() {
     kategoriESRef.current?.close();
 
     const token = sessionStorage.getItem("access_token");
-
     if (!token) return;
 
     const es = new EventSource(
-      `${BASE_URL}/kategoris?mode=sse&ctxtoken=${token}`,
+      `${BASE_URL}/kategoris?mode=sse&ctxtoken=${token}`
     );
 
     kategoriESRef.current = es;
@@ -121,7 +120,7 @@ export function useTemplate() {
     es.onmessage = (e) => {
       if (e.data === "start") return (temp = []);
       if (e.data === "done") {
-        setStateQuestion((p) => ({ ...p, dataKategori: temp }));
+        setQuestionState((p) => ({ ...p, dataKategori: temp }));
         es.close();
         return;
       }
@@ -136,7 +135,7 @@ export function useTemplate() {
     if (!token) return;
 
     const es = new EventSource(
-      `${BASE_URL}/banksoals?mode=sse&ctxtoken=${token}`,
+      `${BASE_URL}/banksoals?mode=sse&ctxtoken=${token}`
     );
 
     bankESRef.current = es;
@@ -146,7 +145,7 @@ export function useTemplate() {
     es.onmessage = (e) => {
       if (e.data === "start") return (temp = []);
       if (e.data === "done") {
-        setStateQuestion((p) => ({ ...p, dataBank: temp }));
+        setQuestionState((p) => ({ ...p, dataBank: temp }));
         es.close();
         return;
       }
@@ -160,26 +159,30 @@ export function useTemplate() {
   }, []);
 
   useEffect(() => {
-    if (!queryQuestion.banksoal) return;
-
+    if (!questionQuery.banksoal) return;
     loadData();
-  }, [queryQuestion.banksoal]);
+  }, [questionQuery.banksoal]);
 
   useEffect(() => {
-    if (!queryQuestion.banksoal) return;
+    if (!questionQuery.banksoal) return;
 
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(loadData, 300);
-  }, [queryQuestion]);
+  }, [questionQuery]);
 
   return {
-    openQuestion,
-    setOpenQuestion,
-    stateQuestion,
-    setStateQuestion,
-    queryQuestion,
-    setQueryQuestion,
-    resetFiltersQuestion: () => setQueryQuestion(initialQueryState),
-    filterCountQuestion: (q: QueryState) => filterBuilder.countFilled(q),
+    isFilterOpen,
+    setFilterOpen,
+
+    questionState,
+    setQuestionState,
+
+    questionQuery,
+    setQuestionQuery,
+
+    resetFiltersQuestion: () => setQuestionQuery(initialQueryState),
+
+    filterCountQuestion: (q: QueryState) =>
+      filterBuilder.countFilled(q),
   };
 }

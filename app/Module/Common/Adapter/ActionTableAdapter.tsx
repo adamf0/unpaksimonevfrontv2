@@ -16,6 +16,7 @@ export class ActionTableAdapter {
   }
 
   public toActionItems(): ActionItem[] {
+    console.log("item",this.item)
     const keys = this.config.actionMap[this.item.status] ?? [];
 
     return keys.map((key) => this.config.baseActions[key](this.item));

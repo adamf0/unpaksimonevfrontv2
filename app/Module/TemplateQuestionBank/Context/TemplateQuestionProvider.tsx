@@ -3,10 +3,16 @@
 import { createContext, useContext } from "react";
 import { useTemplate } from "../Hook/useTemplate";
 
-const TemplateQuestionContext = createContext<any>(null);
+const TemplateQuestionContext =
+  createContext<ReturnType<typeof useTemplate> | null>(null);
 
-export function TemplateQuestionProvider({ children }: any) {
-  const value = useTemplate(); 
+export function TemplateQuestionProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const value = useTemplate();
+
   return (
     <TemplateQuestionContext.Provider value={value}>
       {children}
@@ -15,5 +21,8 @@ export function TemplateQuestionProvider({ children }: any) {
 }
 
 export function useTemplateQuestionContext() {
-  return useContext(TemplateQuestionContext);
+  const ctx = useContext(TemplateQuestionContext);
+  if (!ctx)
+    throw new Error("useTemplateQuestionContext must be used within Provider");
+  return ctx;
 }

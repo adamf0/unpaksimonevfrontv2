@@ -1,13 +1,13 @@
 "use client";
 
-import { FormProvider, useForm, useFormContext } from "react-hook-form";
+import { FormProvider, useForm } from "react-hook-form";
 import { CreateTemplateForm } from "../Organisms/CreateTemplateForm";
 import CreateTemplateChoiceForm from "../Organisms/CreateTemplateChoiceForm";
-import { useTemplateQuestionContext } from "../Context/TemplateQuestionProvider";
 import apiCall from "../../Common/External/APICall";
 import { useToast } from "../../Common/Context/ToastContext";
 import { useEffect } from "react";
 import { useTemplateAnswer } from "../Hook/useTemplateAnswer";
+import { useTemplateQuestionContext } from "../Context/TemplateQuestionProvider";
 
 export type ChoiceOption = {
   value?: number;
@@ -47,30 +47,27 @@ const EMPTY_VALUES: FormValues = {
 
 export default function TemplateQuestionFormWrapper() {
   const { pushToast } = useToast();
-  const { queryQuestion, setQueryQuestion, stateQuestion, setStateQuestion } =
+  const { questionQuery, setQuestionQuery, questionState, setQuestionState } =
     useTemplateQuestionContext();
 
-  const { state: answerState } = useTemplateAnswer();
+  const { answerState } = useTemplateAnswer();
 
   const methods = useForm<FormValues>({
     defaultValues: DEFAULT_VALUES,
   });
 
-  /** 🔥 RESET FORM SAAT EDIT */
+  /** RESET WHEN SELECTED */
   useEffect(() => {
-    if (!stateQuestion.selected) return;
+    if (!questionState.selected) return;
 
-    const s = stateQuestion.selected;
-    // console.log(s)
-
-    const banksoalObj = queryQuestion?.banksoal;
+    const s = questionState.selected;
 
     methods.reset({
-      banksoal: banksoalObj,
+      banksoal: questionQuery?.banksoal,
       kategori: s.kategori?.uuid
         ? {
-            label: s.kategori?.kategori,
-            value: s.kategori?.uuid,
+            label: s.kategori.kategori,
+            value: s.kategori.uuid,
           }
         : null,
       tipepilihan: s.tipe
@@ -82,26 +79,26 @@ export default function TemplateQuestionFormWrapper() {
       bobot: s.bobot ?? 1,
       wajibisi: s.require ?? true,
       pertanyaan: s.judul ?? "",
-      options: [], // kosong dulu
+      options: [],
     });
-  }, [stateQuestion.selected]);
+  }, [questionState.selected]);
 
-  /** 🔥 INJECT JAWABAN KE FIELD ARRAY */
+  /** INJECT ANSWER */
   useEffect(() => {
     if (!answerState.data) return;
 
-    const mapped = answerState.data.map((item: any) => {
-      return {
-        value: item.UUID,
-        label: item.Jawaban,
-        payload: item,
-      };
-    });
+    const mapped = answerState.data.map((item: any) => ({
+      value: item.UUID,
+      label: item.Jawaban,
+      payload: item,
+    }));
 
     methods.setValue("options", mapped);
   }, [answerState.data]);
 
-  const createTemplatePertanyaan = async (data: FormValues) => {
+  const createTemplatePertanyaan = async (data: FormValues, isEdit: boolean) => {
+    if(isEdit) throw new Error("update belum implemen");
+
     const formData = new FormData();
     formData.append("bank_soal", data.banksoal?.value ?? "");
     formData.append("kategori", data.kategori?.value ?? "");
@@ -150,42 +147,28 @@ export default function TemplateQuestionFormWrapper() {
 
   const onSubmit = async (data: FormValues) => {
     try {
-      /** 1. Create Template */
-      const uuidtemplate = await createTemplatePertanyaan(data);
+      const isEditMode = !!questionState.selected;
 
-      if (!uuidtemplate) {
-        throw new Error("UUID template tidak ditemukan");
-      }
+      const uuid = await createTemplatePertanyaan(data, isEditMode);
 
-      /** 2. Handle tipe pilihan */
-      if (data.tipepilihan?.value === "rating") {
-        const ratingOptions = await createRatingOptions(uuidtemplate);
+      if (!uuid) throw new Error("UUID tidak ditemukan");
 
-        // 🔥 inject ke form state
+      if (data.tipepilihan?.value === "rating" && !isEditMode) {
+        const ratingOptions = await createRatingOptions(uuid);
+
         methods.setValue("options", ratingOptions, {
           shouldDirty: true,
         });
       }
 
-      /** 3. Refresh state */
-      setQueryQuestion((prev: any) => ({
+      setQuestionQuery((prev: any) => ({
         ...prev,
         banksoal: data.banksoal,
       }));
 
-      /** 4. Success */
       pushToast("Berhasil");
-      methods.reset({
-        ...DEFAULT_VALUES,
-        options:
-          data.tipepilihan?.value === "rating"
-            ? Array.from({ length: 5 }, (_, i) => ({
-                label: (i + 1).toString(),
-              }))
-            : [],
-      });
     } catch (err: any) {
-      pushToast(err?.response?.data?.message || err.message || "Error");
+      pushToast(err?.response?.data?.message || err.message);
     }
   };
 
@@ -195,23 +178,19 @@ export default function TemplateQuestionFormWrapper() {
         <CreateTemplateForm />
         <CreateTemplateChoiceForm
           onReset={() => {
-            setStateQuestion((prev: any) => {
-              console.log("prev:", prev);
-              return {
-                ...prev,
-                data: [],
-              };
-            });
-            setQueryQuestion((prev: any) => {
-              console.log("prev:", prev);
-              return {
-                ...prev,
-                banksoal: null,
-              };
-            });
+            setQuestionState((prev: any) => ({
+              ...prev,
+              data: [],
+            }));
+
+            setQuestionQuery((prev: any) => ({
+              ...prev,
+              banksoal: null,
+            }));
+
             methods.reset(EMPTY_VALUES);
           }}
-          isEdit={stateQuestion.selected}
+          isEdit={!!questionState.selected}
         />
       </form>
     </FormProvider>
