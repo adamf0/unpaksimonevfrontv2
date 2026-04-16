@@ -24,6 +24,8 @@ interface BankSoalItem {
   judul: string;
   semester: string;
   status: string;
+  konten?: string;
+  deksripsi?: string;
   tanggalmulai: DateTimeVO;
   tanggalakhir: DateTimeVO;
   createdtime: string;
@@ -42,6 +44,8 @@ export function mapBankSoal(api: any): BankSoalItem {
     status: api.Status || !isEmpty(api.DeletedAt ?? ""),
     tanggalmulai: mulai,
     tanggalakhir: akhir,
+    konten: api?.Content,
+    deksripsi: api?.Deskripsi,
     createdby: clipCreatedBy(api),
     createdtime: api?.CreatedAt ?? "",
     deletedtime: api.DeletedAt ?? "",

@@ -4,7 +4,6 @@ import { useForm } from "react-hook-form";
 import AnimatedButton from "../../Common/Components/Molecules/AnimatedButton";
 import { InputField } from "../../Common/Components/Molecules/InputField";
 import { TextareaField } from "../../Common/Components/Molecules/TextareaField";
-import { SelectFieldLite } from "../../Common/Components/Organisms/SelectFieldLite";
 import { useEffect } from "react";
 import { useQuestionBankContext } from "../Context/QuestionBankProvider";
 
