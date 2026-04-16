@@ -1,12 +1,11 @@
 "use client";
 
-import { useSelect } from "@/app/Module/Hooks/useSelect";
 import { SelectChip } from "../Molecules/SelectChip";
 import { SelectDropdownItem } from "../Molecules/SelectDropdownItem";
 import { SelectSearch } from "../Molecules/SelectSearch";
 import { Option } from "../Attribut/Option";
 
-import { useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { usePopper } from "react-popper";
 import { createPortal } from "react-dom";
 
@@ -18,20 +17,16 @@ type Props = {
   value: Option | Option[] | null;
   onChange: (v: any) => void;
   options: Option[];
+  error?: any;
 };
 
 export function SelectField(props: Props) {
-  const {
-    ref,
-    open,
-    setOpen,
-    search,
-    setSearch,
-    selected,
-    toggle,
-    remove,
-    grouped,
-  } = useSelect(props);
+  const { value, onChange, options, mode } = props;
+
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
 
   const [referenceElement, setReferenceElement] =
     useState<HTMLDivElement | null>(null);
@@ -43,12 +38,7 @@ export function SelectField(props: Props) {
   const { styles, attributes } = usePopper(referenceElement, popperElement, {
     placement: "bottom-start",
     modifiers: [
-      {
-        name: "offset",
-        options: {
-          offset: [0, 8],
-        },
-      },
+      { name: "offset", options: { offset: [0, 8] } },
       {
         name: "preventOverflow",
         options: {
@@ -58,18 +48,89 @@ export function SelectField(props: Props) {
     ],
   });
 
+  /** =========================
+   * NORMALIZE VALUE
+   * ========================= */
+  const selected: Option[] = useMemo(() => {
+    if (!value) return [];
+    return Array.isArray(value) ? value : [value];
+  }, [value]);
+
+  /** =========================
+   * FILTER SEARCH
+   * ========================= */
+  const filtered = useMemo(() => {
+    if (!search) return options;
+
+    return options.filter((opt) =>
+      opt.label.toLowerCase().includes(search.toLowerCase()),
+    );
+  }, [options, search]);
+
+  /** =========================
+   * TOGGLE SELECT
+   * ========================= */
+  const toggle = (opt: Option) => {
+    if (mode === "single") {
+      onChange(opt);
+      setOpen(false);
+      return;
+    }
+
+    const exists = selected.find((s) => s.value === opt.value);
+
+    if (exists) {
+      onChange(selected.filter((s) => s.value !== opt.value));
+    } else {
+      onChange([...selected, opt]);
+    }
+  };
+
+  /** =========================
+   * REMOVE CHIP
+   * ========================= */
+  const remove = (opt: Option) => {
+    onChange(selected.filter((s) => s.value !== opt.value));
+  };
+
+  /** =========================
+   * CLICK OUTSIDE (CLOSE)
+   * ========================= */
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (!open) return;
+
+      const target = e.target as Node;
+
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(target) &&
+        popperElement &&
+        !popperElement.contains(target)
+      ) {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [open, popperElement]);
+
   return (
-    <div className="relative w-full space-y-2" ref={ref}>
+    <div className="relative w-full space-y-2" ref={wrapperRef}>
       <label className="text-sm">{props.label}</label>
 
       {/* TRIGGER */}
       <div
         ref={setReferenceElement}
         onClick={() => setOpen(true)}
-        className="w-full bg-surface-container-low p-3 rounded-lg flex flex-wrap gap-2 cursor-pointer"
+        className={`w-full bg-surface-container-low ${selected.length === 0 ? "p-3" : "px-3 py-2.5"} rounded-lg flex flex-wrap gap-2 cursor-pointer`}
       >
         {selected.length === 0 ? (
-          <span className="text-gray-400">{props.placeholder}</span>
+          <span className="text-gray-500 text-sm">{props.placeholder}</span>
         ) : (
           selected.map((o: Option) => (
             <SelectChip
@@ -81,7 +142,9 @@ export function SelectField(props: Props) {
         )}
       </div>
 
-      {/* DROPDOWN (PORTAL OUTSIDE FORM) */}
+      {props.error && <p className="text-xs text-red-500 font-medium">{props.error}</p>}
+
+      {/* DROPDOWN */}
       {open &&
         typeof window !== "undefined" &&
         createPortal(
@@ -98,25 +161,19 @@ export function SelectField(props: Props) {
             <SelectSearch value={search} onChange={setSearch} />
 
             <div className="max-h-60 overflow-auto">
-              {Object.entries(grouped).map(([group, items]: any) => (
-                <div key={group}>
-                  {group !== "default" && (
-                    <div className="p-2 text-xs text-gray-400">{group}</div>
-                  )}
+              {filtered.map((opt: Option) => {
+                const isSelected = selected.some((v) => v.value === opt.value);
 
-                  {items.map((opt: Option) => (
-                    <SelectDropdownItem
-                      key={opt.value}
-                      option={opt}
-                      selected={selected.some(
-                        (v: Option) => v.value === opt.value,
-                      )}
-                      onClick={() => toggle(opt)}
-                      renderItem={props.renderItem}
-                    />
-                  ))}
-                </div>
-              ))}
+                return (
+                  <SelectDropdownItem
+                    key={opt.value}
+                    option={opt}
+                    selected={isSelected}
+                    onClick={() => toggle(opt)}
+                    renderItem={props.renderItem}
+                  />
+                );
+              })}
             </div>
           </div>,
           document.body,

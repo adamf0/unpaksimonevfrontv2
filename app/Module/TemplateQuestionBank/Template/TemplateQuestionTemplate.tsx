@@ -1,10 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import Icon from "../../Common/Components/Atoms/Icon";
 import { FilterButton } from "../../Common/Components/Molecules/FilterButton";
 import { SearchInput } from "../../Common/Components/Molecules/SearchInput";
-import { CreateTemplateForm } from "../Organisms/CreateTemplateForm";
 import { Pagination } from "../../Common/Components/Molecules/Pagination";
 import { FilterSidebar } from "../../Common/Components/Template/FilterSidebar";
 import { QuickInfoCard } from "../Molecules/QuickInfoCard";
@@ -12,11 +10,19 @@ import { LaunchCard } from "../Molecules/LaunchCard";
 import GuideCard from "../Molecules/GuideCard";
 import { TemplateFilterForm } from "../Molecules/TemplateFilterForm";
 import { TemplateTable } from "../Organisms/TemplateTable";
-import CreateTemplateChoiceForm from "../Organisms/CreateTemplateChoiceForm";
+import { useTemplateQuestionContext } from "../Context/TemplateQuestionProvider";
+import TemplateQuestionFormWrapper from "../Organisms/TemplateQuestionFormWrapper";
 
 export default function TemplateQuestionTemplate() {
-  const [open, setOpen] = useState(false);
-  const [current, setCurrent] = useState(1);
+  const {
+    stateQuestion,
+    queryQuestion,
+    setQueryQuestion,
+    openQuestion,
+    setOpenQuestion,
+    resetFiltersQuestion,
+    filterCountQuestion,
+  } = useTemplateQuestionContext();
 
   return (
     <>
@@ -44,9 +50,7 @@ export default function TemplateQuestionTemplate() {
             </h3>
           </div>
 
-          <CreateTemplateForm />
-
-          <CreateTemplateChoiceForm/>
+          <TemplateQuestionFormWrapper />
         </div>
 
         <div className="md:col-span-4 space-y-6">
@@ -68,42 +72,69 @@ export default function TemplateQuestionTemplate() {
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 md:gap-4">
               <SearchInput
                 placeholder="Global search..."
-                onChange={(val) => console.log(val)}
+                onChange={(val) =>
+                  setQueryQuestion((prev: any) => ({
+                    ...prev,
+                    search: val,
+                    page: 1,
+                  }))
+                }
               />
 
-              <FilterButton count={2} onClick={() => setOpen(true)} />
+              <FilterButton
+                count={filterCountQuestion(queryQuestion)}
+                onClick={() => setOpenQuestion(true)}
+              />
             </div>
           </div>
         </div>
 
         <div className="w-full overflow-x-auto">
-          <TemplateTable />
+          <TemplateTable
+            data={stateQuestion.data}
+            loading={stateQuestion.loading}
+          />
         </div>
 
         <div className="p-4 md:p-8 bg-surface-container-low/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-t border-surface-container">
           <Pagination
-            currentPage={current}
-            totalPages={13}
-            totalItems={124}
-            showing={2}
-            onChange={(page) => setCurrent(page)}
+            currentPage={queryQuestion.page}
+            totalPages={
+              stateQuestion.total < 0
+                ? 1
+                : Math.ceil(stateQuestion.total / queryQuestion.limit)
+            }
+            totalItems={stateQuestion.total}
+            showing={queryQuestion.limit}
+            onChange={(page) =>
+              setQueryQuestion((prev: any) => ({ ...prev, page }))
+            }
           />
         </div>
       </section>
 
       <FilterSidebar
-        open={open}
-        onClose={() => setOpen(false)}
+        open={openQuestion}
+        onClose={() => setOpenQuestion(false)}
         footer={
-          <button
-            className="w-full bg-primary text-white py-2 rounded-lg font-bold"
-            onClick={() => console.log("filter")}
-          >
-            Apply Filters
-          </button>
+          <div className="flex flex-col gap-2">
+            <button
+              className="w-full bg-primary text-white py-2 rounded-lg font-bold"
+              onClick={() => setOpenQuestion(false)}
+            >
+              Apply Filters
+            </button>
+            <button
+              type="button"
+              onClick={resetFiltersQuestion}
+              className="w-full py-2 rounded-lg border border-red-300 text-red-600 font-bold hover:bg-red-50 transition"
+            >
+              Reset Filter
+            </button>
+          </div>
         }
       >
-        <TemplateFilterForm />
+        <TemplateFilterForm value={queryQuestion} onChange={setQueryQuestion} />
       </FilterSidebar>
     </>
   );

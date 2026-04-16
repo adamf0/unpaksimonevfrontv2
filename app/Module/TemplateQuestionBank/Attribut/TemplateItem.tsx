@@ -1,7 +1,8 @@
 export interface TemplateItem {
   id: number;
+  uuid: string;
   judul: string;
-  kategori?: string;
+  kategori?: Kategori|null;
   tipe: string;
   bobot: number;
   require: number;
@@ -10,4 +11,9 @@ export interface TemplateItem {
   created?: string; //admin, fakultas, prodi
   createdBy?: string;
   deletedtime?: string;
+}
+
+export interface Kategori {
+  uuid: string;
+  kategori: string;
 }

@@ -1,4 +1,3 @@
-import Icon from "../../Common/Components/Atoms/Icon";
 import Card from "../../Common/Components/Atoms/Card";
 
 export function SubCategoryCard() {

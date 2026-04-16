@@ -1,10 +1,10 @@
-import AdminPanelTemplate from "../../Common/Components/Template/AdminPanelTemplate";
+import AdminPanelTemplateServer from "../../Common/Components/Template/AdminPanelTemplateServer";
 import AccountTemplate from "../Template/AccountTemplate";
 
 export default function AccountPage() {
   return (
-    <AdminPanelTemplate>
+    <AdminPanelTemplateServer>
       <AccountTemplate/>
-    </AdminPanelTemplate>
+    </AdminPanelTemplateServer>
   );
 }

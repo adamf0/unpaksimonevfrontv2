@@ -12,7 +12,6 @@ type InputFieldProps = {
   icon?: string;
   labelAction?: React.ReactNode;
   value?: string;
-  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 };
 
 export default function InputField({
@@ -24,7 +23,7 @@ export default function InputField({
   icon,
   labelAction,
   value,
-  onChange,
+  ...props
 }: InputFieldProps) {
   const [showPassword, setShowPassword] = useState(false);
 
@@ -58,11 +57,11 @@ export default function InputField({
           name={name}
           type={inputType}
           value={value}
-          onChange={onChange}
           placeholder={placeholder}
           className={`w-full py-4 bg-surface-container-low border-2 border-transparent rounded-2xl text-on-surface focus:ring-0 focus:border-primary/50 transition-all placeholder:text-outline/40 font-medium ${
             icon ? "pl-12" : "pl-4"
           } pr-12`}
+          {...props}
         />
 
         {/* Password toggle */}

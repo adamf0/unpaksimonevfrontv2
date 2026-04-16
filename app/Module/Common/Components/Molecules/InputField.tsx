@@ -11,6 +11,7 @@ interface InputFieldProps {
   type?: string;
   error?: string;
 
+  disabled?: boolean;
   wrapperClassName?: string; // 🔥 untuk div luar
   inputClassName?: string;   // 🔥 untuk input
 
@@ -23,6 +24,7 @@ export const InputField = ({
   placeholder,
   type = "text",
   error,
+  disabled,
   wrapperClassName = "",
   inputClassName = "",
   register,
@@ -33,12 +35,14 @@ export const InputField = ({
     <Input
       placeholder={placeholder}
       type={type}
+      name={id}
       register={register}
       className={`
         w-full bg-surface-container-low border-none rounded-lg p-3 text-sm 
         focus:ring-2 focus:ring-primary/20 transition-all
         ${inputClassName}
       `}
+      disabled={disabled}
     />
 
     {error && (

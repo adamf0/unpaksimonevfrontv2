@@ -2,20 +2,133 @@
 
 import Icon from "../../Common/Components/Atoms/Icon";
 import AnimatedButton from "../../Common/Components/Molecules/AnimatedButton";
-import RememberMe from "../Molecules/RememberMe";
+// import RememberMe from "../Molecules/RememberMe";
 import SocialButton from "../Molecules/SocialButton";
-import Divider from '../../Common/Components/Molecules/Divider';
+import Divider from "../../Common/Components/Molecules/Divider";
 import InputField from "../Molecules/InputField";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import apiCall from "../../Common/External/APICall";
+import { useForm } from "react-hook-form";
+import { handleCloudflareError } from "../../Common/Error/axiosErrorHandler";
+import { useEffect, useRef } from "react";
+import { useToast } from "../../Common/Context/ToastContext";
+import getTokenExpiry from "../../Common/Service/tokenExpiry";
 
 export default function AuthLoginSection() {
+  const { pushToast } = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const hasShown = useRef(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    router.push("/dashboard"); // 👈 INI YANG BENAR
+  type LoginForm = {
+    username: string;
+    password: string;
   };
 
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginForm>();
+
+  useEffect(() => {
+    const reason = searchParams.get("r");
+    if (!reason) return;
+
+    let message = "";
+    hasShown.current = true;
+
+    switch (reason) {
+      case "E0":
+        message = "Sesi login berakhir";
+        break;
+      case "E0":
+        message = "Terjadi masalah pada session Anda.";
+        break;
+      case "E1":
+        message = "Tidak dapat mengambil informasi akun.";
+        break;
+      case "F0":
+        message = "Akun Anda tidak memiliki akses ke sistem ini.";
+        break;
+    }
+
+    console.log(message);
+    if (message != "") {
+      pushToast(message);
+    }
+    sessionStorage.clear();
+
+    // hapus query biar tidak muncul ulang
+    window.history.replaceState({}, "", window.location.pathname);
+  }, []);
+
+  const onSubmit = async (input: LoginForm) => {
+    try {
+      const formData = new FormData();
+      formData.append("username", input.username);
+      formData.append("password", input.password);
+
+      const { data } = await apiCall.post("/login", formData);
+      const accessToken = data?.access_token;
+      const refreshToken = data?.refresh_token;
+
+      if (accessToken) { //ini ada nilainya
+        sessionStorage.setItem("access_token", accessToken);
+        document.cookie = `access_token=${accessToken}; path=/`;
+
+        let exp: number | null = null;
+        try {
+          exp = getTokenExpiry(accessToken);
+        } catch (e) {
+          console.warn("Decode token gagal", e);
+        }
+
+        if (exp) {
+          sessionStorage.setItem("access_token_exp", exp.toString());
+        }
+      }
+
+      if (refreshToken) {
+        sessionStorage.setItem("refresh_token", refreshToken);
+      }
+
+      router.push("/dashboard");
+    } catch (error: any) {
+      if (!error.response) {
+        pushToast("Ada masalah pada server");
+      }
+
+      const { status, data } = error.response;
+
+      const cfError = handleCloudflareError(status);
+      if (cfError) {
+        pushToast(cfError);
+        return;
+      }
+
+      if (data?.code === "Account.InvalidCredential") {
+        pushToast("username / password tidak valid");
+        return;
+      }
+
+      if (data?.code === "Login.Validation") {
+        const messages = data.message;
+
+        Object.keys(messages).forEach((field) => {
+          setError(field as keyof LoginForm, {
+            type: "server",
+            message: messages[field],
+          });
+        });
+
+        return;
+      }
+
+      pushToast(data?.message || "Ada masalah pada server");
+    }
+  };
 
   return (
     <section className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12 md:p-20 bg-surface">
@@ -36,21 +149,27 @@ export default function AuthLoginSection() {
             Please enter your credentials to continue your quest.
           </p>
         </div>
-        <form className="space-y-6" onSubmit={handleSubmit}>
+        <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
           <div className="space-y-2">
             <InputField
               id="username"
-              name="username"
               label="Username or Email"
               placeholder="e.g. academic.student@campus.edu"
               icon="alternate_email"
+              {...register("username", {
+                required: "Username wajib diisi",
+              })}
             />
+            {errors.username && (
+              <p className="text-sm text-red-500 ml-1">
+                {errors.username.message}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
             <InputField
               id="password"
-              name="password"
               type="password"
               label="Password"
               placeholder="••••••••"
@@ -63,14 +182,22 @@ export default function AuthLoginSection() {
                   Forgot Password?
                 </a>
               }
+              {...register("password", {
+                required: "Password wajib diisi",
+              })}
             />
+            {errors.password && (
+              <p className="text-sm text-red-500 ml-1">
+                {errors.password.message}
+              </p>
+            )}
           </div>
 
-          <RememberMe
+          {/* <RememberMe
             id="remember"
             name="remember"
             label="Remember this session"
-          />
+          /> */}
 
           <AnimatedButton
             type="submit"
@@ -107,11 +234,21 @@ export default function AuthLoginSection() {
                 />
               </svg>
             }
+            onClick={() =>
+              alert(
+                "fitur masih tahap pengembangan. ini akan aktif ketika sso terimplementasi.",
+              )
+            }
           />
           <SocialButton
             label="SSO Unpak"
             icon="account_balance"
             className="py-4 px-4 bg-surface-container-highest/50 border border-outline-variant/20 rounded-2xl hover:bg-surface-container-highest"
+            onClick={() =>
+              alert(
+                "fitur masih tahap pengembangan. ini akan aktif ketika sso terimplementasi.",
+              )
+            }
           />
         </div>
 

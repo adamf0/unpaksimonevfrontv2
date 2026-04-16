@@ -5,7 +5,7 @@ import { TreeItem } from "../Attribut/TreeItem";
 
 export function TreeNode({ item }: { item: TreeItem }) {
   return (
-    <div className="group/tree-item">
+    <div className="group/tree-item" data-id={item.id} data-uuid={item.uuid} data-name={item.name}>
       {/* NODE */}
       <div className="flex items-center justify-between p-4 bg-surface-container-low rounded-xl border-l-4 border-primary hover:bg-surface-container-high transition-all">
         {/* LEFT */}

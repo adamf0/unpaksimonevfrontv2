@@ -5,13 +5,19 @@ import Sidebar from "../Organisms/Sidebar";
 import Header from "../Organisms/Header";
 import { MenuItem } from "../../Attribut/MenuItem";
 import { usePathname, useRouter } from "next/navigation";
+import { AccountInfo } from "../../Attribut/AccountInfo";
+import { useTokenWatcher } from "../../Hook/tokenWatcher";
 
 export default function AdminPanelTemplate({
+  userProfile,
   children,
 }: {
+  userProfile: AccountInfo;
   children: React.ReactNode;
 }) {
+  useTokenWatcher();
   const router = useRouter();
+
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -30,7 +36,7 @@ export default function AdminPanelTemplate({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const MENU_ITEMS: MenuItem[] = [
+  const BASE_MENU_ITEMS: MenuItem[] = [
     {
       icon: "dashboard",
       label: "Dashboard",
@@ -96,6 +102,18 @@ export default function AdminPanelTemplate({
     },
   ];
 
+  const MENU_ITEMS: MenuItem[] = BASE_MENU_ITEMS.filter((item) => {
+    if (userProfile?.Level === "admin") return true;
+
+    if (userProfile?.Level === "fakultas" || userProfile?.Level === "prodi") {
+      return item.label !== "Account";
+    }
+
+    return false;
+  }).map((item) => ({
+    ...item,
+  }));
+
   const BOTTOM_ITEMS: MenuItem[] = [
     {
       icon: "help_outline",
@@ -112,7 +130,9 @@ export default function AdminPanelTemplate({
       danger: true,
       onClick: () => {
         closeSidebar();
-        router.push("/logout");
+        sessionStorage.removeItem("access_token");
+        sessionStorage.removeItem("refresh_token");
+        window.location.href = "/api/logout";
       },
     },
   ];

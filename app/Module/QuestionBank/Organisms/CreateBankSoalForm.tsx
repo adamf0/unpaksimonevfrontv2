@@ -1,47 +1,81 @@
 "use client";
 
+import { useForm } from "react-hook-form";
 import AnimatedButton from "../../Common/Components/Molecules/AnimatedButton";
 import { InputField } from "../../Common/Components/Molecules/InputField";
 import { TextareaField } from "../../Common/Components/Molecules/TextareaField";
 import { SelectFieldLite } from "../../Common/Components/Organisms/SelectFieldLite";
+import { useEffect } from "react";
+import { useQuestionBankContext } from "../Context/QuestionBankProvider";
+
+type FormValues = {
+  judul: string;
+  semester: any;
+  konten?: string;
+  deskripsi?: string;
+};
 
 export function CreateBankSoalForm() {
+  const { state } = useQuestionBankContext();
+
+  const {
+    control,
+    register,
+    handleSubmit,
+    formState: { errors },
+    setValue,
+    reset,
+  } = useForm<FormValues>({
+    defaultValues: {
+      judul: "",
+      semester: "",
+      konten: "",
+      deskripsi: "",
+    },
+  });
+
+  useEffect(() => {
+    if (!state.selected) return;
+
+    reset({
+      judul: state.selected.judul ?? "",
+      semester: state.selected.semester ?? "",
+      konten: state.selected.konten ?? "",
+      deskripsi: state.selected.deskripsi ?? "",
+    });
+  }, [state.selected, reset]);
+
+  const onSubmit = (data: FormValues) => {
+    console.log("FORM:", data);
+  };
+
   return (
-    <form className="space-y-6">
+    <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Judul */}
         <div className="col-span-2 md:col-span-1">
           <InputField
             id="judul"
-            label="Judul Pertanyaan"
+            label="Judul"
             placeholder="Contoh: Evaluasi Kinerja Dosen"
+            register={register("judul", {
+              required: "Judul wajib diisi",
+            })}
+            error={errors.judul?.message}
           />
         </div>
 
         {/* Semester */}
-        <SelectFieldLite
-          id="semester"
-          label="Semester"
-          placeholder="select semester"
-          options={[
-            { label: "Semester Ganjil 2023/2024", value: "ganjil" },
-            { label: "Semester Genap 2023/2024", value: "genap" },
-            { label: "Semester Pendek 2024", value: "pendek" },
-          ]}
-        />
 
-        {/* Kategori */}
-        <div className="col-span-2">
-          <SelectFieldLite
-            id="kategori"
-            label="Kategori"
-            placeholder="select kategori"
-            options={[
-              { label: "Fasilitas Kampus", value: "fasilitas" },
-              { label: "Metode Pembelajaran", value: "metode" },
-              { label: "Pelayanan Akademik", value: "akademik" },
-              { label: "Penelitian & Pengabdian", value: "penelitian" },
-            ]}
+        <div className="col-span-2 md:col-span-1">
+          <InputField
+            id="semester"
+            label="Semester"
+            placeholder="Contoh: 202601"
+            register={register("semester", {
+              required: "Semester wajib diisi",
+            })}
+            error={errors.judul?.message}
           />
         </div>
 
@@ -52,6 +86,7 @@ export function CreateBankSoalForm() {
             label="Konten Utama"
             placeholder="Tuliskan pertanyaan inti di sini..."
             rows={4}
+            register={register("konten", {})}
           />
         </div>
 
@@ -62,6 +97,7 @@ export function CreateBankSoalForm() {
             label="Deskripsi Tambahan"
             placeholder="Informasi pendukung atau instruksi pengerjaan..."
             rows={3}
+            register={register("deskripsi", {})}
           />
         </div>
       </div>

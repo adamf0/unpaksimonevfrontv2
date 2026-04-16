@@ -6,90 +6,104 @@ import { TemplateItem } from "../Attribut/TemplateItem";
 import { StatusState } from "../Molecules/StatusState";
 import { CreatedByLabel } from "../Atoms/CreatedByLabel";
 import { ActionTableAdapter } from "../../Common/Adapter/ActionTableAdapter";
+import { useTemplateQuestionContext } from "../Context/TemplateQuestionProvider";
+import { isEmpty } from "../../Common/Service/utility";
 
-export function TemplateTable() {
-  const datas: TemplateItem[] = [
-    {
-      id: 1,
-      judul: "Evaluasi Dosen Ganjil 2023",
-      kategori: "Akademik",
-      tipe: "checkbox",
-      bobot: 2,
-      require: 1,
-      status: "draf",
-      createdtime: "2026-01-01 00:00:00",
-      created: "admin",
-      createdBy: "adam",
-      deletedtime: "",
-    },
-    {
-      id: 2,
-      judul: "Evaluasi Dosen Ganjil 2023",
-      kategori: "Akademik",
-      tipe: "rating5",
-      bobot: 2,
-      require: 1,
-      status: "active",
-      createdtime: "2026-01-01 00:00:00",
-      created: "fakultas",
-      createdBy: "hukum",
-      deletedtime: "",
-    },
-    {
-      id: 3,
-      judul: "Evaluasi Dosen Ganjil 2023",
-      kategori: "Akademik",
-      tipe: "radio",
-      bobot: 2,
-      require: 1,
-      status: "deleted",
-      createdtime: "2026-01-01 00:00:00",
-      created: "prodi",
-      createdBy: "hukum (s1)",
-      deletedtime: "2026-01-01 00:00:00",
-    },
-  ];
+interface Props {
+  data: any[];
+  loading: boolean;
+}
+
+export function TemplateTable({ data, loading = false }: Props) {
+  const { setStateQuestion } = useTemplateQuestionContext();
+
+  const datas: TemplateItem[] = (data || []).map((item: any) => {
+    console.log(item)
+    return {
+      id: item.ID,
+      uuid: item.UUID,
+      judul: item.Pertanyaan,
+      kategori: isEmpty(item.UuidKategori)
+        ? null
+        : {
+            uuid: item.UuidKategori,
+            kategori: item.Kategori,
+          },
+      tipe: item.JenisPilihan,
+      bobot: item.Bobot,
+      require: item.Required,
+      status:
+        item.Status == "delete" || !isEmpty(item?.DeletedAt)
+          ? "deleted"
+          : item.status,
+      createdBy: item.CreatedBy,
+    };
+  });
 
   const templateActionConfig: {
     baseActions: Record<any, (item: TemplateItem) => ActionItem>;
     actionMap: Record<string, any[]>;
   } = {
     baseActions: {
-      view: (item) => ({
-        name: "view",
-        icon: "visibility",
-        className: "hover:text-primary",
-        onClick: () => console.log("view", item),
-      }),
       draf: (item) => ({
         name: "draf",
-        icon: "drafts",
+        icon: "draft",
         className: "hover:text-primary",
-        onClick: () => console.log("draf", item),
+        onClick: () => {
+          console.log("draf", item);
+          setStateQuestion((prev: any) => ({
+            ...prev,
+            selected: item,
+          }));
+        },
       }),
       active: (item) => ({
         name: "active",
         icon: "check",
         className: "!text-green-700 hover:text-primary",
-        onClick: () => console.log("active", item),
+        onClick: () => {
+          console.log("active", item);
+          setStateQuestion((prev: any) => ({
+            ...prev,
+            selected: item,
+          }));
+        },
       }),
       recovery: (item) => ({
         name: "recovery",
         icon: "settings_backup_restore",
         className: "!text-blue-700 hover:text-primary",
-        onClick: () => console.log("recovery", item),
+        onClick: () => {
+          console.log("recovery", item);
+          setStateQuestion((prev: any) => ({
+            ...prev,
+            selected: item,
+          }));
+        },
       }),
       edit: (item) => ({
         name: "edit",
         icon: "edit",
         className: "hover:text-primary",
-        onClick: () => console.log("edit", item),
+        onClick: () => {
+          console.log("edit", item);
+          setStateQuestion((prev: any) => ({
+            ...prev,
+            selected: item,
+          }));
+        },
       }),
       delete: (item) => ({
         name: "delete",
         icon: "delete",
         className: "hover:text-error",
-        onClick: () => console.log("delete", item),
+        onClick: () => {
+          console.log("delete", item);
+          setStateQuestion((prev: any) => ({
+            ...prev,
+            selected: item,
+          }));
+        },
       }),
     },
 
@@ -124,58 +138,66 @@ export function TemplateTable() {
       </thead>
 
       <tbody className="divide-y divide-indigo-50">
-        {datas.map((item) => {
-          return (
-            <tr
-              key={item.id}
-              className="hover:bg-indigo-50/20 transition-colors"
-            >
-              {/* Nama + subtitle */}
-              <td className="px-6 py-4">
-                <div className="flex flex-col">
-                  <span className="text-sm font-bold text-indigo-900">
-                    {item.judul}
-                  </span>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="text-xs text-slate-500">
-                      {item.kategori}
+        {loading ? (
+          <tr className="bg-surface-container text-on-surface-variant text-[11px] uppercase tracking-[0.15em] font-bold">
+            <th colSpan={5} className="px-4 md:px-8 py-4">
+              Loading
+            </th>
+          </tr>
+        ) : (
+          datas.map((item) => {
+            return (
+              <tr
+                key={item.id}
+                className="hover:bg-indigo-50/20 transition-colors"
+              >
+                {/* Nama + subtitle */}
+                <td className="px-6 py-4">
+                  <div className="flex flex-col">
+                    <span className="text-sm font-bold text-indigo-900">
+                      {item.judul}
                     </span>
-                    <CreatedByLabel item={item} />
+                    <div className="flex flex-wrap gap-2">
+                      <span className="text-xs text-slate-500">
+                        {item.kategori?.kategori}
+                      </span>
+                      <CreatedByLabel item={item} />
+                    </div>
                   </div>
-                </div>
-              </td>
+                </td>
 
-              {/* Kategori */}
-              <td className="px-6 py-4">
-                <span className="text-sm text-slate-600">{item.tipe}</span>
-              </td>
+                {/* Kategori */}
+                <td className="px-6 py-4">
+                  <span className="text-sm text-slate-600">{item.tipe}</span>
+                </td>
 
-              {/* Status */}
-              <td className="px-6 py-4">
-                <div className="flex flex-wrap justify-center gap-2">
-                  {item.require && (
-                    <span className="px-3 py-1 text-[10px] font-extrabold rounded-full tracking-tight uppercase bg-green-100 text-green-700">
-                      Wajib Isi
+                {/* Status */}
+                <td className="px-6 py-4">
+                  <div className="flex flex-wrap justify-center gap-2">
+                    {item.require && (
+                      <span className="px-3 py-1 text-[10px] font-extrabold rounded-full tracking-tight uppercase bg-green-100 text-green-700">
+                        Wajib Isi
+                      </span>
+                    )}
+
+                    <StatusState item={item} />
+
+                    <span className="px-3 py-1 text-[10px] font-extrabold rounded-full tracking-tight uppercase bg-gray-100 text-green-700">
+                      <span className="text-black">Bobot: </span>+{item.bobot}
                     </span>
-                  )}
+                  </div>
+                </td>
 
-                  <StatusState item={item} />
-
-                  <span className="px-3 py-1 text-[10px] font-extrabold rounded-full tracking-tight uppercase bg-gray-100 text-green-700">
-                    <span className="text-black">Bobot: </span>+{item.bobot}
-                  </span>
-                </div>
-              </td>
-
-              {/* Actions */}
-              <td className="px-6 py-4 text-center">
-                <div className="flex justify-center gap-2">
-                  <ActionButtons items={getActions(item)} />
-                </div>
-              </td>
-            </tr>
-          );
-        })}
+                {/* Actions */}
+                <td className="px-6 py-4 text-center">
+                  <div className="flex justify-center gap-2">
+                    <ActionButtons items={getActions(item)} />
+                  </div>
+                </td>
+              </tr>
+            );
+          })
+        )}
       </tbody>
     </table>
   );

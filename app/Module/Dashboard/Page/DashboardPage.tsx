@@ -1,9 +1,9 @@
-import AdminPanelTemplate from "../../Common/Components/Template/AdminPanelTemplate";
+import AdminPanelTemplateServer from "../../Common/Components/Template/AdminPanelTemplateServer";
 import Card from "../Molecules/Card";
 
 export default function DashboardPage() {
   return (
-    <AdminPanelTemplate>
+    <AdminPanelTemplateServer>
       
       {/* METRICS */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -12,6 +12,6 @@ export default function DashboardPage() {
         <Card title="Departments" value="14" icon="domain" />
       </section>
 
-    </AdminPanelTemplate>
+    </AdminPanelTemplateServer>
   );
 }

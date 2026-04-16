@@ -1,30 +1,80 @@
 "use client";
 
-import { useState } from "react";
 import Icon from "../../Common/Components/Atoms/Icon";
-import { FilterButton } from "../../Common/Components/Molecules/FilterButton";
-import { SearchInput } from "../../Common/Components/Molecules/SearchInput";
-import { CreateCategoryForm } from "../Organisms/CreateCategoryForm";
-import { FilterSidebar } from "../../Common/Components/Template/FilterSidebar";
-import { CategoryTable } from "../Organisms/CategoryTable";
-import { CategoryFilterForm } from "../Molecules/CategoryFilterForm";
-import { CategoryCard } from "../Molecules/CategoryCard";
-import { SubCategoryCard } from "../Molecules/SubCategoryCard";
 import { Tabs } from "../Molecules/Tabs";
-import { TreeView } from "../Molecules/TreeView";
-import { TabValue } from "../Attribut/TabValue";
-import { Pagination } from "../../Common/Components/Molecules/Pagination";
+import dynamic from "next/dynamic";
+import { Suspense } from "react";
+import { useCategoryContext } from "../Context/CategoryProvider";
 
-interface Props {
-  onOpenFilter: () => void;
-}
+const KategoriTreeSection = dynamic(
+  () =>
+    import("../Molecules/KategoriTreeSection").then(
+      (mod) => mod.KategoriTreeSection,
+    ),
+  { ssr: false, loading: () => <div>Loading Tree...</div> },
+);
+
+const KategoriTableSection = dynamic(
+  () =>
+    import("../Molecules/KategoriTableSection").then(
+      (mod) => mod.KategoriTableSection,
+    ),
+  { ssr: false, loading: () => <div className="bg-surface-container-lowest rounded-xl indigo-shadow overflow-hidden p-6">Loading Table...</div> },
+);
+
+const CategoryCard = dynamic(
+  () => import("../Molecules/CategoryCard").then((mod) => mod.CategoryCard),
+  { ssr: false, loading: () => <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10">Loading Info...</div> },
+);
+
+const SubCategoryCard = dynamic(
+  () =>
+    import("../Molecules/SubCategoryCard").then((mod) => mod.SubCategoryCard),
+  { ssr: false, loading: () => <div className="bg-surface-container-lowest rounded-xl p-6 indigo-shadow space-y-4">Loading Info...</div> },
+);
+
+const CreateCategoryForm = dynamic(
+  () =>
+    import("../Organisms/CreateCategoryForm").then(
+      (mod) => mod.CreateCategoryForm,
+    ),
+  { ssr: false, loading: () => <div>Loading Form...</div> },
+);
+
+const FilterSidebar = dynamic(
+  () =>
+    import("../../Common/Components/Template/FilterSidebar").then(
+      (m) => m.FilterSidebar,
+    ),
+  { ssr: false, loading: () => <div>Loading Filter...</div> },
+);
+
+const CategoryFilterForm = dynamic(
+  () =>
+    import("../Molecules/CategoryFilterForm").then((m) => m.CategoryFilterForm),
+  { ssr: false, loading: () => <div>Loading Filter Form...</div> },
+);
 
 export default function CategoryTemplate() {
-  const [view, setView] = useState<TabValue>("tree");
-  const [open, setOpen] = useState(false);
+  const {
+    view,
+    setView,
+    open,
+    openFilter,
+    closeFilter,
+    query,
+    setQuery,
+    resetFilters,
+  } = useCategoryContext();
 
   return (
-    <>
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center h-screen">
+          <div className="animate-spin rounded-full h-10 w-10 border-4 border-gray-300 border-t-primary" />
+        </div>
+      }
+    >
       {/* HEADER SECTION */}
       <section className="max-w-6xl">
         <h2 className="text-[clamp(1.75rem,3vw,3rem)] font-extrabold font-headline tracking-tighter text-on-surface mb-3 md:mb-4 leading-tight">
@@ -67,99 +117,33 @@ export default function CategoryTemplate() {
         {view === "tree" ? (
           <KategoriTreeSection />
         ) : (
-          <KategoriTableSection onOpenFilter={() => setOpen(true)} />
+          <KategoriTableSection onOpenFilter={openFilter} />
         )}
       </div>
 
       <FilterSidebar
         open={open}
-        onClose={() => setOpen(false)}
+        onClose={closeFilter}
         footer={
-          <button
-            className="w-full bg-primary text-white py-2 rounded-lg font-bold"
-            onClick={() => console.log("filter")}
-          >
-            Apply Filters
-          </button>
+          <div className="flex flex-col gap-2">
+            <button
+              className="w-full bg-primary text-white py-2 rounded-lg font-bold"
+              onClick={closeFilter}
+            >
+              Apply Filters
+            </button>
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="w-full py-2 rounded-lg border border-red-300 text-red-600 font-bold hover:bg-red-50 transition"
+            >
+              Reset Filter
+            </button>
+          </div>
         }
       >
-        <CategoryFilterForm />
+        <CategoryFilterForm value={query} onChange={setQuery} />
       </FilterSidebar>
-    </>
-  );
-}
-
-export function KategoriTreeSection() {
-  return (
-    <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-6 lg:p-8 group/tree-item">
-      <TreeView
-        data={[
-          {
-            id: "1",
-            name: "Academic Affairs",
-            type: "folder",
-            children: [
-              {
-                id: "2",
-                name: "Curriculum Development",
-                type: "file",
-              },
-            ],
-          },
-          {
-            id: "3",
-            name: "Student Life",
-            type: "folder",
-          },
-        ]}
-      />
-      <div className="mt-12 pt-8 border-t border-surface-container flex justify-between items-center">
-        <p className="text-sm text-on-surface-variant italic flex items-center gap-2">
-          <span className="material-symbols-outlined text-sm">info</span>
-          Drag and drop to reorder the hierarchy. Changes must be saved to
-          apply.
-        </p>
-        <button className="bg-gradient-to-r from-primary to-primary-dim text-on-primary font-headline font-extrabold px-10 py-4 rounded-xl shadow-lg hover:shadow-primary/20 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center gap-3">
-          Update Changes
-        </button>
-      </div>
-    </div>
-  );
-}
-
-export function KategoriTableSection({ onOpenFilter }: Props) {
-  const [current, setCurrent] = useState(1);
-  
-  return (
-    <section className="bg-surface-container-lowest rounded-xl indigo-shadow overflow-hidden">
-      <div className="p-4 md:p-8 space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <h3 className="text-xl font-bold font-headline">Kategori Overview</h3>
-
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 md:gap-4">
-            <SearchInput
-              placeholder="Global search..."
-              onChange={(val) => console.log(val)}
-            />
-
-            <FilterButton count={2} onClick={onOpenFilter} />
-          </div>
-        </div>
-      </div>
-
-      <div className="w-full overflow-x-auto">
-        <CategoryTable />
-      </div>
-
-      <div className="p-4 md:p-8 bg-surface-container-low/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-t border-surface-container">
-        <Pagination
-          currentPage={current}
-          totalPages={13}
-          totalItems={124}
-          showing={2}
-          onChange={(page) => setCurrent(page)}
-        />
-      </div>
-    </section>
+    </Suspense>
   );
 }

@@ -1,49 +1,42 @@
 "use client";
 
 import { useState } from "react";
+import { useFormContext, useFieldArray } from "react-hook-form";
 import Icon from "../../Common/Components/Atoms/Icon";
 import AnimatedButton from "../../Common/Components/Molecules/AnimatedButton";
 import { InputField } from "../../Common/Components/Molecules/InputField";
 import Button from "../../Common/Components/Atoms/Button";
 import OptionSkeleton from "../Atoms/OptionSkeleton";
-
-/* =========================
-   TYPES
-   ========================= */
-interface ChoiceOption {
-  id: number;
-  label: string;
-}
+import { FormValues } from "./TemplateQuestionFormWrapper";
+import apiCall from "../../Common/External/APICall";
+import { useTemplateQuestionContext } from "../Context/TemplateQuestionProvider";
 
 interface Toast {
   id: number;
   message: string;
 }
 
-/* =========================
-   COMPONENT
-   ========================= */
-export default function CreateTemplateChoiceForm() {
-  const [options, setOptions] = useState<ChoiceOption[]>([
-    { id: 1, label: "Sangat Memuaskan" },
-    { id: 2, label: "Memuaskan" },
-    { id: 3, label: "Kurang Memuaskan" },
-  ]);
+export default function CreateTemplateChoiceForm({
+  onReset,
+  isEdit,
+}: {
+  onReset: () => void;
+  isEdit: boolean;
+}) {
+  const { register, formState } = useFormContext<FormValues>();
+  const {stateQuestion} = useTemplateQuestionContext();
 
-  /* =========================
-     STATE
-     ========================= */
-  const [loadingRowIds, setLoadingRowIds] = useState<number[]>([]);
-  const [errorRowIds, setErrorRowIds] = useState<number[]>([]);
-  const [addingCount, setAddingCount] = useState(0);
+  const { watch, setValue } = useFormContext<FormValues>(); 
+  const options = watch("options") || [];
+
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [addingCount, setAddingCount] = useState(0);
 
-  /* =========================
-     TOAST HANDLER
-     ========================= */
+  /** =========================
+   * TOAST
+   * ========================= */
   const pushToast = (message: string) => {
-    const id = Date.now();
-
+    const id = Date.now(); // aman karena client-only (tidak SSR)
     setToasts((prev) => [...prev, { id, message }]);
 
     setTimeout(() => {
@@ -51,68 +44,104 @@ export default function CreateTemplateChoiceForm() {
     }, 3000);
   };
 
-  /* =========================
-     HANDLERS
-     ========================= */
+  /** =========================
+   * ADD OPTION (FIXED)
+   * ========================= */
+  const addOption = async (isFree:boolean = false) => {
+    if (isFree) {
+      const hasFreeText = options.some(
+        (opt) => String(opt?.payload?.IsFreeText) === "1"
+      );
 
-  // ADD (simulate API + error)
-  const addOption = () => {
+      if (hasFreeText) {
+        pushToast("Free text hanya boleh 1");
+        return;
+      }
+    }
+    if(stateQuestion?.selected?.tipe=="rating" && !isFree){
+      pushToast("rating tidak boleh di tambah");
+      return;
+    }
+
     setAddingCount((prev) => prev + 1);
 
-    setTimeout(() => {
-      const isError = true;
+    try {
+      const templateUUID = stateQuestion?.selected?.uuid;
 
-      if (isError) {
-        setAddingCount((prev) => prev - 1);
-        pushToast("Gagal menambahkan opsi. Coba lagi.");
+      if (!templateUUID) {
+        pushToast("Template pertanyaan belum dipilih");
         return;
       }
 
-      setOptions((prev) => [
-        ...prev,
-        {
-          id: Date.now() + Math.random(),
-          label: "",
+      const formData = new FormData();
+      formData.append("template_pertanyaan", templateUUID);
+      formData.append("jawaban", isFree? "lainnya":"masukkan jawabannya");
+      // formData.append("nilai", "0");
+      formData.append("isFreeText", isFree? "1":"0");
+
+      const res = await apiCall.post("/templatejawaban", formData, {
+        headers: {
+          Authorization: `Bearer ${sessionStorage.getItem("access_token")}`,
         },
-      ]);
+      });
 
+      const newUUID = res.data?.uuid;
+
+      // 🔥 inject ke form state
+      const newOptions = [
+        ...options,
+        {
+          uuid: newUUID,
+          label: isFree? "lainnya":"masukkan jawabannya",
+          payload: {
+            UUID: newUUID,
+            Jawaban: isFree? "lainnya":"masukkan jawabannya",
+            Nilai: 0,
+            IsFreeText: isFree? "1":"0",
+          },
+        },
+      ];
+
+      setValue("options", newOptions, { shouldDirty: true });
+    } catch (err: any) {
+      pushToast(err?.response?.data?.message || "Gagal tambah opsi");
+    } finally {
       setAddingCount((prev) => prev - 1);
-    }, 800);
+    }
   };
 
-  // DELETE (simulate API + error)
-  const removeOption = (id: number) => {
-    setLoadingRowIds((prev) => [...prev, id]);
+  /** =========================
+   * REMOVE OPTION
+   * ========================= */
+  const removeOption = async (index: number) => {
+    const item = options[index];
 
-    setTimeout(() => {
-      const isError = true
+    if (options.length <= 1) {
+      pushToast("Minimal satu opsi harus tersedia");
+      return;
+    }
 
-      if (isError) {
-        setLoadingRowIds((prev) => prev.filter((x) => x !== id));
-        setErrorRowIds((prev) => [...prev, id]);
-        return;
+    try {
+      console.log(item);
+      if (item?.value) {
+        await apiCall.delete(`/templatejawaban/${item.value}`, {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("access_token")}`,
+          },
+        });
       }
 
-      setOptions((prev) => prev.filter((opt) => opt.id !== id));
-      setLoadingRowIds((prev) => prev.filter((x) => x !== id));
-    }, 800);
+      const newOptions = options.filter((_, i) => i !== index);
+
+      setValue("options", newOptions, { shouldDirty: true });
+    } catch (err: any) {
+      pushToast(err?.response?.data?.message || "Gagal hapus opsi");
+    }
   };
 
-  // UPDATE INPUT
-  const updateOption = (id: number, value: string) => {
-    setOptions((prev) =>
-      prev.map((opt) =>
-        opt.id === id ? { ...opt, label: value } : opt
-      )
-    );
-  };
-
-  /* =========================
-     RENDER
-     ========================= */
   return (
     <div className="border-t border-indigo-50 pt-8 relative">
-      {/* ================= TOAST ================= */}
+      {/* TOAST */}
       <div className="fixed bottom-4 right-4 space-y-2 z-50">
         {toasts.map((t) => (
           <div
@@ -125,89 +154,88 @@ export default function CreateTemplateChoiceForm() {
       </div>
 
       {/* HEADER */}
-      <div className="flex flex-col justify-between sm:flex-row gap-2 sm:gap-4 items-start sm:items-center mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h4 className="text-sm font-bold text-indigo-900">
           Konfigurasi Opsi Jawaban
         </h4>
 
         <div className="flex items-center gap-2">
           <Button
-            onClick={addOption}
+            type="button"
+            onClick={()=>addOption()}
             className="flex items-center gap-2 text-primary text-sm font-bold hover:text-primary/50"
           >
             <Icon name="add_circle" />
             Opsi
           </Button>
 
-          <Button className="flex items-center gap-2 text-primary text-sm font-bold hover:text-primary/50">
+          <Button
+            type="button"
+            onClick={()=>addOption(true)}
+            className="flex items-center gap-2 text-primary text-sm font-bold hover:text-primary/50"
+          >
             <Icon name="add_circle" />
             Free Text
           </Button>
         </div>
       </div>
 
-      {/* LIST */}
+      {/* LIST OPTIONS */}
       <div className="space-y-3 overflow-x-auto">
-        {/* HINT */}
-        <div className="text-xs text-slate-400 flex items-center gap-1 px-1">
-          <Icon name="swipe" className="text-sm" />
-          Geser ke samping untuk melihat
-        </div>
+        {options.map((field, index) => (
+          <div key={index} className="flex gap-4 items-center">
+            <span className="text-xs font-bold text-slate-400 w-6">
+              {index + 1}.
+            </span>
 
-        {/* OPTIONS */}
-        {options.map((opt, index) => {
-          if (loadingRowIds.includes(opt.id)) {
-            return <OptionSkeleton key={opt.id} />;
-          }
-
-          return (
-            <div key={opt.id} className="space-y-1">
-              <div className="flex gap-4 items-center">
-                <span className="text-xs font-bold text-slate-400 w-6">
-                  {index + 1}.
-                </span>
-
-                <InputField
-                  id={`option-${opt.id}`}
-                  placeholder="Isi opsi..."
-                  inputClassName="p-3"
-                  wrapperClassName="flex-1"
-                  register={
-                    {
-                      value: opt.label,
-                      onChange: (e: any) =>
-                        updateOption(opt.id, e.target.value),
-                    } as any
-                  }
-                />
-
-                <AnimatedButton
-                  icon="delete"
-                  onClick={() => removeOption(opt.id)}
-                  className="text-error"
-                />
-              </div>
-
-              {/* ERROR MESSAGE */}
-              {errorRowIds.includes(opt.id) && (
-                <p className="text-xs text-red-500 pl-10">
-                  Gagal menghapus opsi. Silakan coba lagi.
-                </p>
+            <InputField
+              id={`option-${index}`} // ✅ FIX: gunakan index (stabil)
+              placeholder="Isi opsi..."
+              inputClassName={`p-3 ${field?.payload?.IsFreeText as boolean? "!bg-gree-500":""}`}
+              wrapperClassName="flex-1"
+              disabled={field?.payload?.IsFreeText as boolean || stateQuestion?.selected?.tipe=="rating"}
+              register={register(
+                `options.${index}.label` as const,
+                // {required: "Opsi tidak boleh kosong",}
               )}
-            </div>
-          );
-        })}
+            />
 
-        {/* ADD SKELETON */}
+            <AnimatedButton
+              type="button"
+              icon="delete"
+              onClick={() => removeOption(index)}
+              className="text-error"
+            />
+          </div>
+        ))}
+
+        {/* SKELETON */}
         {Array.from({ length: addingCount }).map((_, i) => (
-          <OptionSkeleton key={`add-${i}`} />
+          <OptionSkeleton key={`skeleton-${i}`} />
         ))}
       </div>
 
-      {/* SUBMIT */}
-      <div className="mt-8 flex justify-end">
-        <AnimatedButton className="bg-gradient-to-br from-primary to-primary-container text-on-primary px-8 py-3 rounded-xl font-bold shadow-lg hover:scale-[1.02]">
-          Simpan Pertanyaan
+      {/* SUBMIT BUTTON */}
+      <div className="mt-8 flex gap-2 justify-end">
+        <AnimatedButton
+          type="submit"
+          disabled={formState.isSubmitting}
+          className="bg-gradient-to-br from-primary to-primary-container text-on-primary px-8 py-3 rounded-xl font-bold shadow-lg hover:scale-[1.02]"
+        >
+          {formState.isSubmitting
+            ? "Menyimpan..."
+            : isEdit
+              ? "Update Pertanyaan"
+              : "Simpan Pertanyaan"}
+        </AnimatedButton>
+
+        <AnimatedButton
+          type="button"
+          onClick={onReset}
+          disabled={formState.isSubmitting}
+          className="bg-gradient-to-br from-primary to-primary-container text-on-primary px-8 py-3 rounded-xl font-bold shadow-lg hover:scale-[1.02]"
+        >
+          {formState.isSubmitting ? "Menyimpan..." : "Pertanyaan Baru"}
         </AnimatedButton>
       </div>
     </div>

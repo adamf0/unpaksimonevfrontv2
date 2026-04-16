@@ -1,10 +1,16 @@
-import AdminPanelTemplate from "../../Common/Components/Template/AdminPanelTemplate";
+import AdminPanelTemplateServer from "../../Common/Components/Template/AdminPanelTemplateServer";
+import { ToastProvider } from "../../Common/Context/ToastContext";
+import { QuestionBankProvider } from "../Context/QuestionBankProvider";
 import BankSoalTemplate from "../Template/BankSoalTemplate";
 
 export default function BankSoalPage() {
   return (
-    <AdminPanelTemplate>
-      <BankSoalTemplate/>
-    </AdminPanelTemplate>
+    <ToastProvider>
+      <QuestionBankProvider>
+        <AdminPanelTemplateServer>
+          <BankSoalTemplate />
+        </AdminPanelTemplateServer>
+      </QuestionBankProvider>
+    </ToastProvider>
   );
 }

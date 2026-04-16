@@ -7,91 +7,117 @@ import { TreeNode } from "./TreeNode";
 
 interface TreeViewProps {
   data: TreeItem[];
+  onChange?: (data: TreeItem[]) => void;
 }
 
-export function TreeView({ data }: TreeViewProps) {
+export function TreeView({ data, onChange }: TreeViewProps) {
   const rootRef = useRef<HTMLDivElement>(null);
-  const sortablesRef = useRef<Sortable[]>([]); // 🔥 simpan semua instance
+  const sortablesRef = useRef<Sortable[]>([]);
 
   useEffect(() => {
     if (!rootRef.current) return;
 
     const root = rootRef.current;
 
+    // 🔥 BUILD TREE FROM DOM
+    const buildTreeFromDOM = (container: HTMLElement): TreeItem[] => {
+      const items: TreeItem[] = [];
+
+      const children = container.querySelectorAll(
+        ":scope > .group\\/tree-item",
+      );
+
+      children.forEach((el) => {
+        const htmlEl = el as HTMLElement;
+
+        const id = htmlEl.dataset.id || "";
+        const uuid = htmlEl.dataset.uuid || "";
+        const name = htmlEl.dataset.name || "";
+
+        const childContainer = htmlEl.querySelector(
+          ":scope > .child-sort",
+        ) as HTMLElement | null;
+
+        const childrenNodes = childContainer
+          ? childContainer.querySelectorAll(":scope > .group\\/tree-item")
+          : [];
+
+        const hasChildren = childrenNodes.length > 0;
+
+        const node: TreeItem = {
+          id,
+          uuid,
+          name,
+          type: hasChildren ? "folder" : "file",
+          children: hasChildren ? buildTreeFromDOM(childContainer!) : [],
+        };
+
+        items.push(node);
+      });
+
+      return items;
+    };
+
     const sortableConfig: Sortable.Options = {
       animation: 150,
       handle: ".drag-handle",
-      draggable: ".group\\/tree-item", // 🔥 penting (escape slash)
+      draggable: ".group\\/tree-item",
       ghostClass: "opacity-50",
-
       group: {
         name: "nested",
         pull: true,
         put: true,
       },
-
       fallbackOnBody: true,
       swapThreshold: 0.65,
       invertSwap: true,
       fallbackTolerance: 5,
-      dragoverBubble: true, // 🔥 penting untuk deep nesting
+      dragoverBubble: true,
+
+      // 🔥 ON CHANGE
+      onEnd: () => {
+        if (!rootRef.current) return;
+
+        const newTree = buildTreeFromDOM(rootRef.current);
+        console.log("NEW TREE:", newTree);
+
+        onChange?.(newTree);
+      },
     };
 
-    // 🔥 CLEAR OLD INSTANCES
+    // 🔥 SAFE DESTROY
     sortablesRef.current.forEach((s) => {
-      if (s && typeof s.destroy === "function") {
-        try {
+      try {
+        if (s?.el && document.body.contains(s.el)) {
           s.destroy();
-        } catch (e) {
-          console.warn("Sortable destroy error:", e);
         }
-      }
+      } catch {}
     });
+
     sortablesRef.current = [];
 
-    // 🔥 INIT FUNCTION (RECURSIVE SAFE)
+    // 🔥 INIT
     const initSortable = (container: HTMLElement) => {
-      const sortable = new Sortable(container, {
-        ...sortableConfig,
-        onAdd(evt) {
-          const parent = evt.to;
-          parent.appendChild(evt.item);
-        },
-      });
-
+      const sortable = new Sortable(container, sortableConfig);
       sortablesRef.current.push(sortable);
     };
 
-    // 🔥 INIT ROOT
     initSortable(root);
 
-    // 🔥 INIT ALL CHILD SORT
-    const initAll = () => {
-      root.querySelectorAll(".child-sort").forEach((el) => {
-        const htmlEl = el as HTMLElement;
-
-        if (htmlEl.dataset.sortableInit) return;
-
-        htmlEl.dataset.sortableInit = "1";
-        initSortable(htmlEl);
-      });
-    };
-
-    initAll();
-
-    // 🔥 OBSERVER (CRITICAL FOR N LEVEL)
-    const observer = new MutationObserver(() => {
-      initAll();
-    });
-
-    observer.observe(root, {
-      childList: true,
-      subtree: true,
+    root.querySelectorAll(".child-sort").forEach((el) => {
+      initSortable(el as HTMLElement);
     });
 
     return () => {
-      sortablesRef.current.forEach((s) => s.destroy());
-      observer.disconnect();
+      sortablesRef.current.forEach((s) => {
+        try {
+          if (s?.el && document.body.contains(s.el)) {
+            s.destroy();
+          }
+        } catch {}
+      });
+
+      sortablesRef.current = [];
     };
   }, [data]);
 
