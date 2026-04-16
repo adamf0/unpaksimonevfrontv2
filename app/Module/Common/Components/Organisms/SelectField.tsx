@@ -6,7 +6,13 @@ import { SelectSearch } from "../Molecules/SelectSearch";
 import { Option } from "../Attribut/Option";
 
 import { useMemo, useState, useEffect, useRef } from "react";
-import { usePopper } from "react-popper";
+import {
+  useFloating,
+  offset,
+  flip,
+  shift,
+  autoUpdate,
+} from "@floating-ui/react";
 import { createPortal } from "react-dom";
 
 type Props = {
@@ -28,24 +34,19 @@ export function SelectField(props: Props) {
 
   const wrapperRef = useRef<HTMLDivElement | null>(null);
 
-  const [referenceElement, setReferenceElement] =
-    useState<HTMLDivElement | null>(null);
-
-  const [popperElement, setPopperElement] = useState<HTMLDivElement | null>(
-    null,
-  );
-
-  const { styles, attributes } = usePopper(referenceElement, popperElement, {
+  /** =========================
+   * FLOATING UI SETUP
+   * ========================= */
+  const { refs, floatingStyles, update } = useFloating({
     placement: "bottom-start",
-    modifiers: [
-      { name: "offset", options: { offset: [0, 8] } },
-      {
-        name: "preventOverflow",
-        options: {
-          boundary: typeof window !== "undefined" ? document.body : undefined,
-        },
-      },
+    middleware: [
+      offset(8),
+      flip(), // fallback kalau kepotong
+      shift({
+        padding: 8, // mirip preventOverflow
+      }),
     ],
+    whileElementsMounted: autoUpdate,
   });
 
   /** =========================
@@ -94,7 +95,7 @@ export function SelectField(props: Props) {
   };
 
   /** =========================
-   * CLICK OUTSIDE (CLOSE)
+   * CLICK OUTSIDE
    * ========================= */
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -105,19 +106,29 @@ export function SelectField(props: Props) {
       if (
         wrapperRef.current &&
         !wrapperRef.current.contains(target) &&
-        popperElement &&
-        !popperElement.contains(target)
+        refs.floating.current &&
+        !refs.floating.current.contains(target)
       ) {
         setOpen(false);
       }
     }
 
     document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open, refs.floating]);
 
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [open, popperElement]);
+  /** =========================
+   * FORCE WIDTH SYNC
+   * ========================= */
+  const [width, setWidth] = useState<number | undefined>(undefined);
+
+  useEffect(() => {
+    const refEl = refs.reference.current;
+
+    if (refEl instanceof HTMLElement) {
+      setWidth(refEl.offsetWidth);
+    }
+  }, [open, refs.reference.current]);
 
   return (
     <div className="relative w-full space-y-2" ref={wrapperRef}>
@@ -125,9 +136,11 @@ export function SelectField(props: Props) {
 
       {/* TRIGGER */}
       <div
-        ref={setReferenceElement}
+        ref={refs.setReference}
         onClick={() => setOpen(true)}
-        className={`w-full bg-surface-container-low ${selected.length === 0 ? "p-3" : "px-3 py-2.5"} rounded-lg flex flex-wrap gap-2 cursor-pointer`}
+        className={`w-full bg-surface-container-low ${
+          selected.length === 0 ? "p-3" : "px-3 py-2.5"
+        } rounded-lg flex flex-wrap gap-2 cursor-pointer`}
       >
         {selected.length === 0 ? (
           <span className="text-gray-500 text-sm">{props.placeholder}</span>
@@ -142,20 +155,21 @@ export function SelectField(props: Props) {
         )}
       </div>
 
-      {props.error && <p className="text-xs text-red-500 font-medium">{props.error}</p>}
+      {props.error && (
+        <p className="text-xs text-red-500 font-medium">{props.error}</p>
+      )}
 
       {/* DROPDOWN */}
       {open &&
         typeof window !== "undefined" &&
         createPortal(
           <div
-            ref={setPopperElement}
+            ref={refs.setFloating}
             style={{
-              ...styles.popper,
+              ...floatingStyles,
               zIndex: 9999,
-              width: referenceElement?.offsetWidth,
+              width,
             }}
-            {...attributes.popper}
             className="bg-surface-container-low shadow-lg rounded-lg overflow-hidden"
           >
             <SelectSearch value={search} onChange={setSearch} />
