@@ -6,6 +6,8 @@ import { useToast } from "../../Common/Context/ToastContext";
 import { BaseResultState } from "../../Common/Attribut/BaseResultState";
 import { BaseQuery } from "../../Common/Attribut/BaseQuery";
 import { FilterBuilder } from "../../Common/Domain/FilterBuilder";
+import { isEmpty } from "../../Common/Service/utility";
+import { FormValues } from "../Attribut/FormValues";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -51,6 +53,7 @@ export function useTemplate() {
     total: 0,
     loading: false,
     selected: null,
+    flag: null,
   });
 
   const [questionQuery, setQuestionQuery] =
@@ -69,7 +72,7 @@ export function useTemplate() {
         .add("nama_fakultas", "nama_fakultas", "like")
         .add("nama_prodi", "nama_prodi", "like")
         .add("banksoal", "uuidbanksoal", "eq", (val) => val?.value, true),
-    []
+    [],
   );
 
   async function loadData() {
@@ -83,6 +86,7 @@ export function useTemplate() {
       const res = await apiCall.get("/templatepertanyaans", {
         params: {
           mode: "paging",
+          flag: isEmpty(questionState.flag) ? "" : questionState.flag,
           page: questionQuery.page,
           limit: questionQuery.limit,
           search: questionQuery.search,
@@ -90,11 +94,12 @@ export function useTemplate() {
         },
       });
 
-      console.log(res.data?.data)
+      const rows = res?.data?.data ?? [];
+
       setQuestionState((p) => ({
         ...p,
-        data: res.data?.data ?? [],
-        total: res.data?.total ?? 0,
+        data: rows,
+        total: rows.length,
       }));
     } catch (error: any) {
       pushToast(error?.response?.data?.message || "Error");
@@ -110,7 +115,7 @@ export function useTemplate() {
     if (!token) return;
 
     const es = new EventSource(
-      `${BASE_URL}/kategoris?mode=sse&ctxtoken=${token}`
+      `${BASE_URL}/kategoris?mode=sse&ctxtoken=${token}`,
     );
 
     kategoriESRef.current = es;
@@ -135,7 +140,7 @@ export function useTemplate() {
     if (!token) return;
 
     const es = new EventSource(
-      `${BASE_URL}/banksoals?mode=sse&ctxtoken=${token}`
+      `${BASE_URL}/banksoals?mode=sse&ctxtoken=${token}`,
     );
 
     bankESRef.current = es;
@@ -153,6 +158,64 @@ export function useTemplate() {
     };
   }
 
+  function toggleFlag() {
+    setQuestionState((prev) => ({
+      ...prev,
+      flag: isEmpty(prev.flag) ? "deleted" : "",
+    }));
+  }
+
+  const actionQuestion = async (
+    uuid?: string,
+    data?: FormValues,
+    mode: string = "",
+  ) => {
+    if (isEmpty(mode)) throw new Error("instruksi ditolak");
+
+    if (mode == "delete") {
+      const res = await apiCall.delete(`/templatepertanyaan/${uuid}`);
+      return res.data?.uuid;
+    } else if (mode == "force_delete") {
+      const res = await apiCall.delete(`/templatepertanyaan/${uuid}/force`);
+      return res.data?.uuid;
+    } else if (mode == "restore") {
+      const res = await apiCall.put(`/templatepertanyaan/${uuid}/restore`);
+      return res.data?.uuid;
+    } else if (mode == "draf") {
+      const formData = new FormData();
+      formData.append("status", "draf");
+
+      const res = await apiCall.put(
+        `/templatepertanyaan/${uuid}/status`,
+        formData,
+      );
+      return res.data?.uuid;
+    } else if (mode == "active") {
+      const formData = new FormData();
+      formData.append("status", "active");
+
+      const res = await apiCall.put(
+        `/templatepertanyaan/${uuid}/status`,
+        formData,
+      );
+      return res.data?.uuid;
+    } else {
+      const formData = new FormData();
+      formData.append("bank_soal", data?.banksoal?.value ?? "");
+      formData.append("kategori", data?.kategori?.value ?? "");
+      formData.append("jenis_pilihan", data?.tipepilihan?.value ?? "");
+      formData.append("bobot", data?.bobot.toString() ?? "");
+      formData.append("required", data?.wajibisi ? "1" : "0");
+      formData.append("pertanyaan", data?.pertanyaan ?? "");
+
+      const res = uuid
+        ? await apiCall.put(`/templatepertanyaan/${uuid}`, formData)
+        : await apiCall.post("/templatepertanyaan", formData);
+
+      return res.data?.uuid;
+    }
+  };
+
   useEffect(() => {
     loadDataKategori();
     loadDataBankSoal();
@@ -161,7 +224,7 @@ export function useTemplate() {
   useEffect(() => {
     if (!questionQuery.banksoal) return;
     loadData();
-  }, [questionQuery.banksoal]);
+  }, [questionQuery.banksoal, questionState.flag]);
 
   useEffect(() => {
     if (!questionQuery.banksoal) return;
@@ -180,9 +243,14 @@ export function useTemplate() {
     questionQuery,
     setQuestionQuery,
 
+    toggleFlag,
+
+    loadData,
+
+    actionQuestion,
+
     resetFiltersQuestion: () => setQuestionQuery(initialQueryState),
 
-    filterCountQuestion: (q: QueryState) =>
-      filterBuilder.countFilled(q),
+    filterCountQuestion: (q: QueryState) => filterBuilder.countFilled(q),
   };
 }

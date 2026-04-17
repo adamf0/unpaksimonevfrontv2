@@ -9,10 +9,10 @@ import AnimatedButton from "../../Common/Components/Molecules/AnimatedButton";
 import { InputField } from "../../Common/Components/Molecules/InputField";
 
 import OptionSkeleton from "../Atoms/OptionSkeleton";
-import { FormValues } from "./TemplateQuestionFormWrapper";
 
 import apiCall from "../../Common/External/APICall";
 import { useTemplateQuestionContext } from "../Context/TemplateQuestionProvider";
+import { FormValues } from "../Attribut/FormValues";
 
 interface Toast {
   id: number;

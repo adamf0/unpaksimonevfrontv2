@@ -9,22 +9,8 @@ import { useEffect } from "react";
 import { useTemplateAnswer } from "../Hook/useTemplateAnswer";
 import { useTemplateQuestionContext } from "../Context/TemplateQuestionProvider";
 import { handleCloudflareError } from "../../Common/Error/axiosErrorHandler";
-
-export type ChoiceOption = {
-  value?: number;
-  label: string;
-  payload?: any;
-};
-
-export type FormValues = {
-  banksoal: { label: string; value: string } | null;
-  kategori: { label: string; value: string } | null;
-  tipepilihan: { label: string; value: string } | null;
-  bobot: number;
-  wajibisi: boolean;
-  pertanyaan: string;
-  options: ChoiceOption[];
-};
+import { FormValues } from "../Attribut/FormValues";
+import { useTemplateAnswerContext } from "../Context/TemplateAnswareProvider";
 
 const DEFAULT_VALUES: FormValues = {
   banksoal: null,
@@ -48,10 +34,15 @@ const EMPTY_VALUES: FormValues = {
 
 export default function TemplateQuestionFormWrapper() {
   const { pushToast } = useToast();
-  const { questionQuery, setQuestionQuery, questionState, setQuestionState } =
-    useTemplateQuestionContext();
+  const {
+    questionQuery,
+    setQuestionQuery,
+    questionState,
+    setQuestionState,
+    actionQuestion,
+  } = useTemplateQuestionContext();
 
-  const { answerState } = useTemplateAnswer();
+  const { answerState, setAnswerState } = useTemplateAnswerContext();
 
   const methods = useForm<FormValues>({
     defaultValues: DEFAULT_VALUES,
@@ -97,74 +88,131 @@ export default function TemplateQuestionFormWrapper() {
     methods.setValue("options", mapped);
   }, [answerState.data]);
 
-  const createTemplatePertanyaan = async (
-    data: FormValues,
-    isEdit: boolean,
-  ) => {
-    if (isEdit) throw new Error("update belum implemen");
+  const getMissingRatingValues = (answers: any[] = []): number[] => {
+    const existing = answers
+      .map((item) => Number(item?.Nilai ?? item?.payload?.Nilai ?? 0))
+      .filter((num) => num >= 1 && num <= 5);
 
-    const formData = new FormData();
-    formData.append("bank_soal", data.banksoal?.value ?? "");
-    formData.append("kategori", data.kategori?.value ?? "");
-    formData.append("jenis_pilihan", data.tipepilihan?.value ?? "");
-    formData.append("bobot", data.bobot.toString());
-    formData.append("required", data.wajibisi ? "1" : "0");
-    formData.append("pertanyaan", data.pertanyaan);
-
-    const res = await apiCall.post("/templatepertanyaan", formData);
-
-    return res.data?.uuid;
+    return Array.from({ length: 5 }, (_, i) => i + 1).filter(
+      (num) => !existing.includes(num),
+    );
   };
 
-  const createRatingOptions = async (uuidtemplate: string) => {
+  const createRatingOptions = async (
+    uuidtemplate: string,
+    missingValues?: number[],
+  ) => {
     const token = sessionStorage.getItem("access_token");
 
-    const requests = Array.from({ length: 5 }, async (_, i) => {
+    const createValues =
+      missingValues && missingValues.length > 0
+        ? missingValues
+        : Array.from({ length: 5 }, (_, i) => i + 1);
+
+    await Promise.all(
+      createValues.map(async (value) => {
+        const fd = new FormData();
+
+        fd.append("template_pertanyaan", uuidtemplate);
+        fd.append("jawaban", value.toString());
+        fd.append("nilai", value.toString());
+        fd.append("isFreeText", "0");
+
+        await apiCall.post("/templatejawaban", fd, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      }),
+    );
+
+    return Array.from({ length: 5 }, (_, i) => {
       const value = i + 1;
 
-      const fd = new FormData();
-      fd.append("template_pertanyaan", uuidtemplate);
-      fd.append("jawaban", value.toString());
-      fd.append("nilai", value.toString());
-      fd.append("isFreeText", "0");
-
-      const res = await apiCall.post("/templatejawaban", fd, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
       return {
-        uuid: res.data?.uuid,
+        uuid: `${uuidtemplate}-${value}`,
         label: value.toString(),
         payload: {
-          UUID: res.data?.uuid,
+          UUID: `${uuidtemplate}-${value}`,
           Jawaban: value.toString(),
           Nilai: value,
           IsFreeText: 0,
         },
       };
     });
+  };
 
-    return Promise.all(requests);
+  const validateDuplicateRating = (answers: any[] = []): number[] => {
+    const values = answers
+      .map((item: any) => Number(item?.Nilai ?? item?.payload?.Nilai))
+      .filter((num: number) => num >= 1 && num <= 5);
+
+    const duplicates = values.filter(
+      (value: number, index: number) => values.indexOf(value) !== index,
+    );
+
+    return [...new Set(duplicates)];
   };
 
   const onSubmit = async (data: FormValues) => {
     try {
       const isEditMode = !!questionState.selected;
+      const isRating = data.tipepilihan?.value === "rating";
 
-      const uuid = await createTemplatePertanyaan(data, isEditMode);
+      if (isEditMode && isRating) {
+        const duplicateValues = validateDuplicateRating(answerState.data);
+
+        if (duplicateValues.length > 0) {
+          pushToast(
+            `Nilai rating duplikat: ${duplicateValues.join(", ")}. Mohon perbaiki dulu.`,
+          );
+          return;
+        }
+      }
+
+      const uuid = await actionQuestion(
+        questionState?.selected?.uuid,
+        data,
+        isEditMode ? "edit" : "create",
+      );
 
       if (!uuid) throw new Error("UUID tidak ditemukan");
 
-      if (data.tipepilihan?.value === "rating" && !isEditMode) {
-        const ratingOptions = await createRatingOptions(uuid);
+      if (isRating) {
+        let ratingOptions: any[] = [];
 
+        if (!isEditMode) {
+          // create baru => generate 1-5 penuh
+          ratingOptions = await createRatingOptions(uuid);
+        } else {
+          // edit => cek nilai yang hilang
+          const missingRating = getMissingRatingValues(answerState.data);
+
+          if (missingRating.length > 0) {
+            ratingOptions = await createRatingOptions(uuid, missingRating);
+          } else {
+            // kalau tidak ada yg hilang pakai existing
+            ratingOptions = answerState.data.map((item: any) => ({
+              uuid: item.UUID,
+              label: item.Jawaban,
+              payload: item,
+            }));
+          }
+        }
+
+        // sync form
         methods.setValue("options", ratingOptions, {
           shouldDirty: true,
         });
+
+        // sync state
+        setAnswerState((prev: any) => ({
+          ...prev,
+          data: ratingOptions.map((x: any) => x.payload),
+        }));
       }
 
+      /** refresh trigger */
       setQuestionQuery((prev: any) => ({
         ...prev,
         banksoal: data.banksoal,
@@ -172,12 +220,20 @@ export default function TemplateQuestionFormWrapper() {
 
       pushToast("Berhasil");
     } catch (error: any) {
-      if (!error.response) return pushToast("Server error");
+      console.log(error);
+
+      if (!error.response) {
+        pushToast("Server error");
+        return;
+      }
 
       const { status, data } = error.response;
 
       const cf = handleCloudflareError(status);
-      if (cf) return pushToast(cf);
+      if (cf) {
+        pushToast(cf);
+        return;
+      }
 
       pushToast(data?.message || "Error");
     }

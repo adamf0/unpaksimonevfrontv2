@@ -12,6 +12,9 @@ import { TemplateFilterForm } from "../Molecules/TemplateFilterForm";
 import { TemplateTable } from "../Organisms/TemplateTable";
 import TemplateQuestionFormWrapper from "../Organisms/TemplateQuestionFormWrapper";
 import { useTemplateQuestionContext } from "../Context/TemplateQuestionProvider";
+import Modal from "../../Common/Components/Organisms/Modal";
+import { useState } from "react";
+import { HistoryButton } from "../../Common/Components/Molecules/HistoryButton";
 
 export default function TemplateQuestionTemplate() {
   const {
@@ -22,7 +25,35 @@ export default function TemplateQuestionTemplate() {
     setFilterOpen,
     resetFiltersQuestion,
     filterCountQuestion,
+    loadData,
+    actionQuestion,
+    toggleFlag,
   } = useTemplateQuestionContext();
+
+  const [modal, setModal] = useState<any>({
+    type: null,
+    data: null,
+  });
+
+  async function onDelete() {
+    try {
+      await actionQuestion(modal.data?.uuid, undefined, "delete");
+      setModal({ type: null, data: null });
+      await loadData();
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  async function onForceDelete() {
+    try {
+      await actionQuestion(modal.data?.uuid, undefined, "force_delete");
+      setModal({ type: null, data: null });
+      await loadData();
+    } catch (error) {
+      console.error(error);
+    }
+  }
 
   return (
     <>
@@ -84,6 +115,13 @@ export default function TemplateQuestionTemplate() {
                 count={filterCountQuestion(questionQuery)}
                 onClick={() => setFilterOpen(true)}
               />
+
+              <HistoryButton
+                onClick={() => {
+                  console.log("ganti flag");
+                  toggleFlag();
+                }}
+              />
             </div>
           </div>
         </div>
@@ -92,6 +130,18 @@ export default function TemplateQuestionTemplate() {
           <TemplateTable
             data={questionState.data}
             loading={questionState.loading}
+            openDelete={(item: any) =>
+              setModal({
+                type: "delete",
+                data: item,
+              })
+            }
+            openForceDelete={(item: any) =>
+              setModal({
+                type: "force_delete",
+                data: item,
+              })
+            }
           />
         </div>
 
@@ -111,6 +161,35 @@ export default function TemplateQuestionTemplate() {
           />
         </div>
       </section>
+
+      <Modal
+        open={modal.type === "delete" || modal.type === "force_delete"}
+        onClose={() => setModal({ type: null, data: null })}
+        icon="delete_forever"
+        title="Delete Question?"
+        description={
+          modal.type === "force_delete"
+            ? "This action cannot be recovery."
+            : "This action can be recovery"
+        }
+        variant="error"
+        footer={
+          <>
+            <button
+              className="px-6 py-3 font-label font-bold text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-colors"
+              onClick={() => setModal({ type: null, data: null })}
+            >
+              Cancel
+            </button>
+            <button
+              className="px-8 py-3 font-label font-bold bg-error text-white rounded-xl shadow-lg shadow-error/20 active:scale-95 transition-transform"
+              onClick={modal.type === "force_delete" ? onForceDelete : onDelete}
+            >
+              Delete
+            </button>
+          </>
+        }
+      />
 
       {/* FILTER SIDEBAR */}
       <FilterSidebar
@@ -135,10 +214,7 @@ export default function TemplateQuestionTemplate() {
           </div>
         }
       >
-        <TemplateFilterForm
-          value={questionQuery}
-          onChange={setQuestionQuery}
-        />
+        <TemplateFilterForm value={questionQuery} onChange={setQuestionQuery} />
       </FilterSidebar>
     </>
   );

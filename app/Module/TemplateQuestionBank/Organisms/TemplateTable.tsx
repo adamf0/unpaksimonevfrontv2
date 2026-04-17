@@ -5,21 +5,27 @@ import { ActionItem } from "../../Common/Components/Attribut/ActionItem";
 import { TemplateItem } from "../Attribut/TemplateItem";
 import { StatusState } from "../Molecules/StatusState";
 import { CreatedByLabel } from "../Atoms/CreatedByLabel";
-import { ActionTableAdapter } from "../../Common/Adapter/ActionTableAdapter";
 import { useTemplateQuestionContext } from "../Context/TemplateQuestionProvider";
 import { isEmpty } from "../../Common/Service/utility";
-import { TemplateState } from "../Hook/useTemplate";
+import { DeletedTime } from "../Molecules/DeletedTime";
 
 interface Props {
   data: any[];
   loading: boolean;
+  openDelete: (item: TemplateItem) => void;
+  openForceDelete: (item: TemplateItem) => void;
 }
 
-export function TemplateTable({ data, loading = false }: Props) {
-  const { setQuestionState } = useTemplateQuestionContext();
+export function TemplateTable({
+  data,
+  loading = false,
+  openDelete,
+  openForceDelete,
+}: Props) {
+  const { setQuestionState, actionQuestion, loadData } =
+    useTemplateQuestionContext();
 
   const datas: TemplateItem[] = (data || []).map((item: any) => {
-    console.log(item)
     return {
       id: item.ID,
       uuid: item.UUID,
@@ -38,85 +44,86 @@ export function TemplateTable({ data, loading = false }: Props) {
           ? "deleted"
           : item.Status,
       createdBy: item?.CreatedBy ?? "(admin)",
+      deletedtime: item?.DeletedAt,
     };
   });
 
-  const templateActionConfig: {
-    baseActions: Record<any, (item: TemplateItem) => ActionItem>;
-    actionMap: Record<string, any[]>;
-  } = {
-    baseActions: {
-      draf: (item) => ({
-        name: "draf",
-        icon: "draft",
-        className: "hover:text-primary",
-        onClick: () => {
-          console.log("draf", item);
-          setQuestionState((prev: TemplateState) => ({
-            ...prev,
-            selected: item,
-          }));
+  const getActions = (
+    item: TemplateItem,
+    setQuestionState: any,
+    handleAction?: any,
+    openDelete?: any,
+    openForceDelete?: any,
+  ): ActionItem[] => {
+    const deleted = !isEmpty(item.deletedtime);
+
+    // 🔥 PRIORITY 1: deleted state (override semua)
+    if (deleted) {
+      return [
+        {
+          name: "restore",
+          icon: "restore",
+          className: "hover:text-primary",
+          onClick: async () => {
+            await handleAction(item?.uuid, item, "restore");
+            await loadData();
+          },
         },
-      }),
-      active: (item) => ({
-        name: "active",
-        icon: "check",
-        className: "!text-green-700 hover:text-primary",
-        onClick: () => {
-          console.log("active", item);
-          setQuestionState((prev: TemplateState) => ({
-            ...prev,
-            selected: item,
-          }));
+        {
+          name: "force_delete",
+          icon: "delete_forever",
+          className: "hover:text-error",
+          onClick: () => openForceDelete?.(item),
         },
-      }),
-      recovery: (item) => ({
-        name: "recovery",
-        icon: "settings_backup_restore",
-        className: "!text-blue-700 hover:text-primary",
-        onClick: () => {
-          console.log("recovery", item);
-          setQuestionState((prev: TemplateState) => ({
-            ...prev,
-            selected: item,
-          }));
-        },
-      }),
-      edit: (item) => ({
+      ];
+    }
+
+    // 🔥 BASE ACTIONS (SELALU ADA, TIDAK DUPLIKAT)
+    const actions: ActionItem[] = [
+      {
         name: "edit",
         icon: "edit",
         className: "hover:text-primary",
-        onClick: () => {
-          console.log("edit", item);
-          setQuestionState((prev: TemplateState) => ({
+        onClick: () =>
+          setQuestionState((prev: any) => ({
             ...prev,
             selected: item,
-          }));
-        },
-      }),
-      delete: (item) => ({
+          })),
+      },
+      {
         name: "delete",
         icon: "delete",
         className: "hover:text-error",
-        onClick: () => {
-          console.log("delete", item);
-          setQuestionState((prev: TemplateState) => ({
-            ...prev,
-            selected: item,
-          }));
+        onClick: () => openDelete?.(item),
+      },
+    ];
+
+    // 🔥 DYNAMIC ACTION BERDASARKAN STATUS
+    if (item.status === "draf") {
+      actions.push({
+        name: "active",
+        icon: "check",
+        className: "!text-green-600 hover:text-success",
+        onClick: async () => {
+          await handleAction(item?.uuid, item, "active");
+          await loadData();
         },
-      }),
-    },
+      });
+    }
 
-    actionMap: {
-      draf: ["edit", "delete", "active"],
-      deleted: ["edit", "delete", "recovery"],
-      active: ["edit", "delete", "draf"],
-    },
-  };
+    if (item.status === "active") {
+      actions.push({
+        name: "draf",
+        icon: "draft",
+        className: "hover:text-primary",
+        onClick: async () => {
+          await handleAction(item?.uuid, item, "draf");
+          await loadData();
+        },
+      });
+    }
 
-  const getActions = (item: TemplateItem) => {
-    return new ActionTableAdapter(item, templateActionConfig).toActionItems();
+    return actions;
   };
 
   return (
@@ -183,6 +190,8 @@ export function TemplateTable({ data, loading = false }: Props) {
 
                     <StatusState item={item} />
 
+                    <DeletedTime item={item} />
+
                     <span className="px-3 py-1 text-[10px] font-extrabold rounded-full tracking-tight uppercase bg-gray-100 text-green-700">
                       <span className="text-black">Bobot: </span>+{item.bobot}
                     </span>
@@ -192,7 +201,15 @@ export function TemplateTable({ data, loading = false }: Props) {
                 {/* Actions */}
                 <td className="px-6 py-4 text-center">
                   <div className="flex justify-center gap-2">
-                    <ActionButtons items={getActions(item)} />
+                    <ActionButtons
+                      items={getActions(
+                        item,
+                        setQuestionState,
+                        actionQuestion,
+                        openDelete,
+                        openForceDelete,
+                      )}
+                    />
                   </div>
                 </td>
               </tr>

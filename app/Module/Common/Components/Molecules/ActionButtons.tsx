@@ -9,9 +9,9 @@ interface ActionButtonsProps {
 export function ActionButtons({ items = [] }: ActionButtonsProps) {
   return (
     <>
-      {items.map((action) => (
+      {items.map((action, index) => (
         <Button
-          key={action.name}
+          key={`${action.name}-${index}`}
           onClick={action.onClick}
           className={`p-2 text-outline transition-colors ${action.className ?? ""}`}
         >

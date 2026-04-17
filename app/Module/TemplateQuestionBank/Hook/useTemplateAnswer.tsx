@@ -24,6 +24,7 @@ export function useTemplateAnswer() {
     total: 0,
     loading: false,
     selected: null,
+    flag: null,
   });
 
   const [answerQuery, setAnswerQuery] = useState<QueryState>({
@@ -45,7 +46,7 @@ export function useTemplateAnswer() {
         .add("role", "role")
         .add("nama_fakultas", "nama_fakultas", "like")
         .add("nama_prodi", "nama_prodi", "like"),
-    []
+    [],
   );
 
   useEffect(() => {
@@ -69,17 +70,19 @@ export function useTemplateAnswer() {
       const res = await apiCall.get("/templatejawabans", {
         params: {
           mode: "all",
-          page: q.page,
-          limit: q.limit,
+          // page: q.page,
+          // limit: q.limit,
           search: q.search,
           filters,
         },
       });
 
+      const rows = res?.data ?? [];
+
       setAnswerState((p) => ({
         ...p,
-        data: res.data?.data ?? [],
-        total: res.data?.total ?? 0,
+        data: rows,
+        total: rows.length,
       }));
     } catch (err: any) {
       pushToast(err?.response?.data?.message || "Error");
