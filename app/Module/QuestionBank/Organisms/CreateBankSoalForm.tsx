@@ -6,16 +6,13 @@ import { InputField } from "../../Common/Components/Molecules/InputField";
 import { TextareaField } from "../../Common/Components/Molecules/TextareaField";
 import { useEffect } from "react";
 import { useQuestionBankContext } from "../Context/QuestionBankProvider";
-
-type FormValues = {
-  judul: string;
-  semester: any;
-  konten?: string;
-  deskripsi?: string;
-};
+import { useToast } from "../../Common/Context/ToastContext";
+import { handleCloudflareError } from "../../Common/Error/axiosErrorHandler";
+import { FormValues } from "../Attribut/FormValues";
 
 export function CreateBankSoalForm() {
-  const { state } = useQuestionBankContext();
+  const { state, actionBankSoal } = useQuestionBankContext();
+  const { pushToast } = useToast();
 
   const {
     control,
@@ -44,8 +41,26 @@ export function CreateBankSoalForm() {
     });
   }, [state.selected, reset]);
 
-  const onSubmit = (data: FormValues) => {
+  const onSubmit = async (data: FormValues) => {
     console.log("FORM:", data);
+
+    try {
+      const uuid = await actionBankSoal(
+        state?.selected?.uuid,
+        data,
+        state?.selected ? "update" : "create",
+      );
+      pushToast("Berhasil simpan");
+    } catch (error: any) {
+      if (!error.response) return pushToast("Server error");
+
+      const { status, data } = error.response;
+
+      const cf = handleCloudflareError(status);
+      if (cf) return pushToast(cf);
+
+      pushToast(data?.message || "Error");
+    }
   };
 
   return (

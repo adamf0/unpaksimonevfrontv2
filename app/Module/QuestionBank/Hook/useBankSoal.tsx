@@ -7,6 +7,8 @@ import { useToast } from "../../Common/Context/ToastContext";
 import { BaseResultState } from "../../Common/Attribut/BaseResultState";
 import { BaseQuery } from "../../Common/Attribut/BaseQuery";
 import { FilterBuilder } from "../../Common/Domain/FilterBuilder";
+import { isEmpty } from "../../Common/Service/utility";
+import { FormValues } from "../Attribut/FormValues";
 
 /** =========================
  * TYPES
@@ -32,6 +34,7 @@ export function useBankSoal() {
     total: 0,
     loading: false,
     selected: null,
+    flag: null,
   });
 
   const [query, setQuery] = useState<QueryState>({
@@ -56,6 +59,13 @@ export function useBankSoal() {
     .add("nama_fakultas", "nama_fakultas", "like")
     .add("nama_prodi", "nama_prodi", "like");
 
+  function toggleFlag() {
+    setState((prev) => ({
+      ...prev,
+      flag: isEmpty(prev.flag) ? "deleted" : "",
+    }));
+  }
+
   async function loadData() {
     setState((p) => ({ ...p, loading: true }));
 
@@ -65,6 +75,7 @@ export function useBankSoal() {
       const res = await apiCall.get("/banksoals", {
         params: {
           mode: "paging",
+          flag: isEmpty(state?.flag) ? "" : state.flag,
           page: query.page,
           limit: query.limit,
           search: query.search,
@@ -94,13 +105,58 @@ export function useBankSoal() {
     }
   }
 
+  const actionBankSoal = async (
+    uuid?: string,
+    data?: FormValues,
+    mode: string = "",
+  ) => {
+    if (isEmpty(mode)) throw new Error("instruksi ditolak");
+
+    if (mode == "delete") {
+      const res = await apiCall.delete(`/banksoal/${uuid}`);
+      return res.data?.uuid;
+    } else if (mode == "force_delete") {
+      const res = await apiCall.delete(`/banksoal/${uuid}/force`);
+      return res.data?.uuid;
+    } else if (mode == "restore") {
+      const res = await apiCall.put(`/banksoal/${uuid}/restore`);
+      return res.data?.uuid;
+    } else if (mode == "draf") {
+      const formData = new FormData();
+      formData.append("status", "draf");
+
+      const res = await apiCall.put(`/banksoal/${uuid}/status`, formData);
+      return res.data?.uuid;
+    } else if (mode == "active") {
+      const formData = new FormData();
+      formData.append("status", "active");
+
+      const res = await apiCall.put(`/banksoal/${uuid}/status`, formData);
+      return res.data?.uuid;
+    } else {
+      const formData = new FormData();
+      formData.append("judul", data?.judul ?? "");
+      formData.append("semester", data?.semester ?? "");
+      formData.append("content", data?.konten ?? "");
+      formData.append("deskripsi", data?.deskripsi ?? "");
+      formData.append("tanggal_mulai", "2001-01-01 00:00:00");
+      formData.append("tanggal_akhir", "2002-01-01 00:00:00");
+
+      const res = uuid
+        ? await apiCall.put(`/banksoal/${uuid}`, formData)
+        : await apiCall.post("/banksoal", formData);
+
+      return res.data?.uuid;
+    }
+  };
+
   useEffect(() => {
     clearTimeout(debounceRef.current);
 
     debounceRef.current = setTimeout(loadData, 300);
 
     return () => clearTimeout(debounceRef.current);
-  }, [query]);
+  }, [query, , state.flag]);
 
   const resetFilters = () => {
     setQuery({
@@ -122,6 +178,9 @@ export function useBankSoal() {
     setQuery,
     open,
     setOpen,
+    actionBankSoal,
+    loadData,
+    toggleFlag,
     resetFilters,
     filterCount: (q: QueryState) => filterBuilder.countFilled(q),
   };

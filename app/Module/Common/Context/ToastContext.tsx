@@ -11,7 +11,7 @@ import {
 import { createPortal } from "react-dom";
 
 type Toast = {
-  id: number;
+  id: string;
   message: string;
 };
 
@@ -31,7 +31,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const pushToast = useCallback((message: string) => {
-    const id = Date.now();
+    const id = crypto.randomUUID();
 
     setToasts((prev) => [...prev, { id, message }]);
 

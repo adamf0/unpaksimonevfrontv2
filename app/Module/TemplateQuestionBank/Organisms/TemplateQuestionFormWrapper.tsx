@@ -8,6 +8,7 @@ import { useToast } from "../../Common/Context/ToastContext";
 import { useEffect } from "react";
 import { useTemplateAnswer } from "../Hook/useTemplateAnswer";
 import { useTemplateQuestionContext } from "../Context/TemplateQuestionProvider";
+import { handleCloudflareError } from "../../Common/Error/axiosErrorHandler";
 
 export type ChoiceOption = {
   value?: number;
@@ -96,8 +97,11 @@ export default function TemplateQuestionFormWrapper() {
     methods.setValue("options", mapped);
   }, [answerState.data]);
 
-  const createTemplatePertanyaan = async (data: FormValues, isEdit: boolean) => {
-    if(isEdit) throw new Error("update belum implemen");
+  const createTemplatePertanyaan = async (
+    data: FormValues,
+    isEdit: boolean,
+  ) => {
+    if (isEdit) throw new Error("update belum implemen");
 
     const formData = new FormData();
     formData.append("bank_soal", data.banksoal?.value ?? "");
@@ -167,8 +171,15 @@ export default function TemplateQuestionFormWrapper() {
       }));
 
       pushToast("Berhasil");
-    } catch (err: any) {
-      pushToast(err?.response?.data?.message || err.message);
+    } catch (error: any) {
+      if (!error.response) return pushToast("Server error");
+
+      const { status, data } = error.response;
+
+      const cf = handleCloudflareError(status);
+      if (cf) return pushToast(cf);
+
+      pushToast(data?.message || "Error");
     }
   };
 

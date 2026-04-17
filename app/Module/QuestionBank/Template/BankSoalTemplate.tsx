@@ -1,31 +1,45 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import Icon from "../../Common/Components/Atoms/Icon";
 import { FilterButton } from "../../Common/Components/Molecules/FilterButton";
 import { SearchInput } from "../../Common/Components/Molecules/SearchInput";
 import { Pagination } from "../../Common/Components/Molecules/Pagination";
-import { useBankSoal } from "../Hook/useBankSoal";
 import dynamic from "next/dynamic";
 import { useQuestionBankContext } from "../Context/QuestionBankProvider";
 import { HistoryButton } from "../../Common/Components/Molecules/HistoryButton";
+import Modal from "../../Common/Components/Organisms/Modal";
 
 const CreateBankSoalForm = dynamic(
   () =>
     import("../Organisms/CreateBankSoalForm").then(
       (mod) => mod.CreateBankSoalForm,
     ),
-  { ssr: false, loading: () => <div>Loading Form...</div>, },
+  { ssr: false, loading: () => <div>Loading Form...</div> },
 );
 
 const QuickInfoCard = dynamic(
   () => import("../Molecules/QuickInfoCard").then((mod) => mod.QuickInfoCard),
-  { ssr: false, loading: () => <div className="bg-surface-container-lowest rounded-xl p-6 indigo-shadow space-y-4 relative overflow-hidden group">Loading Quick Info Card...</div>, },
+  {
+    ssr: false,
+    loading: () => (
+      <div className="bg-surface-container-lowest rounded-xl p-6 indigo-shadow space-y-4 relative overflow-hidden group">
+        Loading Quick Info Card...
+      </div>
+    ),
+  },
 );
 
 const GuideCard = dynamic(
   () => import("../Molecules/GuideCard").then((m) => m.GuideCard),
-  { ssr: false, loading: () => <div className="bg-surface-container-lowest rounded-xl bg-gradient-to-br from-primary to-[#2c2a51] rounded-xl p-8 text-on-primary indigo-shadow relative overflow-hidden group">Loading Guide Card...</div>, },
+  {
+    ssr: false,
+    loading: () => (
+      <div className="bg-surface-container-lowest rounded-xl bg-gradient-to-br from-primary to-[#2c2a51] rounded-xl p-8 text-on-primary indigo-shadow relative overflow-hidden group">
+        Loading Guide Card...
+      </div>
+    ),
+  },
 );
 
 const BankSoalTable = dynamic(
@@ -41,18 +55,53 @@ const FilterSidebar = dynamic(
     import("../../Common/Components/Template/FilterSidebar").then(
       (m) => m.FilterSidebar,
     ),
-  { ssr: false, loading: () => <div>Loading Filter...</div>, },
+  { ssr: false, loading: () => <div>Loading Filter...</div> },
 );
 
 const BankSoalFilterForm = dynamic(
   () =>
     import("../Molecules/BankSoalFilterForm").then((m) => m.BankSoalFilterForm),
-  { ssr: false, loading: () => <div>Loading Filter Form...</div>, },
+  { ssr: false, loading: () => <div>Loading Filter Form...</div> },
 );
 
 export default function BankSoalTemplate() {
-  const { state, query, setQuery, open, setOpen, resetFilters, filterCount } =
-     useQuestionBankContext();
+  const {
+    state,
+    query,
+    setQuery,
+    open,
+    setOpen,
+    resetFilters,
+    filterCount,
+    toggleFlag,
+    actionBankSoal,
+    loadData,
+  } = useQuestionBankContext();
+
+  const [modal, setModal] = useState<any>({
+    type: null,
+    data: null,
+  });
+
+  async function onDelete() {
+    try {
+      await actionBankSoal(modal.data?.uuid, undefined, "delete");
+      setModal({ type: null, data: null });
+      await loadData();
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  async function onForceDelete() {
+    try {
+      await actionBankSoal(modal.data?.uuid, undefined, "force_delete");
+      setModal({ type: null, data: null });
+      await loadData();
+    } catch (error) {
+      console.error(error);
+    }
+  }
 
   return (
     <Suspense
@@ -122,13 +171,33 @@ export default function BankSoalTemplate() {
                 onClick={() => setOpen(true)}
               />
 
-              <HistoryButton/>
+              <HistoryButton
+                onClick={() => {
+                  console.log("ganti flag");
+                  toggleFlag();
+                }}
+              />
             </div>
           </div>
         </div>
 
         <div className="w-full overflow-x-auto">
-          <BankSoalTable data={state.data} loading={state.loading} />
+          <BankSoalTable
+            data={state.data}
+            loading={state.loading}
+            openDelete={(item: any) =>
+              setModal({
+                type: "delete",
+                data: item,
+              })
+            }
+            openForceDelete={(item: any) =>
+              setModal({
+                type: "force_delete",
+                data: item,
+              })
+            }
+          />
         </div>
 
         <div className="p-4 md:p-8 bg-surface-container-low/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-t border-surface-container">
@@ -143,6 +212,31 @@ export default function BankSoalTemplate() {
           />
         </div>
       </section>
+
+      <Modal
+        open={modal.type === "delete" || modal.type === "force_delete"}
+        onClose={() => setModal({ type: null, data: null })}
+        icon="delete_forever"
+        title="Delete Bank Question?"
+        description={modal.type === "force_delete"? "This action cannot be recovery.":"This action can be recovery"}
+        variant="error"
+        footer={
+          <>
+            <button
+              className="px-6 py-3 font-label font-bold text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-colors"
+              onClick={() => setModal({ type: null, data: null })}
+            >
+              Cancel
+            </button>
+            <button
+              className="px-8 py-3 font-label font-bold bg-error text-white rounded-xl shadow-lg shadow-error/20 active:scale-95 transition-transform"
+              onClick={modal.type === "force_delete"? onForceDelete:onDelete}
+            >
+              Delete
+            </button>
+          </>
+        }
+      />
 
       {/* FILTER SIDEBAR */}
       <FilterSidebar

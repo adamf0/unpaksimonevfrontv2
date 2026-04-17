@@ -3,4 +3,5 @@ export type BaseResultState<T = any> = {
   total: number;
   loading: boolean;
   selected: T | null;
+  flag: string|null;
 };

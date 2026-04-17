@@ -13,19 +13,24 @@ import {
 } from "../../Common/DomainService/DateRangeService";
 import { ButtonVariant } from "../../Common/Attribut/ButtonVariant";
 import { useQuestionBankContext } from "../Context/QuestionBankProvider";
+import { useToast } from "../../Common/Context/ToastContext";
+import { handleCloudflareError } from "../../Common/Error/axiosErrorHandler";
 
 interface Props {
   data: any[];
   loading: boolean;
+  openDelete: (item: BankSoalItem) => void;
+  openForceDelete: (item: BankSoalItem) => void;
 }
 
 interface BankSoalItem {
   id: number;
+  uuid: string;
   judul: string;
   semester: string;
   status: string;
   konten?: string;
-  deksripsi?: string;
+  deskripsi?: string;
   tanggalmulai: DateTimeVO;
   tanggalakhir: DateTimeVO;
   createdtime: string;
@@ -39,13 +44,14 @@ export function mapBankSoal(api: any): BankSoalItem {
 
   return {
     id: api.Id,
+    uuid: api.UUID,
     judul: api.Judul,
     semester: api.Semester,
     status: api.Status || !isEmpty(api.DeletedAt ?? ""),
     tanggalmulai: mulai,
     tanggalakhir: akhir,
     konten: api?.Content,
-    deksripsi: api?.Deskripsi,
+    deskripsi: api?.Deskripsi,
     createdby: clipCreatedBy(api),
     createdtime: api?.CreatedAt ?? "",
     deletedtime: api.DeletedAt ?? "",
@@ -69,37 +75,104 @@ function getRangeVariant(status: RangeStatus): ButtonVariant {
   }
 }
 
-export function BankSoalTable({ data, loading=false }: Props) {
-  const { setState } = useQuestionBankContext();
-
+export function BankSoalTable({
+  data,
+  loading = false,
+  openDelete,
+  openForceDelete,
+}: Props) {
+  const { setState, actionBankSoal, loadData } = useQuestionBankContext();
+  const { pushToast } = useToast();
   const banks: BankSoalItem[] = data.map(mapBankSoal);
 
-  const getActions = (bank: BankSoalItem): ActionItem[] => [
-    {
-      name: "edit",
-      icon: "edit",
-      className: "hover:text-primary",
-      onClick: () => {
-        console.log("edit", bank);
-        setState((prev: any) => ({
-          ...prev,
-          selected: bank,
-        }));
+  async function handleBankSoalAction(
+    selected: BankSoalItem,
+    mode: "draf" | "active" | "restore",
+    successMessage: string,
+  ) {
+    try {
+      await actionBankSoal(selected.uuid, undefined, mode);
+      pushToast(successMessage);
+      await loadData();
+    } catch (error: any) {
+      if (!error?.response) {
+        pushToast("Server error");
+        return;
+      }
+
+      const { status, data } = error.response;
+
+      const cf = handleCloudflareError(status);
+      if (cf) {
+        pushToast(cf);
+        return;
+      }
+
+      pushToast(data?.message || "Error");
+    }
+  }
+
+  const getActions = (bank: BankSoalItem): ActionItem[] => {
+    const actions: ActionItem[] = [
+      {
+        name: "edit",
+        icon: "edit",
+        className: "hover:text-primary",
+        onClick: () =>
+          setState((prev: any) => ({
+            ...prev,
+            selected: bank,
+          })),
       },
-    },
-    {
-      name: "delete",
-      icon: "delete",
-      className: "hover:text-error",
-      onClick: () => {
-        console.log("delete", bank);
-        setState((prev: any) => ({
-          ...prev,
-          selected: bank,
-        }));
+      {
+        name: "delete",
+        icon: "delete",
+        className: "hover:text-error",
+        onClick: () => openDelete(bank),
       },
-    },
-  ];
+    ];
+    const deleted = !isEmpty(bank.deletedtime);
+
+    if (deleted) {
+      return [
+        {
+          name: "restore",
+          icon: "restore",
+          className: "hover:text-primary",
+          onClick: async () =>
+            await handleBankSoalAction(bank, "restore", "Berhasil restore"),
+        },
+        {
+          name: "force delete",
+          icon: "delete_forever",
+          className: "hover:text-error",
+          onClick: () => openForceDelete(bank),
+        },
+      ];
+    }
+
+    if (getBankSoalStatus(bank) === "draf") {
+      actions.push({
+        name: "active",
+        icon: "check",
+        className: "!text-green-500 hover:text-success",
+        onClick: async () =>
+          await handleBankSoalAction(bank, "active", "Berhasil active"),
+      });
+    }
+
+    if (getBankSoalStatus(bank) === "active") {
+      actions.push({
+        name: "draf",
+        icon: "draft",
+        className: "hover:text-primary",
+        onClick: async () =>
+          await handleBankSoalAction(bank, "draf", "Berhasil pindah draf"),
+      });
+    }
+
+    return actions;
+  };
 
   return (
     <table className="min-w-[700px] w-full text-left border-collapse">
