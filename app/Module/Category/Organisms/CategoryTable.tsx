@@ -4,12 +4,15 @@ import { ActionButtons } from "../../Common/Components/Molecules/ActionButtons";
 import Badge from "../../Common/Components/Atoms/Badge";
 import { ActionItem } from "../../Common/Components/Attribut/ActionItem";
 import { isEmpty } from "../../Common/Service/utility";
-import { useCategory } from "../Hook/useCategory";
 import { useCategoryContext } from "../Context/CategoryProvider";
+import { useToast } from "../../Common/Context/ToastContext";
+import { handleCloudflareError } from "../../Common/Error/axiosErrorHandler";
 
 interface Props {
   data: any[];
   loading?: boolean;
+  openDelete: (item: any) => void;
+  openForceDelete: (item: any) => void;
 }
 
 /* =========================
@@ -63,36 +66,84 @@ export function mapCategory(api: any): CategoryItem {
 /* =========================
    TABLE COMPONENT
 ========================= */
-export function CategoryTable({ data, loading = false }: Props) {
-  const { setState } = useCategoryContext();
+export function CategoryTable({
+  data,
+  loading = false,
+  openDelete,
+  openForceDelete,
+}: Props) {
+  const { setState, actionCategory, loadData } = useCategoryContext();
+  const { pushToast } = useToast();
   const categories: CategoryItem[] = data.map(mapCategory);
 
-  const getActions = (category: CategoryItem): ActionItem[] => [
-    {
-      name: "edit",
-      icon: "edit",
-      className: "hover:text-primary",
-      onClick: () => {
-        console.log("edit", category);
-        setState((prev: any) => ({
-          ...prev,
-          selected: category,
-        }));
+  async function handleCategoryAction(
+    selected: CategoryItem,
+    mode: "draf" | "active" | "restore",
+    successMessage: string,
+  ) {
+    try {
+      await actionCategory(selected.uuid, undefined, mode);
+      pushToast(successMessage);
+      await loadData();
+    } catch (error: any) {
+      if (!error?.response) {
+        pushToast("Server error");
+        return;
+      }
+
+      const { status, data } = error.response;
+
+      const cf = handleCloudflareError(status);
+      if (cf) {
+        pushToast(cf);
+        return;
+      }
+
+      pushToast(data?.message || "Error");
+    }
+  }
+
+  const getActions = (category: CategoryItem): ActionItem[] => {
+    const actions: ActionItem[] = [
+      {
+        name: "edit",
+        icon: "edit",
+        className: "hover:text-primary",
+        onClick: () =>
+          setState((prev: any) => ({
+            ...prev,
+            selected: category,
+          })),
       },
-    },
-    {
-      name: "delete",
-      icon: "delete",
-      className: "hover:text-error",
-      onClick: () => {
-        console.log("delete", category);
-        setState((prev: any) => ({
-          ...prev,
-          selected: category,
-        }));
+      {
+        name: "delete",
+        icon: "delete",
+        className: "hover:text-error",
+        onClick: () => openDelete(category),
       },
-    },
-  ];
+    ];
+    const deleted = !isEmpty(category.deletedAt);
+
+    if (deleted) {
+      return [
+        {
+          name: "restore",
+          icon: "restore",
+          className: "hover:text-primary",
+          onClick: async () =>
+            await handleCategoryAction(category, "restore", "Berhasil restore"),
+        },
+        {
+          name: "force delete",
+          icon: "delete_forever",
+          className: "hover:text-error",
+          onClick: () => openForceDelete(category),
+        },
+      ];
+    }
+
+    return actions;
+  };
 
   return (
     <table className="min-w-[700px] w-full text-left border-collapse">

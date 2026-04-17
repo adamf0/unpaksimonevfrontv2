@@ -7,10 +7,24 @@ import { CategoryTable } from "../Organisms/CategoryTable";
 
 interface Props {
   onOpenFilter: () => void;
+  openDelete: (item: any) => void;
+  openForceDelete: (item: any) => void;
 }
 
-export function KategoriTableSection({ onOpenFilter }: Props) {
-  const { state, current, setCurrent, setQuery, filterCount, query } = useCategoryContext();
+export function KategoriTableSection({
+  onOpenFilter,
+  openDelete,
+  openForceDelete,
+}: Props) {
+  const {
+    state,
+    current,
+    setCurrent,
+    setQuery,
+    filterCount,
+    query,
+    toggleFlag,
+  } = useCategoryContext();
 
   return (
     <section className="bg-surface-container-lowest rounded-xl indigo-shadow overflow-hidden">
@@ -31,23 +45,35 @@ export function KategoriTableSection({ onOpenFilter }: Props) {
             />
 
             <FilterButton count={filterCount(query)} onClick={onOpenFilter} />
-            <HistoryButton/>
+            <HistoryButton
+              onClick={() => {
+                console.log("ganti flag");
+                toggleFlag();
+              }}
+            />
           </div>
         </div>
       </div>
 
       <div className="w-full overflow-x-auto">
-        <CategoryTable data={state.data} loading={state.loading} />
+        <CategoryTable
+          data={state.data}
+          loading={state.loading}
+          openDelete={openDelete}
+          openForceDelete={openForceDelete}
+        />
       </div>
 
       <div className="p-4 md:p-8 bg-surface-container-low/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-t border-surface-container">
         <Pagination
-          currentPage={current}
-          totalPages={13}
-          totalItems={124}
-          showing={2}
-          onChange={(page) => setCurrent(page)}
-        />
+            currentPage={query.page}
+            totalPages={
+              state.total < 0 ? 1 : Math.ceil(state.total / query.limit)
+            }
+            totalItems={state.total}
+            showing={query.limit}
+            onChange={(page) => setQuery((prev: any) => ({ ...prev, page }))}
+          />
       </div>
     </section>
   );

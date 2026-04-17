@@ -7,19 +7,19 @@ import { useForm, Controller } from "react-hook-form";
 import { adaptSelectOptions } from "../../Common/Adapter/adaptSelectOptions";
 import { SelectField } from "../../Common/Components/Organisms/SelectField";
 import { useCategoryContext } from "../Context/CategoryProvider";
-
-type FormValues = {
-  kategori: string;
-  subKategori: any;
-};
+import { FormValues } from "../Attribut/FormValues";
+import { useToast } from "../../Common/Context/ToastContext";
+import { handleCloudflareError } from "../../Common/Error/axiosErrorHandler";
 
 export function CreateCategoryForm() {
-  const { state } = useCategoryContext();
+  const { state, actionCategory, loadData, setState } = useCategoryContext();
+  const { pushToast } = useToast();
 
   const {
     control,
     register,
     handleSubmit,
+    reset,
     formState: { errors },
     setValue,
   } = useForm<FormValues>({
@@ -45,21 +45,50 @@ export function CreateCategoryForm() {
       (opt) => opt.value === state.selected.uuidSubKategori,
     );
 
-    console.log(selectedOption)
+    console.log(selectedOption);
 
     if (selectedOption) {
       setValue("subKategori", selectedOption);
     } else {
       // fallback kalau option belum ready
-      setValue("subKategori", {
-        value: state.selected.uuidSubKategori,
-        label: state.selected.subKategori,
-      });
+      setValue("subKategori", null);
     }
   }, [state.selected, options, setValue]);
 
-  const onSubmit = (data: FormValues) => {
+  const onSubmit = async (data: FormValues) => {
     console.log("FORM:", data);
+
+    try {
+      const uuid = await actionCategory(
+        state?.selected?.uuid,
+        data,
+        state?.selected ? "update" : "create",
+      );
+      pushToast("Berhasil simpan");
+
+      reset({
+        kategori: "",
+        subKategori: null,
+      });
+
+      // keluar dari mode edit
+      setState((prev: any) => ({
+        ...prev,
+        selected: null,
+      }));
+    } catch (error: any) {
+      console.error(error);
+      if (!error.response) return pushToast("Server error");
+
+      const { status, data } = error.response;
+
+      const cf = handleCloudflareError(status);
+      if (cf) return pushToast(cf);
+
+      pushToast(data?.message || "Error");
+    }
+
+    await loadData();
   };
 
   return (

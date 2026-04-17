@@ -11,7 +11,7 @@ import { handleCloudflareError } from "../../Common/Error/axiosErrorHandler";
 import { FormValues } from "../Attribut/FormValues";
 
 export function CreateBankSoalForm() {
-  const { state, actionBankSoal } = useQuestionBankContext();
+  const { state, actionBankSoal, setState, loadData } = useQuestionBankContext();
   const { pushToast } = useToast();
 
   const {
@@ -51,6 +51,21 @@ export function CreateBankSoalForm() {
         state?.selected ? "update" : "create",
       );
       pushToast("Berhasil simpan");
+
+      reset({
+        judul: "",
+        semester: "",
+        konten: "",
+        deskripsi: "",
+      });
+
+      // hapus selected mode edit -> kembali create
+      if (state?.selected) {
+        setState((prev: any) => ({
+          ...prev,
+          selected: null,
+        }));
+      }
     } catch (error: any) {
       if (!error.response) return pushToast("Server error");
 
@@ -61,6 +76,8 @@ export function CreateBankSoalForm() {
 
       pushToast(data?.message || "Error");
     }
+
+    await loadData();
   };
 
   return (

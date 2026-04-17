@@ -8,6 +8,8 @@ import { useToast } from "../../Common/Context/ToastContext";
 import { handleCloudflareError } from "../../Common/Error/axiosErrorHandler";
 import { BaseQuery } from "../../Common/Attribut/BaseQuery";
 import { BaseResultState } from "../../Common/Attribut/BaseResultState";
+import { isEmpty } from "../../Common/Service/utility";
+import { FormValues } from "../Attribut/FormValues";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -47,6 +49,7 @@ export function useCategory() {
     loading: false,
     loadingSource: false,
     selected: null,
+    flag: null,
   });
 
   const [query, setQuery] = useState<QueryState>({
@@ -82,6 +85,7 @@ export function useCategory() {
       const res = await apiCall.get("/kategoris", {
         params: {
           mode: "paging",
+          flag: state.flag,
           page: query.page,
           limit: query.limit,
           search: query.search,
@@ -180,7 +184,7 @@ export function useCategory() {
     debounceRef.current = setTimeout(loadData, 300);
 
     return () => clearTimeout(debounceRef.current);
-  }, [query]);
+  }, [query, state.flag]);
 
   // 🔥 SSE (ONLY ONCE)
   useEffect(() => {
@@ -193,6 +197,54 @@ export function useCategory() {
       }
     };
   }, []);
+
+  function toggleFlag() {
+    setState((prev) => ({
+      ...prev,
+      flag: isEmpty(prev.flag) ? "deleted" : "",
+    }));
+  }
+
+  const actionCategory = async (
+    uuid?: string,
+    data?: FormValues,
+    mode: string = "",
+  ) => {
+    if (isEmpty(mode)) throw new Error("instruksi ditolak");
+
+    if (mode == "delete") {
+      const res = await apiCall.delete(`/kategori/${uuid}`);
+      return res.data?.uuid;
+    } else if (mode == "force_delete") {
+      const res = await apiCall.delete(`/kategori/${uuid}/force`);
+      return res.data?.uuid;
+    } else if (mode == "restore") {
+      const res = await apiCall.put(`/kategori/${uuid}/restore`);
+      return res.data?.uuid;
+    } else if (mode == "draf") {
+      const formData = new FormData();
+      formData.append("status", "draf");
+
+      const res = await apiCall.put(`/kategori/${uuid}/status`, formData);
+      return res.data?.uuid;
+    } else if (mode == "active") {
+      const formData = new FormData();
+      formData.append("status", "active");
+
+      const res = await apiCall.put(`/kategori/${uuid}/status`, formData);
+      return res.data?.uuid;
+    } else {
+      const formData = new FormData();
+      formData.append("nama_kategori", data?.kategori ?? "");
+      formData.append("sub_kategori", data?.subKategori?.value ?? "");
+
+      const res = uuid
+        ? await apiCall.put(`/kategori/${uuid}`, formData)
+        : await apiCall.post("/kategori", formData);
+
+      return res.data?.uuid;
+    }
+  };
 
   /** =========================
    * RESET
@@ -223,6 +275,9 @@ export function useCategory() {
     closeFilter,
     current,
     setCurrent,
+    toggleFlag,
+    loadData,
+    actionCategory,
     resetFilters,
     filterCount: (q: QueryState) => filterBuilder.countFilled(q),
   };
