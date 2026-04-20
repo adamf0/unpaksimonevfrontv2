@@ -1,3 +1,5 @@
+import { cn } from "../../Common/Service/utility";
+
 type Props = {
   summary: {
     admin: number;
@@ -18,6 +20,9 @@ type Props = {
     prodi?: string;
     unit?: string;
   };
+
+  TotalInput: number;
+  TotalPertanyaan: number;
 };
 
 export default function InitialSection({
@@ -25,6 +30,8 @@ export default function InitialSection({
   onStart,
   info,
   identity,
+  TotalInput,
+  TotalPertanyaan,
 }: Props) {
   const items = [
     {
@@ -40,6 +47,10 @@ export default function InitialSection({
       value: summary.prodi,
     },
   ].filter((i) => i.value > 0);
+
+  const isSuccess = TotalInput === TotalPertanyaan;
+  const isError = TotalInput > TotalPertanyaan || (TotalPertanyaan<0 || TotalInput<0);
+  const isActive = !isSuccess && !isError;
 
   return (
     <div className="pt-32 pb-20 px-8 max-w-4xl mx-auto flex flex-col gap-10">
@@ -69,8 +80,11 @@ export default function InitialSection({
         <h2 className="font-bold mb-2">⚠️ Perhatian</h2>
         <p className="text-sm leading-relaxed">
           Kuesioner yang telah diisi{" "}
-          <b>tidak dapat diubah atau diulang kembali dan bersifat berkelanjutan</b>. Pastikan semua jawaban
-          yang Anda berikan sudah benar sebelum melanjutkan ke tahap berikutnya.
+          <b>
+            tidak dapat diubah atau diulang kembali dan bersifat berkelanjutan
+          </b>
+          . Pastikan semua jawaban yang Anda berikan sudah benar sebelum
+          melanjutkan ke tahap berikutnya.
         </p>
       </div>
 
@@ -97,10 +111,27 @@ export default function InitialSection({
 
       {/* ================= CTA ================= */}
       <button
-        onClick={onStart}
-        className="w-full bg-primary text-on-primary py-4 rounded-xl font-bold hover:scale-[1.02] transition"
+        onClick={()=>{
+          if(isActive){
+            onStart();
+          }
+        }}
+        disabled={!isActive}
+        className={cn(
+          "w-full py-4 rounded-xl font-bold transition transform disabled:opacity-60 disabled:cursor-not-allowed",
+
+          isActive && "bg-primary text-on-primary hover:scale-[1.02]",
+
+          isSuccess && "bg-green-500 text-white hover:scale-[1.02]",
+
+          isError && "bg-red-500 text-white cursor-not-allowed opacity-70",
+        )}
       >
-        Mulai Kuesioner
+        {isError
+          ? "Data Tidak Valid"
+          : isSuccess
+            ? "Kuesioner Lengkap"
+            : "Mulai Kuesioner"}
       </button>
     </div>
   );

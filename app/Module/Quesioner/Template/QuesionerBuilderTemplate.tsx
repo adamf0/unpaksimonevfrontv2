@@ -8,6 +8,7 @@ import QuestionForm from "../Organisms/QuestionForm";
 import InitialSection from "../Organisms/InitialSection";
 import { useQuestionerBuilder } from "../Hook/useQuestionerBuilder";
 import { useEffect, useState } from "react";
+import { toNumber } from "../../Common/Service/utility";
 
 type Props = {
   uuid: string;
@@ -111,6 +112,8 @@ export default function QuesionerBuilderTemplate({ uuid }: Props) {
             prodi: "Hukum (S1)",
           }}
           onStart={() => setStatus("process")}
+          TotalInput={toNumber(state.data?.TotalInput)}
+          TotalPertanyaan={toNumber(state.data?.TotalPertanyaan)}
         />
       ) : status === "process" ? (
         <QuestionerLayout activeStep={activeStep} onNextStep={() => {}}>

@@ -1,4 +1,7 @@
-export const isEmpty = (value: string| any[] | number | null | undefined) => {
+import { clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+export const isEmpty = (value: string | any[] | number | null | undefined) => {
   if (value === null || value === undefined) return true;
 
   if (value === "00000000-0000-0000-0000-000000000000") {
@@ -23,3 +26,12 @@ export const isEmpty = (value: string| any[] | number | null | undefined) => {
 
   return false;
 };
+
+export const toNumber = (val: any): number => {
+  const n = Number(val);
+  return Number.isFinite(n) ? n : 0;
+};
+
+export function cn(...inputs: any[]) {
+  return twMerge(clsx(inputs));
+}
