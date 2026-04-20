@@ -74,10 +74,6 @@ export default function QuesionerBuilderTemplate({ uuid }: Props) {
     }
   }, [uuid]);
 
-  useEffect(()=>{
-    console.log(status)
-  },[status]);
-
   const setAnswers = (cb: any) => {
     setState((prev) => ({
       ...prev,
@@ -87,7 +83,7 @@ export default function QuesionerBuilderTemplate({ uuid }: Props) {
 
   return (
     <>
-      {loading ? (
+      {loading && ["kuesioner", "pertanyaan"].includes(loading) ? (
         <div className="w-full flex flex-col gap-4 items-center justify-center min-h-[50vh]">
           <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
 
@@ -123,6 +119,7 @@ export default function QuesionerBuilderTemplate({ uuid }: Props) {
             answers={dataAnsware}
             errors={errors}
             toast={toast}
+            loading={loading=="form"} //ini tidak bekerja
             isBrokenQuestion={(q) =>
               q.pilihan.filter((p) => p.freetext).length > 1
             }

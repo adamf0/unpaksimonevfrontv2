@@ -15,7 +15,6 @@ type FormValues = {
   prodi: string;
 };
 
-//[pr] migrate custom hook
 export function CreateUserForm() {
   const {
     register,

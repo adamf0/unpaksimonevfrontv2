@@ -5,10 +5,9 @@ import { Question } from "../Attribut/Question";
 import { AnswerState } from "../Attribut/AnswerState";
 import { Option } from "../Attribut/Option";
 import { handleCloudflareError } from "../../Common/Error/axiosErrorHandler";
-import { useToast } from "../../Common/Context/ToastContext";
 import apiCall from "../../Common/External/APICall";
 
-type LoadingState = "kuesioner" | "pertanyaan" | null;
+type LoadingState = "kuesioner" | "pertanyaan" | "form" | null;
 
 type BankSoalState = {
   dataQuestion: Question[];
@@ -63,7 +62,7 @@ export function useQuestionerBuilder() {
   ): Promise<Question | null> {
     try {
       const res = await apiCall.get(
-        `templatepertanyaan/${uuidTemplatePertanyaan}`,
+        `templatepertanyaan/${uuidTemplatePertanyaan}/template`,
         {
           headers: {
             Authorization: `Bearer ${sessionStorage.getItem("access_token")}`,
@@ -96,6 +95,7 @@ export function useQuestionerBuilder() {
         createdBy: item.Prodi || item.Fakultas || "admin",
 
         tipe: item.JenisPilihan,
+        fullpath: item?.FullPath ?? "General",
         pilihan,
       };
     } catch (error) {
@@ -116,13 +116,24 @@ export function useQuestionerBuilder() {
         dataAnsware: {},
       }));
 
-      const res = await apiCall.get(`kuesioners/active/${uuidKuesioner}`, {
-        headers: {
-          Authorization: `Bearer ${sessionStorage.getItem("access_token")}`,
-        },
-      });
+      const token = sessionStorage.getItem("access_token");
+
+      const [res, resJawaban] = await Promise.all([
+        apiCall.get(`kuesioners/active/${uuidKuesioner}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }),
+
+        apiCall.get(`kuesioner/${uuidKuesioner}/jawaban`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }),
+      ]);
 
       const kuesioner = res.data?.data ?? res.data;
+      const jawaban = resJawaban.data?.data ?? resJawaban.data;
 
       setState((p) => ({
         ...p,
@@ -151,13 +162,67 @@ export function useQuestionerBuilder() {
       );
 
       const questions = rows.filter(Boolean) as Question[];
+      const mappedAnswers: AnswerState = {};
+
+      for (const q of questions) {
+        const rowsByQuestion = jawaban.filter(
+          (x: any) => x.UuidTemplatePertanyaan === q.uuid,
+        );
+
+        if (!rowsByQuestion.length) continue;
+
+        const selectedOptions: Option[] = [];
+        const extra: Record<string, string> = {};
+
+        for (const row of rowsByQuestion) {
+          if (row.UuidTemplateJawaban) {
+            const found = q.pilihan.find(
+              (p) => p.value === row.UuidTemplateJawaban,
+            );
+
+            if (found) {
+              selectedOptions.push(found);
+
+              if (row.FreeText) {
+                extra[found.value] = row.FreeText;
+              }
+            }
+          }
+        }
+
+        // rating = single option
+        if (q.tipe === "rating") {
+          mappedAnswers[q.uuid] = {
+            value: selectedOptions[0] ?? null,
+            extra,
+          };
+        }
+
+        // radio = single option
+        else if (q.tipe === "radio") {
+          mappedAnswers[q.uuid] = {
+            value: selectedOptions[0] ?? null,
+            extra,
+          };
+        }
+
+        // multiple
+        else {
+          mappedAnswers[q.uuid] = {
+            value: selectedOptions,
+            extra,
+          };
+        }
+      }
 
       setState((p) => ({
         ...p,
         dataQuestion: questions,
+        dataAnsware: mappedAnswers,
         loading: null,
       }));
     } catch (error: any) {
+      console.error(error);
       setState((p) => ({
         ...p,
         loading: null,
@@ -259,7 +324,7 @@ export function useQuestionerBuilder() {
     let isValid = true;
 
     for (const q of stepQuestions) {
-      const ans = dataAnsware[q.id];
+      const ans = dataAnsware[q.uuid];
 
       const empty =
         !ans ||
@@ -267,13 +332,13 @@ export function useQuestionerBuilder() {
         (!Array.isArray(ans.value) && !ans.value);
 
       if (q.required && empty) {
-        newErrors[q.id] = "Pertanyaan ini wajib diisi";
+        newErrors[q.uuid] = "Pertanyaan ini wajib diisi";
         isValid = false;
         continue;
       }
 
       if (!isFreetextValid(q, ans)) {
-        newErrors[q.id] = "Harap isi keterangan pilihan Other";
+        newErrors[q.uuid] = "Harap isi keterangan pilihan Other";
         isValid = false;
       }
     }
@@ -335,7 +400,7 @@ export function useQuestionerBuilder() {
   const handleChange = (
     qid: string,
     option: Option,
-    type: "radio" | "checkbox",
+    type: "radio" | "multiple",
   ) => {
     setState((prev) => {
       const current = prev.dataAnsware[qid]?.value;
@@ -407,11 +472,11 @@ export function useQuestionerBuilder() {
   const isSelected = (
     qid: string,
     option: Option,
-    type: "radio" | "checkbox",
+    type: "radio" | "multiple",
   ) => {
     const val = dataAnsware[qid]?.value;
 
-    if (type === "checkbox") {
+    if (type === "multiple") {
       return (
         Array.isArray(val) &&
         val.some((v) => isOption(v) && v.value === option.value)
@@ -424,7 +489,7 @@ export function useQuestionerBuilder() {
   /* =====================================================
      SUBMIT
   ===================================================== */
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const step = availableSteps[stepIndex.current];
@@ -448,17 +513,81 @@ export function useQuestionerBuilder() {
       return;
     }
 
-    const isLastStep = stepIndex.current >= availableSteps.length - 1;
+    const payload = Object.entries(dataAnsware)
+      .map(([uuidPertanyaan, item]) => {
+        const values = Array.isArray(item.value)
+          ? item.value
+          : item.value !== null
+            ? [item.value]
+            : [];
 
-    if (!isLastStep) {
-      setStepIndex((prev) => ({
-        ...prev,
-        current: prev.current + 1,
+        const jawaban = values
+          .filter(
+            (opt): opt is Option =>
+              typeof opt === "object" && opt !== null && "value" in opt,
+          )
+          .map((opt) => ({
+            uuid: opt.value,
+            freetext: item.extra?.[opt.value] ?? "",
+          }));
+
+        return {
+          pertanyaan: uuidPertanyaan,
+          jawaban,
+        };
+      })
+      .filter((row) => row.jawaban.length > 0);
+
+    // console.log("dataAnsware", payload);
+
+    try {
+      setState((p) => ({
+        ...p,
+        loading: "form",
       }));
-      return;
-    }
 
-    setStatus("done");
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      await Promise.allSettled(
+        payload.map((row) => {
+          const formData = new FormData();
+
+          formData.append("pertanyaan", row.pertanyaan);
+          formData.append("jawaban", JSON.stringify(row.jawaban));
+
+          return apiCall.post(
+            `/kuesioner/${state?.data?.UUIDKuesioner}/jawaban`,
+            formData,
+          );
+        }),
+      );
+      setState((p) => ({
+        ...p,
+        loading: null,
+      }));
+
+      const isLastStep = stepIndex.current >= availableSteps.length - 1;
+
+      if (!isLastStep) {
+        setStepIndex((prev) => ({
+          ...prev,
+          current: prev.current + 1,
+        }));
+        return;
+      }
+
+      setStatus("done");
+    } catch (error: any) {
+      if (!error.response) return setToast("Server error");
+
+      const { status, data } = error.response;
+
+      const cf = handleCloudflareError(status);
+      if (cf) return setToast(cf);
+
+      setToast(data?.message || "Error");
+    } finally {
+    }
   };
 
   /* =====================================================

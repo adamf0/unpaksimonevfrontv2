@@ -6,7 +6,7 @@ type CreatedByProps = {
 };
 
 const CREATED_MAP: Record<string, (name?: string) => string> = {
-  admin: (name) => name || "(admin)",
+  admin: (name) => name || "(LPM)",
   fakultas: (name) => `(Fakultas: ${name || "-"})`,
   prodi: (name) => `(Prodi: ${name || "-"})`,
 };
@@ -18,7 +18,7 @@ export function CreatedByLabel({ item }: CreatedByProps) {
 
   const label = formatter
     ? formatter(item.createdBy)
-    : item.createdBy || "(admin)";
+    : item.createdBy || "(LPM)";
 
   return <span className="text-xs text-on-secondary-container">{label}</span>;
 }

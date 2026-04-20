@@ -7,7 +7,7 @@ import Label from "../../Common/Components/Atoms/Label";
 type Props = {
   id: string;
   label: string;
-  type?: "radio" | "checkbox";
+  type?: "radio" | "multiple";
 
   withInput?: boolean;
   inputPlaceholder?: string;
@@ -66,7 +66,7 @@ export default function SelectableOption({
       >
         <Checkbox
           id={id}
-          type={type}
+          type={type === "multiple" ? "checkbox" : "radio"}
           name={name}
           value={value}
           checked={checked}
@@ -75,7 +75,7 @@ export default function SelectableOption({
             mt-1 sm:mt-0 w-5 h-5 shrink-0
             text-primary focus:ring-primary/20
             transition-all cursor-pointer
-            ${type === "checkbox" ? "rounded-md" : "rounded-full"}
+            ${type === "multiple" ? "rounded-md" : "rounded-full"}
             ${className}
           `}
           {...props}

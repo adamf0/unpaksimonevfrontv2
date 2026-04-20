@@ -4,7 +4,6 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { AccountInfo } from "../../Attribut/AccountInfo";
 
-//[pr] langsung baca dari redis
 export default async function AdminPanelTemplateServer({
   children,
 }: {

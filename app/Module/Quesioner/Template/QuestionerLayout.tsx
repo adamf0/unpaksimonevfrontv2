@@ -21,7 +21,7 @@ export default function QuestionerLayout({
               onClick={onNextStep}
             >
               {activeStep === "admin"
-                ? "Student Insights (Admin)"
+                ? "Student Insights (LPM)"
                 : activeStep === "fakultas"
                 ? "Student Insights (Fakultas)"
                 : "Student Insights (Prodi)"}

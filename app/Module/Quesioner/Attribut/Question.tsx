@@ -7,6 +7,7 @@ export type Question = {
   required: boolean;
   created: "admin" | "fakultas" | "prodi";
   createdBy: string;
-  tipe: "radio" | "checkbox" | "rating";
+  tipe: "radio" | "multiple" | "rating";
   pilihan: Option[];
+  fullpath: string,
 };
