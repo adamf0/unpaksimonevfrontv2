@@ -1,13 +1,40 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Question } from "../Attribut/Question";
 import { AnswerState } from "../Attribut/AnswerState";
 import { Option } from "../Attribut/Option";
+import { handleCloudflareError } from "../../Common/Error/axiosErrorHandler";
+import { useToast } from "../../Common/Context/ToastContext";
+import apiCall from "../../Common/External/APICall";
+
+type LoadingState = "kuesioner" | "pertanyaan" | null;
+
+type BankSoalState = {
+  dataQuestion: Question[];
+  dataAnsware: AnswerState;
+  data: any;
+
+  loading: LoadingState;
+
+  userFakultas?: string | null;
+  userProdi?: string | null;
+};
 
 export function useQuestionerBuilder() {
-  const [data, setData] = useState<Question[]>([]);
-  const [answers, setAnswers] = useState<AnswerState>({});
+  // const { pushToast } = useToast();
+
+  const [state, setState] = useState<BankSoalState>({
+    dataQuestion: [],
+    dataAnsware: {},
+    data: null,
+
+    loading: null,
+
+    // userFakultas: "hukum",
+    // userProdi: "hukum (s1)",
+  });
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [toast, setToast] = useState<string | null>(null);
   const [status, setStatus] = useState("initial");
@@ -17,7 +44,6 @@ export function useQuestionerBuilder() {
     current: 0,
   });
 
-  const [loading, setLoading] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
   const STEPS: Array<"admin" | "fakultas" | "prodi"> = [
@@ -26,143 +52,139 @@ export function useQuestionerBuilder() {
     "prodi",
   ];
 
-  const userFakultas = "hukum";
-  const userProdi = "hukum (s1)";
+  const { dataQuestion, dataAnsware, data, loading, userFakultas, userProdi } =
+    state;
 
-  /* ================= AVAILABLE STEP ================= */
-  const availableSteps = useMemo(() => {
-    return STEPS.filter((step) => {
-      if (step === "admin") {
-        return data.some((q) => q.created === "admin");
-      }
-      if (step === "fakultas") {
-        return data.some(
-          (q) => q.created === "fakultas" && q.createdBy === userFakultas,
-        );
-      }
-      if (step === "prodi") {
-        return data.some(
-          (q) => q.created === "prodi" && q.createdBy === userProdi,
-        );
-      }
-      return false;
-    });
-  }, [data]);
+  /* =====================================================
+     LOAD SINGLE QUESTION
+  ===================================================== */
+  async function loadQuestion(
+    uuidTemplatePertanyaan: string,
+  ): Promise<Question | null> {
+    try {
+      const res = await apiCall.get(
+        `templatepertanyaan/${uuidTemplatePertanyaan}`,
+        {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("access_token")}`,
+          },
+        },
+      );
 
-  const activeStep =
-    availableSteps.length > 0
-      ? availableSteps[Math.min(stepIndex.current, availableSteps.length - 1)]
-      : null;
+      const item = res.data?.data ?? res.data;
 
-  //[pr] menampilakn info kuesioner aktif & pengecekan tanggal aktif dari list
-  /* ================= LOAD DATA ================= */
-  async function loadQuestion(): Promise<any[]> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve([
-          {
-            id: "111",
-            pertanyaan: "01. How satisfied are you?",
-            tipe: "radio",
-            required: true,
-            created: "admin",
-            createdBy: "admin",
-            pilihan: [
-              { label: "Extremely Satisfied", value: "extreme" },
-              { label: "Neutral", value: "neutral" },
-              { label: "Other", value: "lainnya", freetext: true },
-            ],
-          },
-          {
-            id: "222",
-            pertanyaan: "03. How satisfied are you?",
-            tipe: "radio",
-            required: false,
-            created: "admin",
-            createdBy: "admin",
-            pilihan: [
-              { label: "Extremely Satisfied", value: "extreme" },
-              { label: "Neutral", value: "neutral" },
-              { label: "Other", value: "lainnya", freetext: true },
-            ],
-          },
-          {
-            id: "333",
-            pertanyaan: "03. What technologies improve learning?",
-            tipe: "rating",
-            required: true,
-            created: "fakultas",
-            createdBy: "hukum",
-            pilihan: [],
-          },
-          {
-            id: "444",
-            pertanyaan: "04. What technologies improve learning?",
-            tipe: "rating",
-            required: false,
-            created: "fakultas",
-            createdBy: "hukum",
-            pilihan: [],
-          },
-          {
-            id: "555",
-            pertanyaan: "05. Select multiple satisfaction factors",
-            tipe: "checkbox",
-            required: false,
-            created: "prodi",
-            createdBy: "hukum (s1)",
-            pilihan: [
-              { label: "Extremely Satisfied", value: "extreme" },
-              { label: "Neutral", value: "neutral" },
-              { label: "Other", value: "lainnya", freetext: true },
-              { label: "Other2", value: "lainnya2", freetext: true },
-            ],
-          },
-        ]);
-      }, 1000);
-    });
+      if (!item) return null;
+
+      const pilihan: Option[] = Array.isArray(item.ListJawaban)
+        ? item.ListJawaban.sort((a: any, b: any) => a.Nilai - b.Nilai).map(
+            (j: any) => ({
+              label: j.Jawaban,
+              value: String(j.UUID),
+              freetext: j.IsFreeText === 1,
+            }),
+          )
+        : [];
+
+      return {
+        id: String(item.ID),
+        uuid: String(item.UUID),
+        pertanyaan: item.Pertanyaan,
+        required: item.Required === 1,
+
+        created: item.Prodi ? "prodi" : item.Fakultas ? "fakultas" : "admin",
+
+        createdBy: item.Prodi || item.Fakultas || "admin",
+
+        tipe: item.JenisPilihan,
+        pilihan,
+      };
+    } catch (error) {
+      console.error(error);
+      return null;
+    }
   }
 
-  async function loadAnsware(): Promise<any> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          "111": {
-            value: { label: "Extremely Satisfied", value: "extreme" },
-            extra: {},
-          },
-          "222": {
-            value: null,
-            extra: {},
-          },
-          "333": { value: 4 },
-          "444": { value: 4 },
-          "555": {
-            value: [
-              { label: "Extremely Satisfied", value: "extreme" },
-              { label: "Other", value: "lainnya", freetext: true },
-            ],
-            extra: {
-              lainnya: "Some custom answer",
-            },
-          },
-        });
-      }, 1000);
-    });
+  /* =====================================================
+     LOAD MAIN DATA
+  ===================================================== */
+  async function loadData(uuidKuesioner: string) {
+    try {
+      setState((p) => ({
+        ...p,
+        loading: "kuesioner",
+        dataQuestion: [],
+        dataAnsware: {},
+      }));
+
+      const res = await apiCall.get(`kuesioners/active/${uuidKuesioner}`, {
+        headers: {
+          Authorization: `Bearer ${sessionStorage.getItem("access_token")}`,
+        },
+      });
+
+      const kuesioner = res.data?.data ?? res.data;
+
+      setState((p) => ({
+        ...p,
+        data: kuesioner,
+      }));
+
+      const targets: string[] = Array.isArray(kuesioner?.TargetPertanyaan)
+        ? kuesioner.TargetPertanyaan
+        : [];
+
+      if (!targets.length) {
+        setState((p) => ({
+          ...p,
+          loading: null,
+        }));
+        return;
+      }
+
+      setState((p) => ({
+        ...p,
+        loading: "pertanyaan",
+      }));
+
+      const rows = await Promise.all(
+        targets.map((uuid: string) => loadQuestion(uuid)),
+      );
+
+      const questions = rows.filter(Boolean) as Question[];
+
+      setState((p) => ({
+        ...p,
+        dataQuestion: questions,
+        loading: null,
+      }));
+    } catch (error: any) {
+      setState((p) => ({
+        ...p,
+        loading: null,
+      }));
+
+      if (!error.response) {
+        throw new Error("Server error");
+        // pushToast("Server error");
+      } else {
+        const { status, data } = error.response;
+
+        const cf = handleCloudflareError(status);
+
+        if (cf) {
+          throw new Error(cf);
+          // pushToast(cf);
+        } else {
+          throw new Error(data?.message || "Error");
+          // pushToast(data?.message || "Error");
+        }
+      }
+    }
   }
 
-  useEffect(() => {
-    const fetch = async () => {
-      setLoading(true);
-      const [q, a] = await Promise.all([loadQuestion(), loadAnsware()]);
-      setData(q);
-      setAnswers(a);
-      setLoading(false);
-    };
-    fetch();
-  }, []);
-
-  /* ================= HELPERS ================= */
+  /* =====================================================
+     HELPERS
+  ===================================================== */
   const isOption = (v: any): v is Option =>
     v && typeof v === "object" && "value" in v;
 
@@ -173,20 +195,71 @@ export function useQuestionerBuilder() {
 
     return values.every((v: any) => {
       const opt = q.pilihan.find((p) => p.value === v.value);
+
       if (!opt?.freetext) return true;
 
       const extraVal = ans.extra?.[v.value];
+
       return typeof extraVal === "string" && extraVal.trim().length > 0;
     });
   };
 
-  /* ================= VALIDATION ================= */
+  /* =====================================================
+     AVAILABLE STEP
+  ===================================================== */
+  const availableSteps = useMemo(() => {
+    return STEPS.filter((step) => {
+      if (step === "admin") {
+        return dataQuestion.some((q) => q.created === "admin");
+      }
+
+      if (step === "fakultas") {
+        return dataQuestion.some(
+          (q) => q.created === "fakultas" && q.createdBy === userFakultas,
+        );
+      }
+
+      if (step === "prodi") {
+        return dataQuestion.some(
+          (q) => q.created === "prodi" && q.createdBy === userProdi,
+        );
+      }
+
+      return false;
+    });
+  }, [dataQuestion, userFakultas, userProdi]);
+
+  const activeStep =
+    availableSteps.length > 0
+      ? availableSteps[Math.min(stepIndex.current, availableSteps.length - 1)]
+      : null;
+
+  /* =====================================================
+     FILTER DATA
+  ===================================================== */
+  const filteredData = useMemo(() => {
+    if (!activeStep) return [];
+
+    return dataQuestion.filter((q) => {
+      if (q.created !== activeStep) return false;
+
+      if (q.created === "admin") return true;
+      if (q.created === "fakultas") return q.createdBy === userFakultas;
+      if (q.created === "prodi") return q.createdBy === userProdi;
+
+      return false;
+    });
+  }, [activeStep, dataQuestion, userFakultas, userProdi]);
+
+  /* =====================================================
+     VALIDATION
+  ===================================================== */
   const validateStep = (stepQuestions: Question[]) => {
     const newErrors: Record<string, string> = {};
     let isValid = true;
 
     for (const q of stepQuestions) {
-      const ans = answers[q.id];
+      const ans = dataAnsware[q.id];
 
       const empty =
         !ans ||
@@ -200,7 +273,7 @@ export function useQuestionerBuilder() {
       }
 
       if (!isFreetextValid(q, ans)) {
-        newErrors[q.id] = "Harap isi keterangan pada pilihan 'Other'";
+        newErrors[q.id] = "Harap isi keterangan pilihan Other";
         isValid = false;
       }
     }
@@ -209,22 +282,9 @@ export function useQuestionerBuilder() {
     return isValid;
   };
 
-  /* ================= FILTER ================= */
-  const filteredData = useMemo(() => {
-    if (!activeStep) return [];
-
-    return data.filter((q) => {
-      if (q.created !== activeStep) return false;
-
-      if (q.created === "admin") return true;
-      if (q.created === "fakultas") return q.createdBy === userFakultas;
-      if (q.created === "prodi") return q.createdBy === userProdi;
-
-      return false;
-    });
-  }, [data, activeStep]);
-
-  /* ================= FLOW ================= */
+  /* =====================================================
+     AUTO STEP FLOW
+  ===================================================== */
   useEffect(() => {
     if (loading || initialized || !availableSteps.length) return;
 
@@ -233,30 +293,24 @@ export function useQuestionerBuilder() {
     while (nextIndex < availableSteps.length) {
       const step = availableSteps[nextIndex];
 
-      const stepQuestions = data.filter((q) => {
-        if (q.created !== step) return false;
-
-        if (q.created === "admin") return true;
-        if (q.created === "fakultas") return q.createdBy === userFakultas;
-        if (q.created === "prodi") return q.createdBy === userProdi;
-
-        return false;
-      });
+      const stepQuestions = dataQuestion.filter((q) => q.created === step);
 
       const required = stepQuestions.filter((q) => q.required);
 
       const allDone = required.every((q) => {
-        const ans = answers[q.id];
+        const ans = dataAnsware[q.id];
+
         if (!ans) return false;
 
         if (q.tipe === "rating") return typeof ans.value === "number";
+
         if (Array.isArray(ans.value)) return ans.value.length > 0;
 
         return !!ans.value;
       });
 
       const freetextValid = required.every((q) =>
-        isFreetextValid(q, answers[q.id]),
+        isFreetextValid(q, dataAnsware[q.id]),
       );
 
       if (required.length > 0 && allDone && freetextValid) {
@@ -266,39 +320,124 @@ export function useQuestionerBuilder() {
       }
     }
 
-    setStepIndex((prev) => ({
-      ...prev,
+    setStepIndex((p) => ({
+      ...p,
       current: Math.min(nextIndex, availableSteps.length - 1),
+      total: availableSteps.length,
     }));
 
     setInitialized(true);
-  }, [loading, availableSteps, data, answers]);
+  }, [loading, initialized, availableSteps, dataQuestion, dataAnsware]);
 
-  /* ================= SUBMIT ================= */
+  /* =====================================================
+     CHANGE ANSWER
+  ===================================================== */
+  const handleChange = (
+    qid: string,
+    option: Option,
+    type: "radio" | "checkbox",
+  ) => {
+    setState((prev) => {
+      const current = prev.dataAnsware[qid]?.value;
+
+      if (type === "radio") {
+        return {
+          ...prev,
+          dataAnsware: {
+            ...prev.dataAnsware,
+            [qid]: {
+              value: option,
+            },
+          },
+        };
+      }
+
+      const arr = Array.isArray(current) ? [...current] : [];
+
+      const exists = arr.some((v) => isOption(v) && v.value === option.value);
+
+      return {
+        ...prev,
+        dataAnsware: {
+          ...prev.dataAnsware,
+          [qid]: {
+            value: exists
+              ? arr.filter((v) => isOption(v) && v.value !== option.value)
+              : [...arr, option],
+          },
+        },
+      };
+    });
+
+    setErrors((p) => {
+      const copy = { ...p };
+      delete copy[qid];
+      return copy;
+    });
+  };
+
+  /* =====================================================
+     CHANGE EXTRA
+  ===================================================== */
+  const handleExtraChange = (qid: string, optVal: string, val: string) => {
+    setState((prev) => ({
+      ...prev,
+      dataAnsware: {
+        ...prev.dataAnsware,
+        [qid]: {
+          ...prev.dataAnsware[qid],
+          extra: {
+            ...prev.dataAnsware[qid]?.extra,
+            [optVal]: val,
+          },
+        },
+      },
+    }));
+
+    setErrors((p) => {
+      const copy = { ...p };
+      delete copy[qid];
+      return copy;
+    });
+  };
+
+  /* =====================================================
+     CHECK SELECTED
+  ===================================================== */
+  const isSelected = (
+    qid: string,
+    option: Option,
+    type: "radio" | "checkbox",
+  ) => {
+    const val = dataAnsware[qid]?.value;
+
+    if (type === "checkbox") {
+      return (
+        Array.isArray(val) &&
+        val.some((v) => isOption(v) && v.value === option.value)
+      );
+    }
+
+    return isOption(val) && val.value === option.value;
+  };
+
+  /* =====================================================
+     SUBMIT
+  ===================================================== */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     const step = availableSteps[stepIndex.current];
     if (!step) return;
 
-    const stepQuestions = data.filter((q) => {
-      if (q.created !== step) return false;
+    const stepQuestions = filteredData;
 
-      if (q.created === "admin") return true;
-      if (q.created === "fakultas") return q.createdBy === userFakultas;
-      if (q.created === "prodi") return q.createdBy === userProdi;
-
-      return false;
-    });
-
-    // ❗ BROKEN CHECK
     const hasBroken = stepQuestions.some(
       (q) => q.pilihan.filter((p) => p.freetext).length > 1,
     );
 
     if (hasBroken) {
-      setToast("tidak dapat kirim karena ada pertanyaan tidak valid");
-      setTimeout(() => setToast(null), 3000);
+      setToast("Tidak dapat kirim karena ada pertanyaan tidak valid");
       return;
     }
 
@@ -306,7 +445,6 @@ export function useQuestionerBuilder() {
 
     if (!isValid) {
       setToast("Harap lengkapi semua pertanyaan");
-      setTimeout(() => setToast(null), 3000);
       return;
     }
 
@@ -323,110 +461,35 @@ export function useQuestionerBuilder() {
     setStatus("done");
   };
 
-  /* ================= ACTIONS ================= */
-  const handleChange = (
-    qid: string,
-    option: Option,
-    type: "radio" | "checkbox",
-  ) => {
-    setAnswers((prev) => {
-      const current = prev[qid]?.value;
-
-      if (type === "radio") {
-        return { ...prev, [qid]: { value: option } };
-      }
-
-      const arr = Array.isArray(current) ? [...current] : [];
-
-      const exists = arr.some((v) => isOption(v) && v.value === option.value);
-
-      return {
-        ...prev,
-        [qid]: {
-          value: exists
-            ? arr.filter((v) => isOption(v) && v.value !== option.value)
-            : [...arr, option],
-        },
-      };
-    });
-
-    setErrors((prev) => {
-      const copy = { ...prev };
-      delete copy[qid];
-      return copy;
-    });
-  };
-
-  const handleExtraChange = (qid: string, optVal: string, val: string) => {
-    setAnswers((prev) => ({
-      ...prev,
-      [qid]: {
-        ...prev[qid],
-        extra: {
-          ...prev[qid]?.extra,
-          [optVal]: val,
-        },
-      },
-    }));
-
-    setErrors((prev) => {
-      const copy = { ...prev };
-      delete copy[qid];
-      return copy;
-    });
-  };
-
-  const isSelected = (
-    qid: string,
-    option: Option,
-    type: "radio" | "checkbox",
-  ) => {
-    const val = answers[qid]?.value;
-
-    if (type === "checkbox") {
-      return (
-        Array.isArray(val) &&
-        val.some((v) => isOption(v) && v.value === option.value)
-      );
-    }
-
-    return isOption(val) && val.value === option.value;
-  };
-
+  /* =====================================================
+     RETURN
+  ===================================================== */
   return {
-    // ================= STATE =================
+    state,
     data,
-    answers,
+
     errors,
     toast,
     status,
-    setStatus,
 
     stepIndex,
-    setStepIndex,
-
-    loading,
-    initialized,
-
     activeStep,
     filteredData,
     availableSteps,
 
-    // ================= ACTIONS =================
-    handleSubmit,
-    handleChange,
-    handleExtraChange,
-
-    // ================= HELPERS =================
-    isSelected,
-    isOption,
-    isFreetextValid,
-    validateStep,
-
-    // ================= INTERNAL CONTROL (optional tapi berguna) =================
-    setAnswers,
+    setState,
     setErrors,
     setToast,
-    setData,
+    setStatus,
+    setStepIndex,
+
+    loadData,
+
+    validateStep,
+    handleChange,
+    handleExtraChange,
+    isSelected,
+
+    handleSubmit,
   };
 }

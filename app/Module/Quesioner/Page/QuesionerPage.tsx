@@ -1,10 +1,14 @@
 import UserPanelTemplate from "../../Common/Components/Template/UserPanelTemplate";
 import QuesionerBuilderTemplate from "../Template/QuesionerBuilderTemplate";
 
-export default function QuesionerPage() {
+type Props = {
+  uuid: string;
+};
+
+export default function QuesionerPage({ uuid }: Props) {
   return (
     <UserPanelTemplate>
-      <QuesionerBuilderTemplate/>
+      <QuesionerBuilderTemplate uuid={uuid} />
     </UserPanelTemplate>
   );
 }
