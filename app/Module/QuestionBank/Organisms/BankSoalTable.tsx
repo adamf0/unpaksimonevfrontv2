@@ -15,27 +15,13 @@ import { ButtonVariant } from "../../Common/Attribut/ButtonVariant";
 import { useQuestionBankContext } from "../Context/QuestionBankProvider";
 import { useToast } from "../../Common/Context/ToastContext";
 import { handleCloudflareError } from "../../Common/Error/axiosErrorHandler";
+import { BankSoalItem } from "../Attribut/BankSoalItem";
 
 interface Props {
   data: any[];
   loading: boolean;
   openDelete: (item: BankSoalItem) => void;
   openForceDelete: (item: BankSoalItem) => void;
-}
-
-interface BankSoalItem {
-  id: number;
-  uuid: string;
-  judul: string;
-  semester: string;
-  status: string;
-  konten?: string;
-  deskripsi?: string;
-  tanggalmulai: DateTimeVO;
-  tanggalakhir: DateTimeVO;
-  createdtime: string;
-  createdby: string;
-  deletedtime: string;
 }
 
 export function mapBankSoal(api: any): BankSoalItem {
@@ -53,8 +39,10 @@ export function mapBankSoal(api: any): BankSoalItem {
     konten: api?.Content,
     deskripsi: api?.Deskripsi,
     createdby: clipCreatedBy(api),
+    createdbyref: api?.CreatedByRef ?? "",
     createdtime: api?.CreatedAt ?? "",
     deletedtime: api.DeletedAt ?? "",
+    listextend: api.ListExt ?? [],
   };
 }
 
@@ -81,7 +69,8 @@ export function BankSoalTable({
   openDelete,
   openForceDelete,
 }: Props) {
-  const { setState, actionBankSoal, loadData } = useQuestionBankContext();
+  const { setState, actionBankSoal, loadData, setOpenTime } =
+    useQuestionBankContext();
   const { pushToast } = useToast();
   const banks: BankSoalItem[] = data.map(mapBankSoal);
 
@@ -114,6 +103,18 @@ export function BankSoalTable({
 
   const getActions = (bank: BankSoalItem): ActionItem[] => {
     const actions: ActionItem[] = [
+      {
+        name: "time",
+        icon: "calendar_clock",
+        className: "hover:text-primary",
+        onClick: () => {
+          setState((prev: any) => ({
+            ...prev,
+            selected: bank,
+          }));
+          setOpenTime(true);
+        },
+      },
       {
         name: "edit",
         icon: "edit",
@@ -206,7 +207,7 @@ export function BankSoalTable({
 
             return (
               <tr
-                key={bank.id}
+                key={bank.uuid}
                 className="hover:bg-surface-container-low/40 transition-colors"
               >
                 <td className="px-4 md:px-8 py-5">

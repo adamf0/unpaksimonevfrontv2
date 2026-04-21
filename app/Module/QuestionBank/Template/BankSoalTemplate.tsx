@@ -9,6 +9,7 @@ import dynamic from "next/dynamic";
 import { useQuestionBankContext } from "../Context/QuestionBankProvider";
 import { HistoryButton } from "../../Common/Components/Molecules/HistoryButton";
 import Modal from "../../Common/Components/Organisms/Modal";
+import { BankSoalTimeForm } from "../Molecules/BankSoalTimeForm";
 
 const CreateBankSoalForm = dynamic(
   () =>
@@ -71,6 +72,8 @@ export default function BankSoalTemplate() {
     setQuery,
     open,
     setOpen,
+    openTime,
+    setOpenTime,
     resetFilters,
     filterCount,
     toggleFlag,
@@ -218,7 +221,11 @@ export default function BankSoalTemplate() {
         onClose={() => setModal({ type: null, data: null })}
         icon="delete_forever"
         title="Delete Bank Question?"
-        description={modal.type === "force_delete"? "This action cannot be recovery.":"This action can be recovery"}
+        description={
+          modal.type === "force_delete"
+            ? "This action cannot be recovery."
+            : "This action can be recovery"
+        }
         variant="error"
         footer={
           <>
@@ -230,13 +237,21 @@ export default function BankSoalTemplate() {
             </button>
             <button
               className="px-8 py-3 font-label font-bold bg-error text-white rounded-xl shadow-lg shadow-error/20 active:scale-95 transition-transform"
-              onClick={modal.type === "force_delete"? onForceDelete:onDelete}
+              onClick={modal.type === "force_delete" ? onForceDelete : onDelete}
             >
               Delete
             </button>
           </>
         }
       />
+
+      <FilterSidebar
+        title="Change time"
+        open={openTime}
+        onClose={() => setOpenTime(false)}
+      >
+        <BankSoalTimeForm/>
+      </FilterSidebar>
 
       {/* FILTER SIDEBAR */}
       <FilterSidebar

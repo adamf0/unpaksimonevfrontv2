@@ -5,7 +5,8 @@ export type RangeStatus =
   | "TIME_RANGE_INVALID"
   | "SCHEDULED"
   | "ACTIVE"
-  | "EXPIRED";
+  | "EXPIRED"
+  | null;
 
 export class DateRangeService {
   constructor(
@@ -17,6 +18,10 @@ export class DateRangeService {
     const start = this.start.toDate();
     const end = this.end.toDate();
     const current = now.toDate();
+
+    if(isEmpty(start?.toISOString()) || isEmpty(end?.toISOString())){
+      return null;
+    }
 
     if (!start || !end || !current || end < start) {
       return "TIME_RANGE_INVALID";

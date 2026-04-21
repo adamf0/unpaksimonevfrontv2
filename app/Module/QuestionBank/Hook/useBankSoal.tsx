@@ -49,6 +49,7 @@ export function useBankSoal() {
   });
 
   const [open, setOpen] = useState(false);
+  const [openTime, setOpenTime] = useState(false);
 
   const debounceRef = useRef<any>(null);
 
@@ -139,8 +140,6 @@ export function useBankSoal() {
       formData.append("semester", data?.semester ?? "");
       formData.append("content", data?.konten ?? "");
       formData.append("deskripsi", data?.deskripsi ?? "");
-      formData.append("tanggal_mulai", "2001-01-01 00:00:00");
-      formData.append("tanggal_akhir", "2002-01-01 00:00:00");
 
       const res = uuid
         ? await apiCall.put(`/banksoal/${uuid}`, formData)
@@ -178,6 +177,8 @@ export function useBankSoal() {
     setQuery,
     open,
     setOpen,
+    openTime,
+    setOpenTime,
     actionBankSoal,
     loadData,
     toggleFlag,
