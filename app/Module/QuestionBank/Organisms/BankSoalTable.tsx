@@ -16,6 +16,7 @@ import { useQuestionBankContext } from "../Context/QuestionBankProvider";
 import { useToast } from "../../Common/Context/ToastContext";
 import { handleCloudflareError } from "../../Common/Error/axiosErrorHandler";
 import { BankSoalItem } from "../Attribut/BankSoalItem";
+import { useAdminPanel } from "../../Common/Components/Template/AdminPanelTemplate";
 
 interface Props {
   data: any[];
@@ -71,6 +72,7 @@ export function BankSoalTable({
 }: Props) {
   const { setState, actionBankSoal, loadData, setOpenTime } =
     useQuestionBankContext();
+  const { userProfile } = useAdminPanel();
   const { pushToast } = useToast();
   const banks: BankSoalItem[] = data.map(mapBankSoal);
 
@@ -102,74 +104,103 @@ export function BankSoalTable({
   }
 
   const getActions = (bank: BankSoalItem): ActionItem[] => {
+    const isOwner =
+      String(bank?.createdbyref ?? "") === String(userProfile?.ID ?? "");
+
+    const status = getBankSoalStatus(bank);
+
+    const isDeleted = !isEmpty(bank.deletedtime);
+
+    /**
+     * helper pilih data
+     */
+    const selectBank = () => {
+      setState((prev: any) => ({
+        ...prev,
+        selected: bank,
+      }));
+    };
+
+    /**
+     * jika sudah delete
+     */
+    if (isDeleted) {
+      const actions: ActionItem[] = [];
+
+      if (isOwner) {
+        actions.push(
+          {
+            name: "restore",
+            icon: "restore",
+            className: "hover:text-primary",
+            onClick: async () =>
+              await handleBankSoalAction(bank, "restore", "Berhasil restore"),
+          },
+          {
+            name: "force delete",
+            icon: "delete_forever",
+            className: "hover:text-error",
+            onClick: () => openForceDelete(bank),
+          },
+        );
+      }
+
+      return actions;
+    }
+
+    /**
+     * action umum
+     */
     const actions: ActionItem[] = [
       {
         name: "time",
         icon: "calendar_clock",
         className: "hover:text-primary",
         onClick: () => {
-          setState((prev: any) => ({
-            ...prev,
-            selected: bank,
-          }));
+          selectBank();
           setOpenTime(true);
         },
       },
-      {
-        name: "edit",
-        icon: "edit",
-        className: "hover:text-primary",
-        onClick: () =>
-          setState((prev: any) => ({
-            ...prev,
-            selected: bank,
-          })),
-      },
-      {
-        name: "delete",
-        icon: "delete",
-        className: "hover:text-error",
-        onClick: () => openDelete(bank),
-      },
     ];
-    const deleted = !isEmpty(bank.deletedtime);
 
-    if (deleted) {
-      return [
+    /**
+     * owner only
+     */
+    if (isOwner) {
+      actions.push(
         {
-          name: "restore",
-          icon: "restore",
+          name: "edit",
+          icon: "edit",
+          className: "hover:text-primary",
+          onClick: () => selectBank(),
+        },
+        {
+          name: "delete",
+          icon: "delete",
+          className: "hover:text-error",
+          onClick: () => openDelete(bank),
+        },
+      );
+
+      if (status === "draf") {
+        actions.push({
+          name: "active",
+          icon: "check",
+          className: "!text-green-500 hover:text-success",
+          onClick: async () =>
+            await handleBankSoalAction(bank, "active", "Berhasil active"),
+        });
+      }
+
+      if (status === "active") {
+        actions.push({
+          name: "draf",
+          icon: "draft",
           className: "hover:text-primary",
           onClick: async () =>
-            await handleBankSoalAction(bank, "restore", "Berhasil restore"),
-        },
-        {
-          name: "force delete",
-          icon: "delete_forever",
-          className: "hover:text-error",
-          onClick: () => openForceDelete(bank),
-        },
-      ];
-    }
-
-    if (getBankSoalStatus(bank) === "draf") {
-      actions.push({
-        name: "active",
-        icon: "check",
-        className: "!text-green-500 hover:text-success",
-        onClick: async () =>
-          await handleBankSoalAction(bank, "active", "Berhasil active"),
-      });
-    }
-
-    if (getBankSoalStatus(bank) === "active") {
-      actions.push({
-        name: "draf",
-        icon: "draft",
-        className: "hover:text-primary",
-        onClick: async () =>
-          await handleBankSoalAction(bank, "draf", "Berhasil pindah draf"),
-      });
+            await handleBankSoalAction(bank, "draf", "Berhasil pindah draf"),
+        });
+      }
     }
 
     return actions;
