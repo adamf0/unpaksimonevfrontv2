@@ -34,13 +34,14 @@ export default function AuthLoginSection() {
 
   useEffect(() => {
     const reason = searchParams.get("r");
+    console.log(reason)
     if (!reason) return;
 
     let message = "";
     hasShown.current = true;
 
     switch (reason) {
-      case "E0":
+      case "Ex":
         message = "Sesi login berakhir";
         break;
       case "E0":

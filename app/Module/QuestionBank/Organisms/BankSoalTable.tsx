@@ -25,6 +25,7 @@ interface Props {
   openForceDelete: (item: BankSoalItem) => void;
 }
 
+//[pr] masih salah dalam load data, misal mipa cuma load mipa + admin, kalau hukum load hukum + mipa
 export function mapBankSoal(api: any): BankSoalItem {
   const mulai = new DateTimeVO(api?.TanggalMulai ?? "");
   const akhir = new DateTimeVO(api?.TanggalAkhir ?? "");

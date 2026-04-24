@@ -7,6 +7,7 @@ function clearAuthCookies(res: NextResponse) {
     sameSite: "lax" as const,
     path: "/",
     maxAge: 0,
+    expires: new Date(0),
   };
 
   res.cookies.set("access_token", "", cookieOptions);
@@ -14,7 +15,16 @@ function clearAuthCookies(res: NextResponse) {
 }
 
 export async function GET(req: Request) {
-  const res = NextResponse.redirect(new URL("/login", req.url));
+  const url = new URL(req.url);
+  const reason = url.searchParams.get("r");
+
+  const loginUrl = new URL("/login", req.url);
+
+  if (reason) {
+    loginUrl.searchParams.set("r", reason);
+  }
+
+  const res = NextResponse.redirect(loginUrl);
 
   clearAuthCookies(res);
 

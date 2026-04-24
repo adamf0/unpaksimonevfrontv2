@@ -1,4 +1,4 @@
-export interface TemplateItem {
+export type TemplateItem = {
   id: number;
   uuid: string;
   judul: string;
@@ -13,7 +13,7 @@ export interface TemplateItem {
   deletedtime?: string;
 }
 
-export interface Kategori {
+export type Kategori = {
   uuid: string;
   kategori: string;
 }

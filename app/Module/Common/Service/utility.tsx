@@ -1,4 +1,5 @@
 import { clsx } from "clsx";
+import { useMemo } from "react";
 import { twMerge } from "tailwind-merge";
 
 export const isEmpty = (value: string | any[] | number | null | undefined) => {
@@ -35,3 +36,8 @@ export const toNumber = (val: any): number => {
 export function cn(...inputs: any[]) {
   return twMerge(clsx(inputs));
 }
+
+export const colors = Array.from({ length: 100 }, (_, i) => {
+  const hue = (i * 137.508) % 360; // golden angle → distribusi warna lebih natural
+  return `hsl(${hue}, 70%, 55%)`;
+});

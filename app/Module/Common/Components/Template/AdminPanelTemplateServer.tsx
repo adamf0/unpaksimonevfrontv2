@@ -14,22 +14,27 @@ export default async function AdminPanelTemplateServer({
 
   // ❌ tidak ada token
   if (!token) {
-    redirect("/api/logout?r=E0");
+    redirect("/api/logout?r=Ex");
   }
 
   let user: AccountInfo;
 
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/whoami`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
       },
       cache: "no-store",
+      signal: controller.signal,
     });
 
+    clearTimeout(timeout);
+
     if (!res.ok) {
-      redirect("/api/logout?r=E1");
+      redirect("/api/logout?r=E1"); //di login page berhasil menampilkan toast
     }
 
     user = await res.json();
@@ -42,10 +47,10 @@ export default async function AdminPanelTemplateServer({
   const allowedRoles = ["admin", "fakultas", "prodi"];
 
   if (!allowedRoles.includes(user?.Level)) {
-    redirect("/api/logout?r=F0");
+    redirect("/api/logout?r=F0");  //di login page berhasil menampilkan toast
   }
 
-  console.log("SERVER USER:", user); // muncul di terminal
+  console.log("SERVER USER:", user);
 
   return (
     <AdminPanelTemplate userProfile={user}>

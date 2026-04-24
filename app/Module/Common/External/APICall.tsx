@@ -13,9 +13,16 @@ apiCall.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
+    if (!config.signal) {
+      const controller = new AbortController();
+      config.signal = controller.signal;
+      (config as any).__abortController = controller;
+    }
+
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
+//signal: controller.signal,
 export default apiCall;

@@ -15,6 +15,7 @@ type BankSoalState = {
   data: any;
 
   loading: LoadingState;
+  error?: string | null;
 
   userFakultas?: string | null;
   userProdi?: string | null;
@@ -29,6 +30,7 @@ export function useQuestionerBuilder() {
     data: null,
 
     loading: null,
+    error: null,
 
     // userFakultas: "hukum",
     // userProdi: "hukum (s1)",
@@ -99,7 +101,7 @@ export function useQuestionerBuilder() {
         pilihan,
       };
     } catch (error) {
-      console.error(error);
+      // console.error(error);
       return null;
     }
   }
@@ -220,27 +222,37 @@ export function useQuestionerBuilder() {
         dataQuestion: questions,
         dataAnsware: mappedAnswers,
         loading: null,
+        error: null,
       }));
     } catch (error: any) {
-      console.error(error);
+      // console.error(error);
       setState((p) => ({
         ...p,
         loading: null,
+        error: error,
       }));
 
       if (!error.response) {
-        throw new Error("Server error");
+        setState((p) => ({
+          ...p,
+          error: "Server error",
+        }));
         // pushToast("Server error");
       } else {
         const { status, data } = error.response;
-
         const cf = handleCloudflareError(status);
 
         if (cf) {
-          throw new Error(cf);
+          setState((p) => ({
+            ...p,
+            error: cf,
+          }));
           // pushToast(cf);
         } else {
-          throw new Error(data?.message || "Error");
+          setState((p) => ({
+            ...p,
+            error: data?.message || "Error",
+          }));
           // pushToast(data?.message || "Error");
         }
       }

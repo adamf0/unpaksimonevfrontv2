@@ -8,7 +8,7 @@ import QuestionForm from "../Organisms/QuestionForm";
 import InitialSection from "../Organisms/InitialSection";
 import { useQuestionerBuilder } from "../Hook/useQuestionerBuilder";
 import { useEffect, useState } from "react";
-import { toNumber } from "../../Common/Service/utility";
+import { isEmpty, toNumber } from "../../Common/Service/utility";
 
 type Props = {
   uuid: string;
@@ -55,12 +55,24 @@ export default function QuesionerBuilderTemplate({ uuid }: Props) {
     loadData,
   } = useQuestionerBuilder();
 
-  const { loading, dataAnsware } = state;
+  const { loading, dataAnsware, error } = state;
 
-  const [errorContext, _] = useState<{
+  const [errorContext, setErrorContext] = useState<{
     type: "auth" | "server" | "unknown";
     message?: string;
   } | null>(null);
+
+  useEffect(() => {
+    if (!error) {
+      setErrorContext(null);
+      return;
+    }
+
+    setErrorContext({
+      type: "server",
+      message: error,
+    });
+  }, [error]);
 
   useEffect(() => {
     const token = sessionStorage.getItem("access_token");
@@ -82,6 +94,13 @@ export default function QuesionerBuilderTemplate({ uuid }: Props) {
     }));
   };
 
+  console.log(
+    status === "initial",
+    status === "process",
+    isEmpty(errorContext?.type),
+    errorContext,
+  );
+
   return (
     <>
       {loading && ["kuesioner", "pertanyaan"].includes(loading) ? (
@@ -94,70 +113,96 @@ export default function QuesionerBuilderTemplate({ uuid }: Props) {
           </p>
         </div>
       ) : status === "initial" ? (
-        <InitialSection
-          summary={{
-            admin: filteredData.filter((x) => x.created === "admin").length,
-            fakultas: filteredData.filter((x) => x.created === "fakultas")
-              .length,
-            prodi: filteredData.filter((x) => x.created === "prodi").length,
-          }}
-          info={{
-            title: state.data?.Judul || "-",
-            year: state.data?.Semester || "-",
-            semester: state.data?.Semester || "-",
-          }}
-          identity={{
-            audiens: "adam furoqon - 065117251",
-            fakultas: "Hukum",
-            prodi: "Hukum (S1)",
-          }}
-          onStart={() => setStatus("process")}
-          TotalInput={toNumber(state.data?.TotalInput)}
-          TotalPertanyaan={toNumber(state.data?.TotalPertanyaan)}
-        />
-      ) : status === "process" ? (
-        <QuestionerLayout activeStep={activeStep} onNextStep={() => {}}>
-          <QuestionForm
-            filteredData={filteredData}
-            answers={dataAnsware}
-            errors={errors}
-            toast={toast}
-            loading={loading=="form"} //ini tidak bekerja
-            isBrokenQuestion={(q) =>
-              q.pilihan.filter((p) => p.freetext).length > 1
-            }
-            isSelected={isSelected}
-            handleChange={handleChange}
-            handleExtraChange={handleExtraChange}
-            setAnswers={setAnswers}
-            handleSubmit={handleSubmit}
+        errorContext ? (
+          SectionError(status, errorContext, uuid)
+        ) : (
+          <InitialSection
+            summary={{
+              admin: filteredData.filter((x) => x.created === "admin").length,
+              fakultas: filteredData.filter((x) => x.created === "fakultas")
+                .length,
+              prodi: filteredData.filter((x) => x.created === "prodi").length,
+            }}
+            info={{
+              title: state.data?.Judul || "-",
+              year: state.data?.Semester || "-",
+              semester: state.data?.Semester || "-",
+            }}
+            identity={{
+              audiens: "adam furoqon - 065117251",
+              fakultas: "Hukum",
+              prodi: "Hukum (S1)",
+            }}
+            onStart={() => setStatus("process")}
+            TotalInput={toNumber(state.data?.TotalInput)}
+            TotalPertanyaan={toNumber(state.data?.TotalPertanyaan)}
           />
-        </QuestionerLayout>
-      ) : (
-        <div className="pt-32 pb-20 px-8 max-w-6xl mx-auto flex flex-col gap-32">
-          {status === "done" && <Complete />}
-          {status === "not_found" && <NotFound />}
-          {status === "problem" && (
-            <Problem
-              title={
-                errorContext?.type === "auth"
-                  ? "Authentication Required"
-                  : "Something Went South."
+        )
+      ) : status === "process" ? (
+        errorContext ? (
+          SectionError(status, errorContext, uuid)
+        ) : (
+          <QuestionerLayout activeStep={activeStep} onNextStep={() => {}}>
+            <QuestionForm
+              filteredData={filteredData}
+              answers={dataAnsware}
+              errors={errors}
+              toast={toast}
+              loading={loading == "form"} //ini tidak bekerja
+              isBrokenQuestion={(q) =>
+                q.pilihan.filter((p) => p.freetext).length > 1
               }
-              message={
-                errorContext?.message ||
-                "A technical glitch occurred while processing your request."
-              }
-              code={
-                errorContext?.type === "auth"
-                  ? `AUTH-401-${uuid}`
-                  : "CQ-ERROR-992-PX"
-              }
-              sessionActive={errorContext?.type !== "auth"}
+              isSelected={isSelected}
+              handleChange={handleChange}
+              handleExtraChange={handleExtraChange}
+              setAnswers={setAnswers}
+              handleSubmit={handleSubmit}
             />
-          )}
-        </div>
+          </QuestionerLayout>
+        )
+      ) : (
+        SectionError(status, errorContext, uuid)
       )}
     </>
+  );
+}
+function SectionError(
+  status: string,
+  errorContext: {
+    type: "auth" | "server" | "unknown";
+    message?: string;
+  } | null,
+  uuid: string,
+) {
+  const renderStatusSection = () => {
+    if (status === "done") {
+      return <Complete />;
+    }
+
+    if (status === "not_found") {
+      return <NotFound />;
+    }
+
+    return (
+      <Problem
+        title={
+          errorContext?.type === "auth"
+            ? "Authentication Required"
+            : "Something Went South."
+        }
+        message={
+          errorContext?.message ||
+          "A technical glitch occurred while processing your request."
+        }
+        code={
+          errorContext?.type === "auth" ? `AUTH-401-${uuid}` : "CQ-ERROR-992-PX"
+        }
+        sessionActive={errorContext?.type !== "auth"}
+      />
+    );
+  };
+
+  return (
+    <div className="pt-32 pb-20 px-8 max-w-6xl mx-auto flex flex-col gap-32">{renderStatusSection()}</div>
   );
 }
