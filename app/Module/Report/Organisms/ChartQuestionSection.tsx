@@ -14,6 +14,7 @@ export default function ChartQuestionSection({
   full_path,
   data,
 }: Props) {
+  console.log(data)
   // =========================
   // FILTER DATA
   // =========================

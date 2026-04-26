@@ -156,7 +156,7 @@ export function TemplateTable({
           datas.map((item) => {
             return (
               <tr
-                key={item.id}
+                key={item.uuid}
                 className="hover:bg-indigo-50/20 transition-colors"
               >
                 {/* Nama + subtitle */}

@@ -46,7 +46,7 @@ export default function FilterSection({
 
   return (
     <section className="bg-surface-container-lowest p-4 sm:p-5 lg:p-6 rounded-2xl lg:rounded-3xl mb-8 lg:mb-10 shadow-[0_12px_32px_-4px_rgba(44,42,81,0.06)] border border-outline-variant/10">
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+      <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
         <SelectField
           label="Bank Soal"
           placeholder="Pilih Bank Soal"
@@ -62,7 +62,7 @@ export default function FilterSection({
           renderItem={renderItem}
         />
 
-        <SelectField
+        {/* <SelectField
           label="Fakultas"
           placeholder="Pilih Fakultas"
           options={fakultasOptions}
@@ -90,7 +90,7 @@ export default function FilterSection({
           }
           mode="single"
           renderItem={renderItem}
-        />
+        /> */}
 
         <SelectField
           label="Semester"

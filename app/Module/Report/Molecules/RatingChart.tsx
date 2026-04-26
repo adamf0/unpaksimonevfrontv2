@@ -26,13 +26,12 @@ export default function RatingChart({
   data = [],
   loading = false,
 }: Props) {
-  const total = data.reduce((a, b) => a + b.value, 0);
+  const total = data.reduce((sum, item) => sum + item.value, 0);
 
   const chartData = data.map((item) => ({
     rating: item.label,
     total: item.value,
-    percent:
-      total > 0 ? ((item.value / total) * 100).toFixed(1) : "0",
+    percent: total > 0 ? (item.value / total) * 100 : 0,
   }));
 
   const colors = [
@@ -62,7 +61,7 @@ export default function RatingChart({
         <BarChart
           data={chartData}
           margin={{
-            top: 24,
+            top: 36,
             right: 10,
             left: 10,
             bottom: 10,
@@ -72,22 +71,48 @@ export default function RatingChart({
           <YAxis hide />
 
           <Tooltip
-            formatter={(value: any, _n: any, props: any) => [
+            formatter={(value: any, _name: any, props: any) => [
               `${value} responden`,
               `Rating ${props?.payload?.rating}`,
             ]}
           />
 
-          <Bar dataKey="total" radius={[12, 12, 0, 0]}>
+          <Bar
+            dataKey="total"
+            radius={[12, 12, 0, 0]}
+            isAnimationActive={false}
+          >
             {chartData.map((_, i) => (
-              <Cell key={i} fill={colors[i % colors.length]} />
+              <Cell
+                key={i}
+                fill={colors[i % colors.length]}
+              />
             ))}
 
             <LabelList
               position="top"
               content={(props: any) => {
-                const { x, y, width, value, index } = props;
-                const row = chartData[index];
+                const {
+                  x = 0,
+                  y = 0,
+                  width = 0,
+                  value = 0,
+                } = props;
+
+                if (value <= 0) return null;
+
+                // cari data berdasarkan posisi bar
+                const row = chartData.find(
+                  (_, i) =>
+                    Math.abs(
+                      x -
+                        (i *
+                          ((560 - 20) / chartData.length) +
+                          20)
+                    ) < 60
+                );
+
+                const percent = row?.percent ?? 0;
 
                 return (
                   <text
@@ -96,8 +121,9 @@ export default function RatingChart({
                     textAnchor="middle"
                     fontSize="12"
                     fontWeight="600"
+                    fill="#111827"
                   >
-                    {value} ({row?.percent}%)
+                    {value} ({percent.toFixed(1)}%)
                   </text>
                 );
               }}

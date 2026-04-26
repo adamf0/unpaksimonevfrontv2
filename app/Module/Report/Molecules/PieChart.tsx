@@ -43,18 +43,41 @@ export default function PieChart({
     "#84cc16",
   ];
 
-  const { chartData, total, hasData, otherTotal, cleanOther } = useMemo(() => {
-    const cleanMain = (mainData ?? []).filter((x) => x.value > 0);
-    const cleanOther = (otherData ?? []).filter((x) => x.value > 0);
+  const {
+    chartData,
+    total,
+    hasData,
+    otherTotal,
+    cleanOther,
+  } = useMemo(() => {
+    const cleanMain = (mainData ?? []).filter(
+      (x) => x.value > 0
+    );
 
-    const otherTotal = cleanOther.reduce((s, i) => s + i.value, 0);
+    const cleanOther = (otherData ?? []).filter(
+      (x) => x.value > 0
+    );
+
+    const otherTotal = cleanOther.reduce(
+      (sum, item) => sum + item.value,
+      0
+    );
 
     const finalData =
       otherTotal > 0
-        ? [...cleanMain, { label: "Lainnya", value: otherTotal }]
+        ? [
+            ...cleanMain,
+            {
+              label: "Lainnya",
+              value: otherTotal,
+            },
+          ]
         : cleanMain;
 
-    const total = finalData.reduce((s, i) => s + i.value, 0);
+    const total = finalData.reduce(
+      (sum, item) => sum + item.value,
+      0
+    );
 
     return {
       chartData: finalData,
@@ -67,78 +90,38 @@ export default function PieChart({
 
   return (
     <div className="bg-surface-container-lowest p-8 rounded-[2rem] shadow-[0_12px_32px_-4px_rgba(44,42,81,0.06)] flex flex-col h-full relative overflow-hidden">
-      {/* bubble */}
       <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16" />
 
-      {/* title */}
       <h4 className="font-bold text-on-surface text-lg mb-2 leading-tight pr-8 relative z-10">
         {title}
       </h4>
 
-      {/* subtitle */}
       <p className="text-sm text-on-surface/60 mb-6 relative z-10">
-        {subtitle} • Total: <span className="font-semibold">{total}</span>
+        {subtitle} • Total:{" "}
+        <span className="font-semibold">
+          {total}
+        </span>
       </p>
 
-      {/* loading */}
       {loading && (
         <div className="flex-grow flex items-center justify-center">
           <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
         </div>
       )}
 
-      {/* empty */}
       {!loading && !hasData && (
-        <div className="flex-grow flex flex-col items-center justify-center text-center px-6">
-          <svg
-            width="84"
-            height="84"
-            viewBox="0 0 24 24"
-            fill="none"
-            className="mb-4 text-primary/30"
-          >
-            <path
-              d="M4 19H20"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-            />
-            <path
-              d="M7 16V10"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-            />
-            <path
-              d="M12 16V6"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-            />
-            <path
-              d="M17 16V13"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-            />
-          </svg>
-
-          <p className="font-semibold text-on-surface mb-1">
-            Data tidak tersedia
-          </p>
-
-          <p className="text-sm text-on-surface/60">
-            Belum ada respon yang dapat ditampilkan.
-          </p>
+        <div className="flex-grow flex items-center justify-center text-sm text-on-surface/60">
+          Data tidak tersedia
         </div>
       )}
 
-      {/* filled */}
       {!loading && hasData && (
         <>
-          {/* chart */}
           <div className="flex-grow min-h-[380px]">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer
+              width="100%"
+              height="100%"
+            >
               <PC>
                 <Pie
                   data={chartData}
@@ -150,14 +133,25 @@ export default function PieChart({
                   innerRadius={58}
                   paddingAngle={3}
                   label={({ percent }) =>
-                    percent && percent > 0.05
-                      ? `${(percent * 100).toFixed(0)}%`
+                    percent &&
+                    percent > 0.05
+                      ? `${(
+                          percent * 100
+                        ).toFixed(0)}%`
                       : ""
                   }
                   labelLine={false}
                 >
                   {chartData.map((_, index) => (
-                    <Cell key={index} fill={colors[index % colors.length]} />
+                    <Cell
+                      key={index}
+                      fill={
+                        colors[
+                          index %
+                            colors.length
+                        ]
+                      }
+                    />
                   ))}
                 </Pie>
 
@@ -183,16 +177,13 @@ export default function PieChart({
             </ResponsiveContainer>
           </div>
 
-          {/* other detail */}
           {otherTotal > 0 && (
-            <div
-              className={`mt-4 border-t border-outline/10 pt-4 flex flex-col min-h-0 transition-all duration-300 ${
-                showOther ? "h-[260px]" : "h-auto"
-              }`}
-            >
+            <div className="mt-4 border-t border-outline/10 pt-4">
               <button
-                onClick={() => setShowOther(!showOther)}
-                className="text-sm font-semibold text-primary hover:opacity-80 transition shrink-0 text-left"
+                onClick={() =>
+                  setShowOther(!showOther)
+                }
+                className="text-sm font-semibold text-primary hover:opacity-80 transition"
               >
                 {showOther
                   ? "Sembunyikan detail lainnya"
@@ -200,38 +191,62 @@ export default function PieChart({
               </button>
 
               {showOther && (
-                <div className="mt-4 flex-1 min-h-0 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
+                <div className="mt-4 space-y-3 max-h-[260px] overflow-y-auto pr-2">
                   {cleanOther
-                    .sort((a, b) => b.value - a.value)
-                    .map((item, index) => {
-                      const percent =
-                        total > 0
-                          ? ((item.value / total) * 100).toFixed(1)
-                          : "0";
+                    .sort(
+                      (a, b) =>
+                        b.value - a.value
+                    )
+                    .map(
+                      (
+                        item,
+                        index
+                      ) => {
+                        // FIX:
+                        // gunakan otherTotal, bukan total chart
+                        const percent =
+                          otherTotal > 0
+                            ? (item.value /
+                                otherTotal) *
+                              100
+                            : 0;
 
-                      return (
-                        <div key={index} className="space-y-1">
-                          <div className="flex justify-between text-sm gap-3">
-                            <span className="text-on-surface/80 truncate">
-                              {item.label}
-                            </span>
+                        return (
+                          <div
+                            key={index}
+                            className="space-y-1"
+                          >
+                            <div className="flex justify-between text-sm gap-3">
+                              <span className="truncate text-on-surface/80">
+                                {
+                                  item.label
+                                }
+                              </span>
 
-                            <span className="font-medium whitespace-nowrap">
-                              {item.value} ({percent}%)
-                            </span>
+                              <span className="font-medium whitespace-nowrap">
+                                {
+                                  item.value
+                                }{" "}
+                                (
+                                {percent.toFixed(
+                                  1
+                                )}
+                                %)
+                              </span>
+                            </div>
+
+                            <div className="w-full h-2 rounded-full bg-primary/10 overflow-hidden">
+                              <div
+                                className="h-full rounded-full bg-gradient-to-r from-primary to-primary-container"
+                                style={{
+                                  width: `${percent}%`,
+                                }}
+                              />
+                            </div>
                           </div>
-
-                          <div className="w-full h-2 rounded-full bg-primary/10 overflow-hidden">
-                            <div
-                              className="h-full rounded-full bg-gradient-to-r from-primary to-primary-container"
-                              style={{
-                                width: `${percent}%`,
-                              }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      }
+                    )}
                 </div>
               )}
             </div>

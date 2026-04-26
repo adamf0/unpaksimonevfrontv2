@@ -124,7 +124,7 @@ export function TreeView({ data, onChange }: TreeViewProps) {
   return (
     <div ref={rootRef} className="space-y-2">
       {data.map((item) => (
-        <TreeNode key={item.id} item={item} />
+        <TreeNode key={item.uuid} item={item} />
       ))}
     </div>
   );
