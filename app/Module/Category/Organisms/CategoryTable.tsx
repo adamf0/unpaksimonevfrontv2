@@ -166,7 +166,7 @@ export function CategoryTable({
           categories.map((category) => {
             return (
               <tr
-                key={category.id}
+                key={category.uuid}
                 className="hover:bg-surface-container-low/40 transition-colors"
               >
                 <td className="px-4 md:px-8 py-5">

@@ -14,16 +14,18 @@ import { useEffect, useRef } from "react";
 import { useToast } from "../../Common/Context/ToastContext";
 import getTokenExpiry from "../../Common/Service/tokenExpiry";
 
+type LoginForm = {
+  username: string;
+  password: string;
+};
+
 export default function AuthLoginSection() {
   const { pushToast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
   const hasShown = useRef(false);
 
-  type LoginForm = {
-    username: string;
-    password: string;
-  };
+  const allowedFields = ["username", "password"];
 
   const {
     register,
@@ -34,7 +36,7 @@ export default function AuthLoginSection() {
 
   useEffect(() => {
     const reason = searchParams.get("r");
-    console.log(reason)
+    console.log(reason);
     if (!reason) return;
 
     let message = "";
@@ -75,7 +77,8 @@ export default function AuthLoginSection() {
       const accessToken = data?.access_token;
       const refreshToken = data?.refresh_token;
 
-      if (accessToken) { //ini ada nilainya
+      if (accessToken) {
+        //ini ada nilainya
         sessionStorage.setItem("access_token", accessToken);
         document.cookie = `access_token=${accessToken}; path=/`;
 
@@ -114,10 +117,12 @@ export default function AuthLoginSection() {
         return;
       }
 
-      if (data?.code === "Login.Validation") {
+      if (data?.code?.endsWith(".Validation")) {
         const messages = data.message;
 
         Object.keys(messages).forEach((field) => {
+          if (!allowedFields.includes(field)) return;
+
           setError(field as keyof LoginForm, {
             type: "server",
             message: messages[field],

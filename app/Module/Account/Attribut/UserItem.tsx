@@ -1,7 +1,12 @@
 export interface UserItem {
-  id: number;
-  name: string;
-  email: string;
-  level: string;
-  department: string;
+  UUID: string;
+  Username: string;
+  Level: string;
+  Name: string;
+  Email: string | null;
+  RefFakultas: string | null;
+  Fakultas: string | null;
+  RefProdi: string | null;
+  Prodi: string | null;
+  DeletedAt: string | null;
 }

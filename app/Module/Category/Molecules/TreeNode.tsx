@@ -32,7 +32,7 @@ export function TreeNode({ item }: { item: TreeItem }) {
       {/* 🔥 WAJIB ADA UNTUK N LEVEL */}
       <div className="ml-6 sm:ml-12 mt-2 space-y-2 border-l-2 border-surface-container-high pl-4 sm:pl-8 child-sort min-h-[20px]">
         {item.children?.map((child) => (
-          <TreeNode key={child.id} item={child} />
+          <TreeNode key={child.uuid} item={child} />
         ))}
       </div>
     </div>
