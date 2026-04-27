@@ -16,8 +16,6 @@ type Props = {
 
 export default function FilterSection({
   bankSoalOptions,
-  fakultasOptions,
-  prodiOptions,
   semesterOptions,
   onApply,
 }: Props) {
@@ -61,36 +59,6 @@ export default function FilterSection({
           mode="single"
           renderItem={renderItem}
         />
-
-        {/* <SelectField
-          label="Fakultas"
-          placeholder="Pilih Fakultas"
-          options={fakultasOptions}
-          value={filter.fakultas}
-          onChange={(val) =>
-            setFilter((prev) => ({
-              ...prev,
-              fakultas: val,
-            }))
-          }
-          mode="single"
-          renderItem={renderItem}
-        />
-
-        <SelectField
-          label="Unit / Prodi"
-          placeholder="Pilih Prodi"
-          options={prodiOptions}
-          value={filter.prodi}
-          onChange={(val) =>
-            setFilter((prev) => ({
-              ...prev,
-              prodi: val,
-            }))
-          }
-          mode="single"
-          renderItem={renderItem}
-        /> */}
 
         <SelectField
           label="Semester"

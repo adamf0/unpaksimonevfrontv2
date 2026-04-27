@@ -1,22 +1,38 @@
 "use client";
 
-import { useRef, useState, useMemo } from "react";
+import { useRef, useState, useMemo, useEffect } from "react";
 import { Payload } from "../Attribut/Payload";
 import { KuesionerResult } from "../Attribut/KuesionerResult";
 import { handleCloudflareError } from "../../Common/Error/axiosErrorHandler";
+import { useToast } from "../../Common/Context/ToastContext";
+import { isEmpty } from "../../Common/Service/utility";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
-const ModeDemo = process.env.NEXT_PUBLIC_DEMO == "1"; 
+const ModeDemo = process.env.NEXT_PUBLIC_DEMO == "1";
+
+type QueryState = {
+  kode_fakultas: string | null;
+  nama_fakultas: string | null;
+  kode_prodi: string | null;
+  nama_prodi: string | null;
+
+  bankSoal: { value: string; label: string } | null;
+};
 
 export function useKuesionerReport() {
   const readerRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(
     null,
   );
   const controllerRef = useRef<AbortController | null>(null);
+  const esFakultasRef = useRef<EventSource | null>(null);
+  const esProdiRef = useRef<EventSource | null>(null);
 
   const [data, setData] = useState<KuesionerResult[]>([]);
   const [dataDetail, setDataDetail] = useState<KuesionerResult[]>([]);
   const [dataBankSoal, setDataBankSoal] = useState<any[]>([]);
+  const [dataFakultas, setDataFakultas] = useState<any[]>([]);
+  const [dataProdi, setDataProdi] = useState<any[]>([]);
+  const [dataTemplate, setDataTemplate] = useState<any[]>([]);
 
   const [errdata, setErrData] = useState<string | null>(null);
   const [errdataDetail, setErrDataDetail] = useState<string | null>(null);
@@ -24,6 +40,24 @@ export function useKuesionerReport() {
   const [loading, setLoading] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [loadingBankSoal, setLoadingBankSoal] = useState(false);
+  const [loadingFakultas, setLoadingFakultas] = useState(false);
+  const [loadingProdi, setLoadingProdi] = useState(false);
+  const [loadingTemplate, setLoadingTemplate] = useState(false);
+
+  const [open, setOpen] = useState(false);
+
+  const { pushToast } = useToast();
+
+  const [query, setQuery] = useState<QueryState>({
+    kode_fakultas: null,
+    nama_fakultas: null,
+    kode_prodi: null,
+    nama_prodi: null,
+    bankSoal: null,
+  });
+
+  const openFilter = () => setOpen(true);
+  const closeFilter = () => setOpen(false);
 
   // =========================
   // FETCH MAIN DATA
@@ -269,13 +303,183 @@ export function useKuesionerReport() {
   }
 
   // =========================
+  // Template SOAL
+  // =========================
+  async function loadTemplateSoal(uuidbanksoal: any) {
+    console.log("panggil", uuidbanksoal);
+    setLoadingTemplate(true);
+
+    try {
+      const res = await fetch(
+        `${BASE_URL}/templatepertanyaan/${uuidbanksoal}/banksoal`,
+        {
+          method: "GET",
+          headers: {
+            Accept: "text/event-stream",
+            Authorization: `Bearer ${sessionStorage.getItem("access_token")}`,
+          },
+        },
+      );
+
+      if (!res.ok || !res.body) throw new Error("Network error");
+
+      const reader = res.body.getReader();
+      readerRef.current = reader;
+
+      const decoder = new TextDecoder("utf-8");
+
+      let buffer = "";
+      let temp: any[] = [];
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const chunks = buffer.split("\n\n");
+        buffer = chunks.pop() || "";
+
+        for (const chunk of chunks) {
+          const line = chunk.trim();
+          if (!line.startsWith("data:")) continue;
+
+          const val = line.replace("data:", "").trim();
+
+          if (val === "start") {
+            temp = [];
+            continue;
+          }
+
+          if (val === "done") {
+            setDataTemplate(temp);
+            setLoadingTemplate(false);
+            return;
+          }
+
+          try {
+            temp.push(JSON.parse(val));
+          } catch {}
+        }
+
+        setDataTemplate([...temp]);
+      }
+    } catch (error: any) {
+      console.error(error);
+    } finally {
+      setLoadingTemplate(false);
+    }
+  }
+
+  /** =========================
+   * GENERIC SSE LOADER
+   * ========================= */
+  function loadSSE(
+    url: string,
+    ref: React.MutableRefObject<EventSource | null>,
+    sourceKey: "dataFakultas" | "dataProdi",
+    loadingKey: "loadingFakultas" | "loadingProdi",
+  ) {
+    if (ref.current) return;
+
+    if (loadingKey === "loadingFakultas") setLoadingFakultas(true);
+    if (loadingKey === "loadingProdi") setLoadingProdi(true);
+
+    const es = new EventSource(url);
+    ref.current = es;
+
+    let tempData: any[] = [];
+
+    es.onmessage = (event) => {
+      const val = event.data;
+
+      if (val === "start") {
+        tempData = [];
+        return;
+      }
+
+      if (val === "done") {
+        if (sourceKey === "dataFakultas") setDataFakultas(tempData);
+        if (sourceKey === "dataProdi") setDataProdi(tempData);
+
+        if (loadingKey === "loadingFakultas") setLoadingFakultas(false);
+        if (loadingKey === "loadingProdi") setLoadingProdi(false);
+
+        es.close();
+        ref.current = null;
+        return;
+      }
+
+      try {
+        tempData.push(JSON.parse(val));
+
+        if (sourceKey === "dataFakultas") {
+          setDataFakultas([...tempData]);
+        }
+
+        if (sourceKey === "dataProdi") {
+          setDataProdi([...tempData]);
+        }
+      } catch {}
+    };
+
+    es.onerror = () => {
+      pushToast("SSE connection error");
+
+      if (loadingKey === "loadingFakultas") setLoadingFakultas(false);
+      if (loadingKey === "loadingProdi") setLoadingProdi(false);
+
+      es.close();
+      ref.current = null;
+    };
+  }
+
+  /** =========================
+   * LOADERS
+   * ========================= */
+  function loadDataFakultas() {
+    loadSSE(
+      `${BASE_URL}/fakultass?mode=sse&ctxtoken=${sessionStorage.getItem(
+        "access_token",
+      )}`,
+      esFakultasRef,
+      "dataFakultas",
+      "loadingFakultas",
+    );
+  }
+
+  function loadDataProdi() {
+    loadSSE(
+      `${BASE_URL}/prodis?mode=sse&ctxtoken=${sessionStorage.getItem(
+        "access_token",
+      )}`,
+      esProdiRef,
+      "dataProdi",
+      "loadingProdi",
+    );
+  }
+
+  // =========================
   // DERIVED DATA
   // =========================
+
+  const filteredDetail = useMemo(() => {
+    return dataDetail.filter((item) => {
+      const matchFakultas =
+        !query.kode_fakultas ||
+        String(item.KodeFakultas) === String(query.kode_fakultas);
+
+      const matchProdi =
+        !query.kode_prodi ||
+        String(item.KodeProdi) === String(query.kode_prodi);
+
+      return matchFakultas && matchProdi;
+    });
+  }, [dataDetail, query]);
 
   const topQuestions = useMemo(() => {
     const map: Record<string, any> = {};
 
-    for (const item of dataDetail) {
+    for (const item of filteredDetail) {
       const key = `${item.Pertanyaan}||${item.FullPath}`;
 
       if (!map[key]) {
@@ -302,7 +506,7 @@ export function useKuesionerReport() {
         score: Number(((avg / 5) * 10).toFixed(1)),
       };
     });
-  }, [dataDetail]);
+  }, [filteredDetail]);
 
   const yearlyStats = useMemo(() => {
     const map: Record<string, any> = {};
@@ -334,7 +538,7 @@ export function useKuesionerReport() {
   const facultyStats = useMemo(() => {
     const map: Record<string, any> = {};
 
-    for (const item of dataDetail) {
+    for (const item of filteredDetail) {
       const f = item.Fakultas;
       const p = item.Prodi;
 
@@ -352,37 +556,136 @@ export function useKuesionerReport() {
         total: users.size,
       })),
     }));
-  }, [dataDetail]);
+  }, [filteredDetail]);
 
   const groupedByFullPath = useMemo(() => {
-    const map: Record<string, any[]> = {};
+    if (!filteredDetail.length || !dataTemplate.length) return [];
 
-    for (const item of dataDetail) {
-      const key = item.FullPath || "-";
-      if (!map[key]) map[key] = [];
-      map[key].push(item);
+    type AnswerAgg = {
+      count: Record<string, number>;
+      data: Record<string, any[]>;
+    };
+
+    const answerMap: Record<string, AnswerAgg> = {};
+
+    // =========================
+    // 1. BUILD ANSWER MAP
+    // =========================
+    for (const item of filteredDetail) {
+      const key = item.Pertanyaan;
+      if (!key) continue;
+
+      const value = item.Jawaban || item.FreeText;
+      if (!value) continue;
+
+      if (!answerMap[key]) {
+        answerMap[key] = {
+          count: {},
+          data: {},
+        };
+      }
+
+      // count
+      answerMap[key].count[value] = (answerMap[key].count[value] || 0) + 1;
+
+      // store raw row (untuk "data")
+      if (!answerMap[key].data[value]) {
+        answerMap[key].data[value] = [];
+      }
+
+      answerMap[key].data[value].push(item);
     }
 
-    return Object.entries(map)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([fullPath, items]) => ({
-        fullPath,
-        data: items,
-      }));
-  }, [dataDetail]);
+    // =========================
+    // 2. GROUP BY FULLPATH
+    // =========================
+    const map: Record<string, any> = {};
+
+    for (const t of dataTemplate) {
+      const fullPath = t.FullPath || "-";
+      const key = t.Pertanyaan;
+
+      if (!map[fullPath]) {
+        map[fullPath] = {
+          fullPath,
+          pertanyaan: [],
+        };
+      }
+
+      const agg = key ? answerMap[key] : undefined;
+
+      let jawaban: any[] = [];
+
+      if (agg) {
+        jawaban = Object.entries(agg.count).map(([label, total]) => ({
+          label,
+          total,
+          data: agg.data[label] || [],
+        }));
+      }
+
+      map[fullPath].pertanyaan.push({
+        title: t.Pertanyaan,
+        jenispilihan: t.JenisPilihan,
+        jawaban,
+      });
+    }
+
+    return Object.values(map);
+  }, [filteredDetail, dataTemplate]);
+
+  const resetFilters = () => {
+    setQuery({
+      kode_fakultas: null,
+      nama_fakultas: null,
+      kode_prodi: null,
+      nama_prodi: null,
+      bankSoal: null,
+    });
+  };
+
+  useEffect(() => {
+    loadDataFakultas();
+    loadDataProdi();
+    loadData();
+    loadBankSoal();
+
+    return () => {
+      esFakultasRef.current?.close();
+      esFakultasRef.current = null;
+
+      esProdiRef.current?.close();
+      esProdiRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!query.bankSoal?.value) return;
+
+    loadTemplateSoal(query.bankSoal.value);
+  }, [query.bankSoal]);
 
   return {
     data,
     dataDetail,
     dataBankSoal,
+    dataFakultas,
+    dataProdi,
+    dataTemplate,
 
     loading,
     loadingDetail,
     loadingBankSoal,
+    loadingFakultas,
+    loadingProdi,
+    loadingTemplate,
 
     loadData,
     loadDataDetail,
     loadBankSoal,
+    loadDataFakultas,
+    loadDataProdi,
+    loadTemplateSoal,
 
     errdata,
     errdataDetail,
@@ -391,5 +694,13 @@ export function useKuesionerReport() {
     yearlyStats,
     facultyStats,
     groupedByFullPath,
+
+    open,
+    setOpen,
+    openFilter,
+    closeFilter,
+    query,
+    setQuery,
+    resetFilters,
   };
 }

@@ -6,8 +6,11 @@ import ChartQuestionSection from "../Organisms/ChartQuestionSection";
 import FilterSection from "../Organisms/FiltersSection";
 import FourYearChart from "../Molecules/FourYearChart";
 import { useEffect, useRef, useState } from "react";
-import { useKuesionerReport } from "../Hook/useReport";
 import { adaptSelectOptions } from "../../Common/Adapter/adaptSelectOptions";
+import { useKuesionerReportContext } from "../Context/KuesionerReportContext";
+import { FilterSidebar } from "../../Common/Components/Template/FilterSidebar";
+import { ReportFilterForm } from "../Molecules/ReportFilterForm";
+import { Filter } from "lucide-react";
 
 export default function ReportTemplate() {
   const {
@@ -21,27 +24,23 @@ export default function ReportTemplate() {
     errdataDetail,
 
     dataBankSoal,
-    loadBankSoal,
 
     topQuestions,
     yearlyStats,
     facultyStats,
     groupedByFullPath,
-  } = useKuesionerReport();
 
-  const [filter, setFilter] = useState<any>(null);
+    open,
+    query,
+    setQuery,
+    openFilter,
+    closeFilter,
+    resetFilters,
+  } = useKuesionerReportContext();
+
   const prevFilterRef = useRef<any>(null);
-
   const [bankOptions, setBankOptions] = useState<any[]>([]);
   const [semesterOptions, setSemesterOptions] = useState<any[]>([]);
-
-  // =========================
-  // INIT
-  // =========================
-  useEffect(() => {
-    loadData();
-    loadBankSoal();
-  }, []);
 
   // =========================
   // OPTIONS
@@ -78,9 +77,16 @@ export default function ReportTemplate() {
     loadDataDetail(payload);
   };
 
+  console.log("groupedByFullPath", groupedByFullPath);
+
   return (
     <>
-      <FourYearChart data={yearlyStats} err={errdata} onReload={loadData} loading={loading} />
+      <FourYearChart
+        data={yearlyStats}
+        err={errdata}
+        onReload={loadData}
+        loading={loading}
+      />
 
       <FilterSection
         bankSoalOptions={bankOptions}
@@ -88,9 +94,12 @@ export default function ReportTemplate() {
         prodiOptions={[]}
         semesterOptions={semesterOptions}
         onApply={(val) => {
-          setFilter(val);
-
           if (!val?.bankSoal?.label) return;
+
+          setQuery((prev: any) => ({
+            ...prev,
+            bankSoal: val?.bankSoal,
+          }));
 
           const payload = {
             judul: val.bankSoal.label,
@@ -103,6 +112,49 @@ export default function ReportTemplate() {
           loadDataDetail(payload);
         }}
       />
+
+      <button
+        onClick={openFilter}
+        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-primary text-white shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition relative"
+      >
+        <Filter size={20} />
+
+        {(() => {
+          const count = (query?.fakultas ? 1 : 0) + (query?.prodi ? 1 : 0);
+
+          if (!count) return null;
+
+          return (
+            <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
+              {count}
+            </span>
+          );
+        })()}
+      </button>
+
+      <FilterSidebar
+        open={open}
+        onClose={closeFilter}
+        footer={
+          <div className="flex flex-col gap-2">
+            <button
+              className="w-full bg-primary text-white py-2 rounded-lg font-bold"
+              onClick={closeFilter}
+            >
+              Apply Filters
+            </button>
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="w-full py-2 rounded-lg border border-red-300 text-red-600 font-bold hover:bg-red-50 transition"
+            >
+              Reset Filter
+            </button>
+          </div>
+        }
+      >
+        <ReportFilterForm value={query} onChange={setQuery} />
+      </FilterSidebar>
 
       <TopQuestionsSection
         data={topQuestions}
@@ -131,7 +183,7 @@ export default function ReportTemplate() {
             <ChartQuestionSection
               key={group.fullPath}
               full_path={group.fullPath}
-              data={group.data}
+              data={group.pertanyaan}
             />
           ))}
         </>

@@ -1,5 +1,7 @@
 export type KuesionerResult = {
   ID: number;
+  UUIDTemplatePertanyaan?: string;
+  
   UUID: string;
   NIDN: string;
   NamaDosen: string;
