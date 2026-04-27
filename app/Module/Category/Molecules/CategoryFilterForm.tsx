@@ -1,74 +1,172 @@
 "use client";
 
+import { useMemo } from "react";
+import { useCategoryContext } from "../Context/CategoryProvider";
+import { SelectField } from "../../Common/Components/Organisms/SelectField";
+import { InputField } from "../../Common/Components/Molecules/InputField";
+import { adaptSelectOptions } from "../Adapter/adaptSelectOptions";
+
 type Props = {
   value: any;
   onChange: (val: any) => void;
 };
 
 export function CategoryFilterForm({ value, onChange }: Props) {
+  const { state } = useCategoryContext();
+
+  /** =========================
+   * SELECTED VALUE FROM QUERY
+   * ========================= */
+  const selectedRole = value.role
+    ? {
+        label: value.role.charAt(0).toUpperCase() + value.role.slice(1),
+        value: value.role,
+      }
+    : null;
+
+  const selectedFakultas = value.nama_fakultas
+    ? {
+        label: value.nama_fakultas,
+        value: value.kode_fakultas ?? value.nama_fakultas,
+      }
+    : null;
+
+  const selectedProdi = value.nama_prodi
+    ? {
+        label: value.nama_prodi,
+        value: value.kode_prodi ?? value.nama_prodi,
+      }
+    : null;
+
+  const isAdmin = value.role === "admin";
+
+  /** =========================
+   * OPTIONS
+   * ========================= */
+  const fakultasOptions = useMemo(() => {
+    return adaptSelectOptions(state.sourceFakultas ?? [], {
+      valueKey: "KodeFakultas",
+      labelKey: "NamaFakultas",
+    });
+  }, [state.sourceFakultas]);
+
+  const prodiOptions = useMemo(() => {
+    const raw = state.sourceProdi ?? [];
+    const kodeFak = value.kode_fakultas;
+
+    if (!kodeFak) {
+      if (isAdmin) {
+        return adaptSelectOptions(raw, {
+          valueKey: "KodeProdi",
+          labelKey: "NamaProdi",
+        });
+      }
+
+      return [];
+    }
+
+    const filtered = raw.filter(
+      (item: any) =>
+        String(item.KodeFakultas).trim() === String(kodeFak).trim()
+    );
+
+    return adaptSelectOptions(filtered, {
+      valueKey: "KodeProdi",
+      labelKey: "NamaProdi",
+    });
+  }, [state.sourceProdi, value.kode_fakultas, isAdmin]);
+
   return (
-    <>
+    <div className="space-y-4">
       {/* ROLE */}
-      <div>
-        <label className="text-sm font-semibold">Created By</label>
-        <select
-          className="w-full mt-1 p-2 rounded-lg border"
-          value={value.role || ""}
-          onChange={(e) => onChange({ ...value, role: e.target.value })}
-        >
-          <option value="">All</option>
-          <option value="admin">Admin</option>
-          <option value="fakultas">Fakultas</option>
-          <option value="prodi">Prodi</option>
-        </select>
-      </div>
+      <SelectField
+        label="Created By"
+        mode="single"
+        value={selectedRole}
+        onChange={(val: any) =>
+          onChange({
+            ...value,
+            role: val?.value ?? "",
+            kode_fakultas: "",
+            nama_fakultas: "",
+            kode_prodi: "",
+            nama_prodi: "",
+            page: 1,
+          })
+        }
+        placeholder="Select role"
+        options={[
+          { label: "Admin", value: "admin" },
+          { label: "Fakultas", value: "fakultas" },
+          { label: "Prodi", value: "prodi" },
+        ]}
+      />
 
-      {/* CREATOR (fakultas/prodi name search) */}
-      <div>
-        <label className="text-sm font-semibold">Fakultas</label>
-        <input
-          type="text"
-          className="w-full mt-1 p-2 rounded-lg border"
-          value={value.nama_fakultas || ""}
-          onChange={(e) =>
-            onChange({ ...value, nama_fakultas: e.target.value })
-          }
-          placeholder="Hukum..."
-        />
-      </div>
+      {/* FAKULTAS */}
+      <SelectField
+        label="Fakultas"
+        mode="single"
+        value={selectedFakultas}
+        onChange={(val: any) =>
+          onChange({
+            ...value,
+            kode_fakultas: val?.value ?? "",
+            nama_fakultas: val?.label ?? "",
+            kode_prodi: "",
+            nama_prodi: "",
+            page: 1,
+          })
+        }
+        placeholder="Select fakultas"
+        options={fakultasOptions}
+      />
 
-      <div>
-        <label className="text-sm font-semibold">Prodi</label>
-        <input
-          type="text"
-          className="w-full mt-1 p-2 rounded-lg border"
-          value={value.nama_prodi || ""}
-          onChange={(e) => onChange({ ...value, nama_prodi: e.target.value })}
-          placeholder="Hukum (S1)..."
-        />
-      </div>
+      {/* PRODI */}
+      <SelectField
+        label="Prodi"
+        mode="single"
+        value={selectedProdi}
+        onChange={(val: any) =>
+          onChange({
+            ...value,
+            kode_prodi: val?.value ?? "",
+            nama_prodi: val?.label ?? "",
+            page: 1,
+          })
+        }
+        placeholder="Select prodi"
+        options={prodiOptions}
+      />
 
-      <div>
-        <label className="text-sm font-semibold">Kategori</label>
-        <input
-          type="text"
-          className="w-full mt-1 p-2 rounded-lg border"
-          placeholder="Search kategori..."
-          value={value.kategori || ""}
-          onChange={(e) => onChange({ ...value, kategori: e.target.value })}
-        />
-      </div>
+      {/* KATEGORI */}
+      <InputField
+        id="kategori"
+        label="Kategori"
+        placeholder="Search kategori..."
+        value={value.kategori ?? ""}
+        onChange={(e: any) =>
+          onChange({
+            ...value,
+            kategori: e.target.value,
+            page: 1,
+          })
+        }
+      />
 
-      <div>
-        <label className="text-sm font-semibold">Sub Kategori</label>
-        <input
-          type="text"
-          className="w-full mt-1 p-2 rounded-lg border"
-          placeholder="Search sub kategori..."
-          value={value.full_text || ""}
-          onChange={(e) => onChange({ ...value, full_text: e.target.value })}
-        />
-      </div>
-    </>
+      {/* SUB KATEGORI */}
+      <InputField
+        id="full_text"
+        label="Sub Kategori"
+        placeholder="Search sub kategori..."
+        value={value.full_text ?? ""}
+        onChange={(e: any) =>
+          onChange({
+            ...value,
+            full_text: e.target.value,
+            page: 1,
+          })
+        }
+      />
+    </div>
   );
 }

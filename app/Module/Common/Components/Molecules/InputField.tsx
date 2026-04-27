@@ -15,6 +15,8 @@ interface InputFieldProps {
   wrapperClassName?: string; // 🔥 untuk div luar
   inputClassName?: string;   // 🔥 untuk input
 
+  value?: string;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   register?: UseFormRegisterReturn;
 }
 
@@ -27,6 +29,8 @@ export const InputField = ({
   disabled,
   wrapperClassName = "",
   inputClassName = "",
+  value,
+  onChange,
   register,
 }: InputFieldProps) => (
   <div className={`space-y-2 ${wrapperClassName}`}>
@@ -36,7 +40,9 @@ export const InputField = ({
       placeholder={placeholder}
       type={type}
       name={id}
+      value={value}
       register={register}
+      onChange={onChange}
       className={`
         w-full bg-surface-container-low border-none rounded-lg p-3 text-sm 
         focus:ring-2 focus:ring-primary/20 transition-all

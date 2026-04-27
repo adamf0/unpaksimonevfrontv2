@@ -4,12 +4,7 @@ import { Suspense, useState } from "react";
 import Icon from "../../Common/Components/Atoms/Icon";
 import { FilterButton } from "../../Common/Components/Molecules/FilterButton";
 import { SearchInput } from "../../Common/Components/Molecules/SearchInput";
-// import { SecurityCard } from "../Molecules/SecurityCard";
-// import { StatsCard } from "../Molecules/StatsCard";
-// import { AccountTable } from "../Organisms/AccountTable";
-// import { CreateUserForm } from "../Organisms/CreateUserForm";
 import { FilterSidebar } from "../../Common/Components/Template/FilterSidebar";
-// import { AccountFilterForm } from "../Molecules/AccountFilterForm";
 import Modal from "../../Common/Components/Organisms/Modal";
 import { Pagination } from "../../Common/Components/Molecules/Pagination";
 import { UserItem } from "../Attribut/UserItem";
@@ -249,7 +244,7 @@ export default function AccountTemplate() {
 
             <button
               type="button"
-              onClick={resetFilters}
+              onClick={resetFilters} //gagal reset accountfiltersform
               className="w-full py-2 rounded-lg border border-red-300 text-red-600 font-bold hover:bg-red-50 transition"
             >
               Reset Filter

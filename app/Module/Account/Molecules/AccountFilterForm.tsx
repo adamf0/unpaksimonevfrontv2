@@ -1,100 +1,173 @@
 "use client";
 
+import { useMemo } from "react";
+import { useAccountContext } from "../Context/AccountProvider";
+import { adaptSelectOptions } from "../Adapter/adaptSelectOptions";
+import { SelectField } from "../../Common/Components/Organisms/SelectField";
+import { InputField } from "../../Common/Components/Molecules/InputField";
+
 type Props = {
   value: any;
   onChange: (val: any) => void;
 };
 
 export function AccountFilterForm({ value, onChange }: Props) {
+  const { state } = useAccountContext();
+
+  /** =========================
+   * SELECTED VALUE FROM QUERY
+   * ========================= */
+  const selectedLevel = value.level
+    ? {
+        label:
+          value.level.charAt(0).toUpperCase() + value.level.slice(1),
+        value: value.level,
+      }
+    : null;
+
+  const selectedFakultas = value.nama_fakultas
+    ? {
+        label: value.nama_fakultas,
+        value: value.kode_fakultas ?? value.nama_fakultas,
+      }
+    : null;
+
+  const selectedProdi = value.nama_prodi
+    ? {
+        label: value.nama_prodi,
+        value: value.kode_prodi ?? value.nama_prodi,
+      }
+    : null;
+
+  const isAdmin = value.level === "admin";
+
+  /** =========================
+   * OPTIONS
+   * ========================= */
+  const fakultasOptions = useMemo(() => {
+    return adaptSelectOptions(state.sourceFakultas ?? [], {
+      valueKey: "KodeFakultas",
+      labelKey: "NamaFakultas",
+    });
+  }, [state.sourceFakultas]);
+
+  const prodiOptions = useMemo(() => {
+    const raw = state.sourceProdi ?? [];
+    const kodeFak = value.kode_fakultas;
+
+    if (!kodeFak) {
+      if (isAdmin) {
+        return adaptSelectOptions(raw, {
+          valueKey: "KodeProdi",
+          labelKey: "NamaProdi",
+        });
+      }
+
+      return [];
+    }
+
+    const filtered = raw.filter(
+      (item: any) =>
+        String(item.KodeFakultas).trim() === String(kodeFak).trim()
+    );
+
+    return adaptSelectOptions(filtered, {
+      valueKey: "KodeProdi",
+      labelKey: "NamaProdi",
+    });
+  }, [state.sourceProdi, value.kode_fakultas, isAdmin]);
+
   return (
-    <>
+    <div className="space-y-4">
       {/* LEVEL */}
-      <div>
-        <label className="text-sm font-semibold">Level</label>
-        <select
-          className="w-full mt-1 p-2 rounded-lg border"
-          value={value.level || ""}
-          onChange={(e) =>
-            onChange({
-              ...value,
-              level: e.target.value,
-            })
-          }
-        >
-          <option value="">All</option>
-          <option value="admin">Admin</option>
-          <option value="fakultas">Fakultas</option>
-          <option value="prodi">Prodi</option>
-        </select>
-      </div>
+      <SelectField
+        label="Level"
+        mode="single"
+        value={selectedLevel}
+        onChange={(val: any) =>
+          onChange({
+            ...value,
+            level: val?.value ?? "",
+            kode_fakultas: "",
+            nama_fakultas: "",
+            kode_prodi: "",
+            nama_prodi: "",
+            page: 1,
+          })
+        }
+        placeholder="Select level"
+        options={[
+          { label: "Admin", value: "admin" },
+          { label: "Fakultas", value: "fakultas" },
+          { label: "Prodi", value: "prodi" },
+        ]}
+      />
 
       {/* NAME */}
-      <div>
-        <label className="text-sm font-semibold">Name</label>
-        <input
-          type="text"
-          className="w-full mt-1 p-2 rounded-lg border"
-          placeholder="Search name..."
-          value={value.name || ""}
-          onChange={(e) =>
-            onChange({
-              ...value,
-              name: e.target.value,
-            })
-          }
-        />
-      </div>
+      <InputField
+        id="name"
+        label="Name"
+        placeholder="Search name..."
+        value={value.name ?? ""}
+        onChange={(e: any) =>
+          onChange({
+            ...value,
+            name: e.target.value,
+            page: 1,
+          })
+        }
+      />
 
       {/* EMAIL */}
-      <div>
-        <label className="text-sm font-semibold">Email</label>
-        <input
-          type="text"
-          className="w-full mt-1 p-2 rounded-lg border"
-          placeholder="Search email..."
-          value={value.email || ""}
-          onChange={(e) =>
-            onChange({
-              ...value,
-              email: e.target.value,
-            })
-          }
-        />
-      </div>
+      <InputField
+        id="email"
+        label="Email"
+        placeholder="Search email..."
+        value={value.email ?? ""}
+        onChange={(e: any) =>
+          onChange({
+            ...value,
+            email: e.target.value,
+            page: 1,
+          })
+        }
+      />
 
       {/* FAKULTAS */}
-      <div>
-        <label className="text-sm font-semibold">Fakultas</label>
-        <input
-          type="text"
-          className="w-full mt-1 p-2 rounded-lg border"
-          placeholder="Search fakultas..."
-          value={value.nama_fakultas || ""}
-          onChange={(e) =>
-            onChange({
-              ...value,
-              nama_fakultas: e.target.value,
-            })
-          }
-        />
-      </div>
+      <SelectField
+        label="Fakultas"
+        mode="single"
+        value={selectedFakultas}
+        onChange={(val: any) =>
+          onChange({
+            ...value,
+            kode_fakultas: val?.value ?? "",
+            nama_fakultas: val?.label ?? "",
+            kode_prodi: "",
+            nama_prodi: "",
+            page: 1,
+          })
+        }
+        placeholder="Select fakultas"
+        options={fakultasOptions}
+      />
 
       {/* PRODI */}
-      <div>
-        <label className="text-sm font-semibold">Prodi</label>
-        <input
-          type="text"
-          className="w-full mt-1 p-2 rounded-lg border"
-          placeholder="Search prodi..."
-          value={value.nama_prodi || ""}
-          onChange={(e) =>
-            onChange({
-              ...value,
-              nama_prodi: e.target.value,
-            })
-          }
-        />
-      </div>
-    </>
+      <SelectField
+        label="Prodi"
+        mode="single"
+        value={selectedProdi}
+        onChange={(val: any) =>
+          onChange({
+            ...value,
+            kode_prodi: val?.value ?? "",
+            nama_prodi: val?.label ?? "",
+            page: 1,
+          })
+        }
+        placeholder="Select prodi"
+        options={prodiOptions}
+      />
+    </div>
   );
 }

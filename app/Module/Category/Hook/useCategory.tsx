@@ -26,7 +26,11 @@ export type QueryState = BaseQuery & {
 
 export type KategoriState = BaseResultState<any> & {
   source: any[];
+  sourceFakultas: any[];
+  sourceProdi: any[];
   loadingSource: boolean;
+  loadingFakultas: boolean;
+  loadingProdi: boolean;
 };
 
 /** =========================
@@ -45,9 +49,13 @@ export function useCategory() {
   const [state, setState] = useState<KategoriState>({
     data: [],
     source: [],
+    sourceFakultas: [],
+    sourceProdi: [],
     total: 0,
     loading: false,
     loadingSource: false,
+    loadingFakultas: false,
+    loadingProdi: false,
     selected: null,
     flag: null,
   });
@@ -65,6 +73,8 @@ export function useCategory() {
 
   const debounceRef = useRef<any>(null);
   const esRef = useRef<EventSource | null>(null);
+  const esFakultasRef = useRef<EventSource | null>(null);
+  const esProdiRef = useRef<EventSource | null>(null);
 
   const filterBuilder = new FilterBuilder<QueryState>()
     .add("kategori", "kategori", "like")
@@ -113,6 +123,92 @@ export function useCategory() {
     } finally {
       setState((p) => ({ ...p, loading: false }));
     }
+  }
+  /** =========================
+   * GENERIC SSE LOADER
+   * ========================= */
+  function loadSSE(
+    url: string,
+    ref: React.MutableRefObject<EventSource | null>,
+    sourceKey: "sourceFakultas" | "sourceProdi",
+    loadingKey: "loadingFakultas" | "loadingProdi",
+  ) {
+    if (ref.current) return;
+
+    setState((p) => ({ ...p, [loadingKey]: true }));
+
+    const es = new EventSource(url);
+    ref.current = es;
+
+    let tempData: any[] = [];
+
+    es.onmessage = (event) => {
+      const val = event.data;
+
+      if (val === "start") {
+        tempData = [];
+        return;
+      }
+
+      if (val === "done") {
+        setState((p) => ({
+          ...p,
+          [sourceKey]: tempData,
+          [loadingKey]: false,
+        }));
+
+        es.close();
+        ref.current = null;
+        return;
+      }
+
+      try {
+        const parsed = JSON.parse(val);
+        tempData.push(parsed);
+
+        setState((p) => ({
+          ...p,
+          [sourceKey]: [...tempData],
+        }));
+      } catch {}
+    };
+
+    es.onerror = () => {
+      pushToast("SSE connection error");
+
+      setState((p) => ({
+        ...p,
+        [loadingKey]: false,
+      }));
+
+      es.close();
+      ref.current = null;
+    };
+  }
+
+  /** =========================
+   * LOADERS
+   * ========================= */
+  function loadDataFakultas() {
+    loadSSE(
+      `${BASE_URL}/fakultass?mode=sse&ctxtoken=${sessionStorage.getItem(
+        "access_token",
+      )}`,
+      esFakultasRef,
+      "sourceFakultas",
+      "loadingFakultas",
+    );
+  }
+
+  function loadDataProdi() {
+    loadSSE(
+      `${BASE_URL}/prodis?mode=sse&ctxtoken=${sessionStorage.getItem(
+        "access_token",
+      )}`,
+      esProdiRef,
+      "sourceProdi",
+      "loadingProdi",
+    );
   }
 
   /** =========================
@@ -186,15 +282,20 @@ export function useCategory() {
     return () => clearTimeout(debounceRef.current);
   }, [query, state.flag]);
 
-  // 🔥 SSE (ONLY ONCE)
   useEffect(() => {
+    loadDataFakultas();
+    loadDataProdi();
     loadDataSource();
 
     return () => {
-      if (esRef.current) {
-        esRef.current.close();
-        esRef.current = null;
-      }
+      esRef.current?.close();
+      esRef.current = null;
+
+      esFakultasRef.current?.close();
+      esFakultasRef.current = null;
+
+      esProdiRef.current?.close();
+      esProdiRef.current = null;
     };
   }, []);
 

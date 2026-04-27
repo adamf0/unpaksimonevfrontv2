@@ -10,6 +10,8 @@ import { FilterBuilder } from "../../Common/Domain/FilterBuilder";
 import { isEmpty } from "../../Common/Service/utility";
 import { FormValues } from "../Attribut/FormValues";
 
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+
 /** =========================
  * TYPES
  * ========================= */
@@ -21,7 +23,12 @@ export type QueryState = BaseQuery & {
   nama_prodi: string;
 };
 
-export type BankSoalState = BaseResultState<any>;
+export type BankSoalState = BaseResultState<any> & {
+  sourceFakultas: any[];
+  sourceProdi: any[];
+  loadingFakultas: boolean;
+  loadingProdi: boolean;
+};
 
 /** =========================
  * HOOK
@@ -31,8 +38,12 @@ export function useBankSoal() {
 
   const [state, setState] = useState<BankSoalState>({
     data: [],
+    sourceFakultas: [],
+    sourceProdi: [],
     total: 0,
     loading: false,
+    loadingFakultas: false,
+    loadingProdi: false,
     selected: null,
     flag: null,
   });
@@ -51,6 +62,8 @@ export function useBankSoal() {
   const [open, setOpen] = useState(false);
   const [openTime, setOpenTime] = useState(false);
 
+  const esFakultasRef = useRef<EventSource | null>(null);
+  const esProdiRef = useRef<EventSource | null>(null);
   const debounceRef = useRef<any>(null);
 
   const filterBuilder = new FilterBuilder<QueryState>()
@@ -105,6 +118,117 @@ export function useBankSoal() {
       setState((p) => ({ ...p, loading: false }));
     }
   }
+
+  /** =========================
+   * GENERIC SSE LOADER
+   * ========================= */
+  function loadSSE(
+    url: string,
+    ref: React.MutableRefObject<EventSource | null>,
+    sourceKey: "sourceFakultas" | "sourceProdi",
+    loadingKey: "loadingFakultas" | "loadingProdi",
+  ) {
+    if (ref.current) return;
+
+    setState((p) => ({ ...p, [loadingKey]: true }));
+
+    const es = new EventSource(url);
+    ref.current = es;
+
+    let tempData: any[] = [];
+
+    es.onmessage = (event) => {
+      const val = event.data;
+
+      if (val === "start") {
+        tempData = [];
+        return;
+      }
+
+      if (val === "done") {
+        setState((p) => ({
+          ...p,
+          [sourceKey]: tempData,
+          [loadingKey]: false,
+        }));
+
+        es.close();
+        ref.current = null;
+        return;
+      }
+
+      try {
+        const parsed = JSON.parse(val);
+        tempData.push(parsed);
+
+        setState((p) => ({
+          ...p,
+          [sourceKey]: [...tempData],
+        }));
+      } catch {}
+    };
+
+    es.onerror = () => {
+      pushToast("SSE connection error");
+
+      setState((p) => ({
+        ...p,
+        [loadingKey]: false,
+      }));
+
+      es.close();
+      ref.current = null;
+    };
+  }
+
+  /** =========================
+   * LOADERS
+   * ========================= */
+  function loadDataFakultas() {
+    loadSSE(
+      `${BASE_URL}/fakultass?mode=sse&ctxtoken=${sessionStorage.getItem(
+        "access_token",
+      )}`,
+      esFakultasRef,
+      "sourceFakultas",
+      "loadingFakultas",
+    );
+  }
+
+  function loadDataProdi() {
+    loadSSE(
+      `${BASE_URL}/prodis?mode=sse&ctxtoken=${sessionStorage.getItem(
+        "access_token",
+      )}`,
+      esProdiRef,
+      "sourceProdi",
+      "loadingProdi",
+    );
+  }
+
+  /** =========================
+   * EFFECT
+   * ========================= */
+  useEffect(() => {
+    clearTimeout(debounceRef.current);
+
+    debounceRef.current = setTimeout(loadData, 300);
+
+    return () => clearTimeout(debounceRef.current);
+  }, [query, state.flag]);
+
+  useEffect(() => {
+    loadDataFakultas();
+    loadDataProdi();
+
+    return () => {
+      esFakultasRef.current?.close();
+      esFakultasRef.current = null;
+
+      esProdiRef.current?.close();
+      esProdiRef.current = null;
+    };
+  }, []);
 
   const actionBankSoal = async (
     uuid?: string,
