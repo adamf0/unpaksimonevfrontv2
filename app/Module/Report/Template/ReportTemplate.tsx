@@ -11,6 +11,7 @@ import { useKuesionerReportContext } from "../Context/KuesionerReportContext";
 import { FilterSidebar } from "../../Common/Components/Template/FilterSidebar";
 import { ReportFilterForm } from "../Molecules/ReportFilterForm";
 import { Filter } from "lucide-react";
+import FilterButton from "../Atoms/FilterButton";
 
 export default function ReportTemplate() {
   const {
@@ -113,24 +114,7 @@ export default function ReportTemplate() {
         }}
       />
 
-      <button
-        onClick={openFilter}
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-primary text-white shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition relative"
-      >
-        <Filter size={20} />
-
-        {(() => {
-          const count = (query?.fakultas ? 1 : 0) + (query?.prodi ? 1 : 0);
-
-          if (!count) return null;
-
-          return (
-            <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
-              {count}
-            </span>
-          );
-        })()}
-      </button>
+      <FilterButton query={query} openFilter={openFilter} />
 
       <FilterSidebar
         open={open}
