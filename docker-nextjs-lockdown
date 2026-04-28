@@ -1,0 +1,43 @@
+#include <tunables/global>
+
+profile docker-nextjs-lockdown flags=(attach_disconnected,mediate_deleted) {
+
+  #include <abstractions/base>
+
+  network inet tcp,
+  network inet udp,
+  network inet6 tcp,
+  network inet6 udp,
+
+  file,
+  umount,
+
+  deny /bin/** mrwklx,
+  deny /usr/bin/** mrwklx,
+  deny /sbin/** mrwklx,
+  deny /usr/sbin/** mrwklx,
+
+  # allow app files
+  /app/** rix,
+
+  # node runtime (from image)
+  /nodejs/** rix,
+  /usr/lib64/** r,
+  /lib64/** r,
+
+  # temp
+  /tmp/** rw,
+
+  # proc restrictions
+  deny /proc/** wklx,
+  deny /sys/** wklx,
+
+  # no privilege escalation
+  deny capability sys_admin,
+  deny capability setuid,
+  deny capability setgid,
+  deny capability sys_ptrace,
+  deny capability net_admin,
+  deny capability mknod,
+
+}

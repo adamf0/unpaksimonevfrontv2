@@ -1,0 +1,48 @@
+version: "3.9"
+
+services:
+  nextjs:
+    container_name: unpaksimonev-web
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: unpaksimonev:latest
+
+    ports:
+      - "3000:3000"
+
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      TZ: Asia/Jakarta
+
+    restart: unless-stopped
+
+    # run as non-root
+    user: "10001:10001"
+
+    # read only filesystem
+    read_only: true
+
+    tmpfs:
+      - /tmp:size=64m,noexec,nosuid,nodev
+
+    # security hardening
+    cap_drop:
+      - ALL
+
+    security_opt:
+      - no-new-privileges:true
+      - apparmor=docker-nextjs-lockdown
+
+    pids_limit: 200
+    mem_limit: 512m
+    cpus: "1.00"
+
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000').then(()=>process.exit(0)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
