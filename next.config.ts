@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   productionBrowserSourceMaps: false,
   generateBuildId: async () => "build",
   poweredByHeader: false,
+  devIndicators: false,
   headers() {
     return [
       {

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import QuesionerClient from "./QuesionerClient";
 
 type Props = {
@@ -9,5 +10,7 @@ type Props = {
 export default async function Page({ params }: Props) {
   const { uuid } = await params;
 
-  return <QuesionerClient uuid={uuid} />;
+  return <Suspense fallback={null}>
+    <QuesionerClient uuid={uuid} />
+  </Suspense>;
 }

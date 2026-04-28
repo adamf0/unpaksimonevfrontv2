@@ -54,7 +54,7 @@ export function useTokenWatcher() {
         } catch (err) {
           console.error("❌ SWAP FAILED", err);
           sessionStorage.clear();
-          window.location.href = "/api/logout?r=E00";
+          window.location.href = "/action/logout?r=E00";
         } finally {
           isRefreshing.current = false;
         }
@@ -64,7 +64,7 @@ export function useTokenWatcher() {
       if (now >= expiry && !refreshToken) {
         console.warn("⛔ TOKEN EXPIRED & NO REFRESH");
         sessionStorage.clear();
-        window.location.href = "/api/logout?r=E00";
+        window.location.href = "/action/logout?r=E00";
       }
     }, 1000);
 

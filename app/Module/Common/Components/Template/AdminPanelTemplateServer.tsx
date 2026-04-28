@@ -14,7 +14,7 @@ export default async function AdminPanelTemplateServer({
 
   // ❌ tidak ada token
   if (!token) {
-    redirect("/api/logout?r=Ex");
+    redirect("/action/logout?r=Ex");
   }
 
   let user: AccountInfo;
@@ -34,20 +34,20 @@ export default async function AdminPanelTemplateServer({
     clearTimeout(timeout);
 
     if (!res.ok) {
-      redirect("/api/logout?r=E1"); //di login page berhasil menampilkan toast
+      redirect("/action/logout?r=E1"); //di login page berhasil menampilkan toast
     }
 
     user = await res.json();
   } catch (err) {
     console.error("whoami error:", err);
-    redirect("/api/logout?r=E0");
+    redirect("/action/logout?r=E0");
   }
 
   // ✅ VALIDASI ROLE
   const allowedRoles = ["admin", "fakultas", "prodi"];
 
   if (!allowedRoles.includes(user?.Level)) {
-    redirect("/api/logout?r=F0");  //di login page berhasil menampilkan toast
+    redirect("/action/logout?r=F0");  //di login page berhasil menampilkan toast
   }
 
   console.log("SERVER USER:", user);
