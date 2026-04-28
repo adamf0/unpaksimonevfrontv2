@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import Sortable from "sortablejs";
+import type { Options } from "sortablejs";
 import { TreeItem } from "../Attribut/TreeItem";
 import { TreeNode } from "./TreeNode";
 
@@ -58,7 +59,7 @@ export function TreeView({ data, onChange }: TreeViewProps) {
       return items;
     };
 
-    const sortableConfig: Sortable.Options = {
+    const sortableConfig: Options = {
       animation: 150,
       handle: ".drag-handle",
       draggable: ".group\\/tree-item",
