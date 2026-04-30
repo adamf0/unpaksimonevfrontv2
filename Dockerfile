@@ -23,10 +23,11 @@ FROM registry.access.redhat.com/ubi9/nodejs-22-minimal:latest
 
 WORKDIR /app
 
-ENV NODE_ENV=production
+# ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
+ENV TZ=Asia/Jakarta
 ENV TZ=Asia/Jakarta
 
 COPY --from=builder /src/.next/standalone ./
