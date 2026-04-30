@@ -5,7 +5,7 @@ FROM registry.access.redhat.com/ubi9/nodejs-22:latest AS builder
 
 WORKDIR /src
 
-ENV NODE_ENV=production
+# ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
 COPY package*.json ./
