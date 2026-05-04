@@ -39,6 +39,10 @@ COPY --from=builder /src/.next/standalone ./
 COPY --from=builder /src/.next/static ./.next/static
 COPY --from=builder /src/public ./public
 
+RUN mkdir -p /app/.next/cache \
+    && chown -R 1001:0 /app \
+    && chmod -R 755 /app
+    
 USER 1001
 
 EXPOSE 3000
