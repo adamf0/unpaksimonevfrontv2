@@ -63,12 +63,26 @@ export function middleware(req: NextRequest) {
     "Content-Security-Policy",
     `
       default-src 'self';
-      script-src 'self' 'nonce-${nonce}';
-      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-      font-src 'self' https://fonts.gstatic.com;
-      img-src 'self' data:;
-      connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com;
+      script-src 'nonce-${nonce}' 'strict-dynamic';
+      style-src 'nonce-${nonce}' https://fonts.googleapis.com;
+      font-src https://fonts.gstatic.com;
+      img-src 
+        'self'
+        data:
+        blob:
+        https:;
+      connect-src 'self' https://stagging-api-simonev-lpm.unpak.ac.id;
+      object-src 'none';
+      base-uri 'none';
+      form-action 'self';
+      manifest-src 'self';
+      media-src 'self';
+      worker-src 'self' blob:;
       frame-ancestors 'none';
+      require-trusted-types-for 'script';
+      upgrade-insecure-requests;
+      report-uri /api/report;
+      trusted-types nextjs;
     `
       .replace(/\s{2,}/g, " ")
       .trim()

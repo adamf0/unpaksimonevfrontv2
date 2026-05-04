@@ -1,0 +1,38 @@
+#include <tunables/global>
+
+profile docker-nextjs flags=(attach_disconnected,mediate_deleted) {
+
+  #include <abstractions/base>
+  #include <abstractions/nodejs>
+
+  network inet tcp,
+  network inet udp,
+  network inet6 tcp,
+  network inet6 udp,
+
+  file,
+  umount,
+
+  # allow app
+  /app/** rix,
+
+  # node runtime
+  /usr/bin/node rix,
+  /usr/lib/** r,
+  /lib/** r,
+
+  # next.js cache (WAJIB)
+  /app/.next/** rw,
+
+  # temp
+  /tmp/** rw,
+
+  # block sensitive
+  deny /proc/sys/** w,
+  deny /sys/** w,
+
+  # capabilities
+  deny capability sys_admin,
+  deny capability sys_ptrace,
+  deny capability net_admin,
+}
