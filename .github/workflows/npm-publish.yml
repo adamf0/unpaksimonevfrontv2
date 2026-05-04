@@ -96,6 +96,7 @@ jobs:
           sbom: false         # 🔥 cegah info dependency leak
           build-args: |
             NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL }}
           tags: |
             ${{ env.IMAGE_NAME }}:${{ steps.version.outputs.NEW_TAG }}
             ${{ env.IMAGE_NAME }}:latest

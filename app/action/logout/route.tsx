@@ -18,7 +18,11 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const reason = url.searchParams.get("r");
 
-  const loginUrl = new URL("/login", req.url);
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    "http://localhost:4000";
+
+  const loginUrl = new URL("/login", baseUrl);
 
   if (reason) {
     loginUrl.searchParams.set("r", reason);
