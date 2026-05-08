@@ -28,6 +28,7 @@ export type BankSoalState = BaseResultState<any> & {
   sourceProdi: any[];
   loadingFakultas: boolean;
   loadingProdi: boolean;
+  action: string|null;
 };
 
 /** =========================
@@ -45,6 +46,7 @@ export function useBankSoal() {
     loadingFakultas: false,
     loadingProdi: false,
     selected: null,
+    action: null,
     flag: null,
   });
 
@@ -237,7 +239,11 @@ export function useBankSoal() {
   ) => {
     if (isEmpty(mode)) throw new Error("instruksi ditolak");
 
-    if (mode == "delete") {
+    if (mode == "copy") {
+      const res = await apiCall.post(`/banksoal/${uuid}/copy`);
+      return res.data?.uuid;
+    }
+    else if (mode == "delete") {
       const res = await apiCall.delete(`/banksoal/${uuid}`);
       return res.data?.uuid;
     } else if (mode == "force_delete") {

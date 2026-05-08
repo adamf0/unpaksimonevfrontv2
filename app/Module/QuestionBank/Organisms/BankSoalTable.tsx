@@ -23,6 +23,7 @@ interface Props {
   loading: boolean;
   openDelete: (item: BankSoalItem) => void;
   openForceDelete: (item: BankSoalItem) => void;
+  onCopy: (item: BankSoalItem) => void;
 }
 
 //[pr] masih salah dalam load data, misal mipa cuma load mipa + admin, kalau hukum load hukum + mipa
@@ -70,6 +71,7 @@ export function BankSoalTable({
   loading = false,
   openDelete,
   openForceDelete,
+  onCopy,
 }: Props) {
   const { setState, actionBankSoal, loadData, setOpenTime } =
     useQuestionBankContext();
@@ -115,12 +117,21 @@ export function BankSoalTable({
     /**
      * helper pilih data
      */
-    const selectBank = () => {
-      setState((prev: any) => ({
-        ...prev,
-        selected: bank,
-      }));
+    const selectBank = (withaction: boolean = false) => {
+      if (withaction) {
+        setState((prev: any) => ({
+          ...prev,
+          selected: bank,
+          action: "time",
+        }));
+      } else {
+        setState((prev: any) => ({
+          ...prev,
+          selected: bank,
+        }));
+      }
     };
+    
 
     /**
      * jika sudah delete
@@ -154,11 +165,17 @@ export function BankSoalTable({
      */
     const actions: ActionItem[] = [
       {
+        name: "copy",
+        icon: "copy_all",
+        className: "hover:text-primary",
+        onClick: () => onCopy(bank)
+      },
+      {
         name: "time",
         icon: "calendar_clock",
         className: "hover:text-primary",
         onClick: () => {
-          selectBank();
+          selectBank(true);
           setOpenTime(true);
         },
       },

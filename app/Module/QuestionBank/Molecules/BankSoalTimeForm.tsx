@@ -244,6 +244,10 @@ export function BankSoalTimeForm() {
                 ""
             ),
 
+          NamaFakultas: selectedData.NamaFakultas,
+          NamaProdi: selectedData.NamaProdi,
+          Role: selectedData.Role,
+
           canDelete:
             String(
               selectedData?.createdbyref ??
@@ -288,6 +292,10 @@ export function BankSoalTimeForm() {
 
             createdByRef:
               item.CreatedByRef,
+
+            NamaFakultas: item.NamaFakultas,
+            NamaProdi: item.NamaProdi,
+            Role: item.Role,
 
             canDelete:
               String(

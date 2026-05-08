@@ -2,6 +2,8 @@ import { FilterButton } from "../../Common/Components/Molecules/FilterButton";
 import { HistoryButton } from "../../Common/Components/Molecules/HistoryButton";
 import { Pagination } from "../../Common/Components/Molecules/Pagination";
 import { SearchInput } from "../../Common/Components/Molecules/SearchInput";
+import { useToast } from "../../Common/Context/ToastContext";
+import { handleCloudflareError } from "../../Common/Error/axiosErrorHandler";
 import { useCategoryContext } from "../Context/CategoryProvider";
 import { CategoryTable } from "../Organisms/CategoryTable";
 
@@ -24,7 +26,39 @@ export function KategoriTableSection({
     filterCount,
     query,
     toggleFlag,
+    actionCategory,
+    loadData, setState
   } = useCategoryContext();
+
+  const { pushToast } = useToast();
+
+  async function copyHandler(data:any){
+    try {
+      const uuid = await actionCategory(
+        data?.uuid,
+        null,
+        "copy",
+      );
+      pushToast("Berhasil copy");
+    
+      setState((prev: any) => ({
+        ...prev,
+        selected: null,
+      }));
+    } catch (error: any) {
+      console.error(error);
+      if (!error.response) return pushToast("Server error");
+    
+      const { status, data } = error.response;
+    
+      const cf = handleCloudflareError(status);
+      if (cf) return pushToast(cf);
+    
+      pushToast(data?.message || "Error");
+    }
+    
+    await loadData();
+  }
 
   return (
     <section className="bg-surface-container-lowest rounded-xl indigo-shadow overflow-hidden">
@@ -61,6 +95,7 @@ export function KategoriTableSection({
           loading={state.loading}
           openDelete={openDelete}
           openForceDelete={openForceDelete}
+          onCopy={copyHandler}
         />
       </div>
 

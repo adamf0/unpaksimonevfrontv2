@@ -94,12 +94,12 @@ export default function QuesionerBuilderTemplate({ uuid }: Props) {
     }));
   };
 
-  console.log(
-    status === "initial",
-    status === "process",
-    isEmpty(errorContext?.type),
-    errorContext,
-  );
+  // console.log(
+  //   status === "initial",
+  //   status === "process",
+  //   isEmpty(errorContext?.type),
+  //   errorContext,
+  // );
 
   return (
     <>

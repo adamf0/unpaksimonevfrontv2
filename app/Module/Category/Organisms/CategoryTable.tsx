@@ -13,6 +13,7 @@ interface Props {
   loading?: boolean;
   openDelete: (item: any) => void;
   openForceDelete: (item: any) => void;
+  onCopy: (item: any) => void;
 }
 
 /* =========================
@@ -71,6 +72,7 @@ export function CategoryTable({
   loading = false,
   openDelete,
   openForceDelete,
+  onCopy,
 }: Props) {
   const { setState, actionCategory, loadData } = useCategoryContext();
   const { pushToast } = useToast();
@@ -105,6 +107,12 @@ export function CategoryTable({
 
   const getActions = (category: CategoryItem): ActionItem[] => {
     const actions: ActionItem[] = [
+      {
+        name: "copy",
+        icon: "copy_all",
+        className: "hover:text-primary",
+        onClick: () => onCopy(category)          
+      },
       {
         name: "edit",
         icon: "edit",

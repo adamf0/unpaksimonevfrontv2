@@ -5,7 +5,7 @@ import { FilterButton } from "../../Common/Components/Molecules/FilterButton";
 import { SearchInput } from "../../Common/Components/Molecules/SearchInput";
 import { Pagination } from "../../Common/Components/Molecules/Pagination";
 import { FilterSidebar } from "../../Common/Components/Template/FilterSidebar";
-import { QuickInfoCard } from "../Molecules/QuickInfoCard";
+// import { QuickInfoCard } from "../Molecules/QuickInfoCard";
 import { LaunchCard } from "../Molecules/LaunchCard";
 import GuideCard from "../Molecules/GuideCard";
 import { TemplateFilterForm } from "../Molecules/TemplateFilterForm";
@@ -85,7 +85,7 @@ export default function TemplateQuestionTemplate() {
         </div>
 
         <div className="md:col-span-4 space-y-6">
-          <QuickInfoCard />
+          {/* <QuickInfoCard /> */}
           <LaunchCard />
           <GuideCard />
         </div>

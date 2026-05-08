@@ -19,7 +19,7 @@ export function GuideCard() {
               2
             </div>
             <p className="text-sm leading-snug">
-              Pastikan kategori sesuai agar pelaporan data akurat.
+              Setiap pertanyaan akan masuk status 'Draft' sebelum diterbitkan.
             </p>
           </li>
           <li className="flex gap-4">
@@ -27,7 +27,7 @@ export function GuideCard() {
               3
             </div>
             <p className="text-sm leading-snug">
-              Setiap pertanyaan akan masuk status 'Draft' sebelum diterbitkan.
+              Atur waktu kuesionernya. Pengaturan waktu disini tidak dapat bentrok satu sama lain.
             </p>
           </li>
         </ul>

@@ -10,6 +10,8 @@ import { useQuestionBankContext } from "../Context/QuestionBankProvider";
 import { HistoryButton } from "../../Common/Components/Molecules/HistoryButton";
 import Modal from "../../Common/Components/Organisms/Modal";
 import { BankSoalTimeForm } from "../Molecules/BankSoalTimeForm";
+import { handleCloudflareError } from "../../Common/Error/axiosErrorHandler";
+import { useToast } from "../../Common/Context/ToastContext";
 
 const CreateBankSoalForm = dynamic(
   () =>
@@ -73,6 +75,7 @@ export default function BankSoalTemplate() {
     open,
     setOpen,
     openTime,
+    setState,
     setOpenTime,
     resetFilters,
     filterCount,
@@ -81,10 +84,36 @@ export default function BankSoalTemplate() {
     loadData,
   } = useQuestionBankContext();
 
+  const { pushToast } = useToast();
+
   const [modal, setModal] = useState<any>({
     type: null,
     data: null,
   });
+
+  async function copyHandler(data: any) { //[pr] copy data bank soal sudah, tapi masih belum copy template dan jawaban
+    try {
+      const uuid = await actionBankSoal(data?.uuid, null, "copy");
+      pushToast("Berhasil copy");
+
+      setState((prev: any) => ({
+        ...prev,
+        selected: null,
+      }));
+    } catch (error: any) {
+      console.error(error);
+      if (!error.response) return pushToast("Server error");
+
+      const { status, data } = error.response;
+
+      const cf = handleCloudflareError(status);
+      if (cf) return pushToast(cf);
+
+      pushToast(data?.message || "Error");
+    }
+
+    await loadData();
+  }
 
   async function onDelete() {
     try {
@@ -144,7 +173,7 @@ export default function BankSoalTemplate() {
         </div>
 
         <div className="md:col-span-4 space-y-6">
-          <QuickInfoCard />
+          <QuickInfoCard data={state.data} loading={state.loading} />
           <GuideCard />
         </div>
       </section>
@@ -188,6 +217,7 @@ export default function BankSoalTemplate() {
           <BankSoalTable
             data={state.data}
             loading={state.loading}
+            onCopy={copyHandler}
             openDelete={(item: any) =>
               setModal({
                 type: "delete",
@@ -248,9 +278,16 @@ export default function BankSoalTemplate() {
       <FilterSidebar
         title="Change time"
         open={openTime}
-        onClose={() => setOpenTime(false)}
+        onClose={() => {
+          setState((prev: any) => ({
+            ...prev,
+            selected: null,
+            action: null,
+          }));
+          setOpenTime(false);
+        }}
       >
-        <BankSoalTimeForm/>
+        <BankSoalTimeForm />
       </FilterSidebar>
 
       {/* FILTER SIDEBAR */}

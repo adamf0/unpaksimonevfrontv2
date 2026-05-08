@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import AnimatedButton from "../../Common/Components/Molecules/AnimatedButton";
 import { InputField } from "../../Common/Components/Molecules/InputField";
 import { TextareaField } from "../../Common/Components/Molecules/TextareaField";
@@ -9,6 +9,8 @@ import { useQuestionBankContext } from "../Context/QuestionBankProvider";
 import { useToast } from "../../Common/Context/ToastContext";
 import { handleCloudflareError } from "../../Common/Error/axiosErrorHandler";
 import { FormValues } from "../Attribut/FormValues";
+import { CKEditorField } from "../../Common/Components/Molecules/CKEditorField";
+import { isEmpty } from "../../Common/Service/utility";
 
 export function CreateBankSoalForm() {
   const { state, actionBankSoal, setState, loadData } = useQuestionBankContext();
@@ -31,7 +33,9 @@ export function CreateBankSoalForm() {
   });
 
   useEffect(() => {
+    console.log(state)
     if (!state.selected) return;
+    if (state.action=="time") return;
 
     reset({
       judul: state.selected.judul ?? "",
@@ -110,26 +114,41 @@ export function CreateBankSoalForm() {
           />
         </div>
 
-        {/* Konten */}
+        {/* Konten [pr] ckeditor*/}
         <div className="col-span-2">
-          <TextareaField
-            id="konten"
-            label="Konten Utama"
-            placeholder="Tuliskan pertanyaan inti di sini..."
-            rows={4}
-            register={register("konten", {})}
+          <Controller
+            name="konten"
+            control={control}
+            render={({ field, fieldState }) => (
+              <CKEditorField
+                id="konten"
+                label="Konten Utama"
+                placeholder="Tuliskan pertanyaan inti di sini..."
+                value={field.value}
+                onChange={field.onChange}
+                error={fieldState.error?.message}
+              />
+            )}
           />
         </div>
 
         {/* Deskripsi */}
         <div className="col-span-2">
-          <TextareaField
-            id="deskripsi"
-            label="Deskripsi Tambahan"
-            placeholder="Informasi pendukung atau instruksi pengerjaan..."
-            rows={3}
-            register={register("deskripsi", {})}
+          <Controller
+            name="deskripsi"
+            control={control}
+            render={({ field, fieldState }) => (
+              <CKEditorField
+                id="deskripsi"
+                label="Deskripsi Tambahan"
+                placeholder="Informasi pendukung atau instruksi pengerjaan..."
+                value={field.value}
+                onChange={field.onChange}
+                error={fieldState.error?.message}
+              />
+            )}
           />
+          
         </div>
       </div>
 

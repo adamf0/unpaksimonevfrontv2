@@ -45,7 +45,7 @@ export function CreateCategoryForm() {
       (opt) => opt.value === state.selected.uuidSubKategori,
     );
 
-    console.log(selectedOption);
+    // console.log(selectedOption);
 
     if (selectedOption) {
       setValue("subKategori", selectedOption);

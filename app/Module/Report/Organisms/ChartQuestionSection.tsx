@@ -136,6 +136,8 @@ export default function ChartQuestionSection({
     );
   }
 
+  console.log("full_path", full_path, "ratingQuestions",ratingQuestions)
+
   return (
     <section className="mb-10">
       {/* HEADER */}
@@ -179,7 +181,7 @@ export default function ChartQuestionSection({
             return (
               <RatingChartCard
                 key={idx}
-                title={`Distribusi Rating - ${q.title}`}
+                title={q.title}
                 data={ratingData}
               />
             );

@@ -83,7 +83,6 @@ export function AccountTable({
 
   const getActions = (user: UserItem): ActionItem[] => {
     const deleted = !isEmpty(user.DeletedAt);
-    console.log(user)
 
     if (deleted) {
       return [

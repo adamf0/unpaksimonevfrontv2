@@ -313,7 +313,11 @@ export function useCategory() {
   ) => {
     if (isEmpty(mode)) throw new Error("instruksi ditolak");
 
-    if (mode == "delete") {
+    if (mode == "copy") {
+      const res = await apiCall.post(`/kategori/${uuid}/copy`);
+      return res.data?.uuid;
+    }
+    else if (mode == "delete") {
       const res = await apiCall.delete(`/kategori/${uuid}`);
       return res.data?.uuid;
     } else if (mode == "force_delete") {
