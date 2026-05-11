@@ -6,11 +6,11 @@ import CreateTemplateChoiceForm from "../Organisms/CreateTemplateChoiceForm";
 import apiCall from "../../Common/External/APICall";
 import { useToast } from "../../Common/Context/ToastContext";
 import { useEffect } from "react";
-import { useTemplateAnswer } from "../Hook/useTemplateAnswer";
 import { useTemplateQuestionContext } from "../Context/TemplateQuestionProvider";
 import { handleCloudflareError } from "../../Common/Error/axiosErrorHandler";
 import { FormValues } from "../Attribut/FormValues";
 import { useTemplateAnswerContext } from "../Context/TemplateAnswareProvider";
+import { useTemplatePreview } from "../Hook/useTemplatePreview";
 
 const DEFAULT_VALUES: FormValues = {
   banksoal: null,
@@ -41,6 +41,8 @@ export default function TemplateQuestionFormWrapper() {
     setQuestionState,
     actionQuestion,
   } = useTemplateQuestionContext();
+
+  const {loadPreview} = useTemplatePreview();
 
   const { answerState, setAnswerState } = useTemplateAnswerContext();
 
@@ -74,6 +76,10 @@ export default function TemplateQuestionFormWrapper() {
       options: [],
     });
   }, [questionState.selected]);
+
+  useEffect(()=>{
+    loadPreview(questionQuery?.banksoal?.value);
+  },[questionQuery.banksoal]);
 
   /** INJECT ANSWER */
   useEffect(() => {

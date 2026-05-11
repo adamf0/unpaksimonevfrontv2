@@ -5,7 +5,6 @@ import { FilterButton } from "../../Common/Components/Molecules/FilterButton";
 import { SearchInput } from "../../Common/Components/Molecules/SearchInput";
 import { Pagination } from "../../Common/Components/Molecules/Pagination";
 import { FilterSidebar } from "../../Common/Components/Template/FilterSidebar";
-// import { QuickInfoCard } from "../Molecules/QuickInfoCard";
 import { LaunchCard } from "../Molecules/LaunchCard";
 import GuideCard from "../Molecules/GuideCard";
 import { TemplateFilterForm } from "../Molecules/TemplateFilterForm";
@@ -15,6 +14,9 @@ import { useTemplateQuestionContext } from "../Context/TemplateQuestionProvider"
 import Modal from "../../Common/Components/Organisms/Modal";
 import { useState } from "react";
 import { HistoryButton } from "../../Common/Components/Molecules/HistoryButton";
+import TemplateQuestionPreview from "../Organisms/TemplateQuestionPreview";
+import { useAdminPanel } from "../../Common/Components/Template/AdminPanelTemplate";
+import BannerPreview from "../Molecules/BannerPreview";
 
 export default function TemplateQuestionTemplate() {
   const {
@@ -29,6 +31,8 @@ export default function TemplateQuestionTemplate() {
     actionQuestion,
     toggleFlag,
   } = useTemplateQuestionContext();
+
+  const { mode, setMode } = useAdminPanel();
 
   const [modal, setModal] = useState<any>({
     type: null,
@@ -55,7 +59,12 @@ export default function TemplateQuestionTemplate() {
     }
   }
 
-  return (
+  return mode == "preview" ? (
+    <>
+      <BannerPreview onBack={()=>setMode("builder")}/>
+      <TemplateQuestionPreview />
+    </>
+  ) : (
     <>
       {/* HEADER */}
       <section className="max-w-6xl">

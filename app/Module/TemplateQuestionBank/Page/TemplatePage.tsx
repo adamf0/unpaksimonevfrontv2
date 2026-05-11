@@ -2,6 +2,7 @@ import AdminPanelTemplateServer from "../../Common/Components/Template/AdminPane
 import { ToastProvider } from "../../Common/Context/ToastContext";
 import { TemplateAnswerProvider } from "../Context/TemplateAnswareProvider";
 import { TemplateQuestionProvider } from "../Context/TemplateQuestionProvider";
+import { TemplatePreviewProvider } from "../Hook/useTemplatePreview";
 import TemplateTemplate from "../Template/TemplateQuestionTemplate";
 
 export default function TemplatePage() {
@@ -10,7 +11,9 @@ export default function TemplatePage() {
       <TemplateQuestionProvider>
         <TemplateAnswerProvider>
           <AdminPanelTemplateServer>
-            <TemplateTemplate />
+            <TemplatePreviewProvider>
+              <TemplateTemplate />
+            </TemplatePreviewProvider>
           </AdminPanelTemplateServer>
         </TemplateAnswerProvider>
       </TemplateQuestionProvider>

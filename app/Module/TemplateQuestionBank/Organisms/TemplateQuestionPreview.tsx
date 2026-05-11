@@ -1,0 +1,494 @@
+"use client";
+
+import { useMemo, useState } from "react";
+
+import QuestionerLayout from "../../Quesioner/Template/QuestionerLayout";
+
+import { Question } from "../../Quesioner/Attribut/Question";
+import { AnswerState } from "../../Quesioner/Attribut/AnswerState";
+import { Option } from "../../Quesioner/Attribut/Option";
+import { useTemplatePreview } from "../Hook/useTemplatePreview";
+import { TemplatePertanyaanWithAnswareDefault } from "../Attribut/TemplatePertanyaanWithAnswareDefault";
+
+/* =========================================================
+   MAPPER
+========================================================= */
+
+function mapQuestions(RAW_DATA : TemplatePertanyaanWithAnswareDefault[], step: "admin" | "fakultas" | "prodi"): Question[] {
+  return RAW_DATA.filter((item: any) => {
+    // ADMIN
+    if (step === "admin") {
+      return item.CreatedBy == null;
+    }
+
+    // FAKULTAS
+    if (step === "fakultas") {
+      return item.CreatedBy === "fakultas";
+    }
+
+    // PRODI
+    if (step === "prodi") {
+      return item.CreatedBy === "prodi";
+    }
+
+    return false;
+  }).map((item: any) => ({
+    id: item.UUID,
+    uuid: item.UUID,
+
+    pertanyaan: item.Pertanyaan,
+
+    required: item.Required === 1,
+
+    created:
+      step === "admin" ? "admin" : step === "fakultas" ? "fakultas" : "prodi",
+
+    createdBy: "preview",
+
+    tipe: item.JenisPilihan as "radio" | "multiple" | "rating",
+
+    fullpath: item.FullPath,
+
+    pilihan: [...item.ListJawaban]
+      .sort((a: any, b: any) => b.Nilai - a.Nilai)
+      .map((j: any) => ({
+        label: j.Jawaban,
+        value: j.UUID,
+        freetext: j.IsFreeText === 1,
+      })),
+  }));
+}
+/* =========================================================
+   MAIN COMPONENT
+========================================================= */
+
+export default function TemplateQuestionPreview() {
+  // ========================================================
+  // STEP
+  // ========================================================
+
+  const [activeStep, setActiveStep] = useState<"admin" | "fakultas" | "prodi">(
+    "admin",
+  );
+  const {previewData} = useTemplatePreview();
+
+  // ========================================================
+  // QUESTIONS
+  // ========================================================
+
+  const questions = useMemo(() => mapQuestions(previewData , activeStep), [previewData, activeStep]);
+
+  // ========================================================
+  // ANSWERS
+  // ========================================================
+
+  const [answers, setAnswers] = useState<AnswerState>({});
+
+  function handleRadio(qid: string, option: Option) {
+    setAnswers((prev) => ({
+      ...prev,
+      [qid]: {
+        value: option,
+      },
+    }));
+  }
+
+  function handleMultiple(qid: string, option: Option) {
+    setAnswers((prev) => {
+      const current = prev[qid]?.value;
+
+      const arr: Option[] = Array.isArray(current) ? (current as Option[]) : [];
+
+      const exists = arr.some((x) => x.value === option.value);
+
+      return {
+        ...prev,
+        [qid]: {
+          value: exists
+            ? arr.filter((x) => x.value !== option.value)
+            : [...arr, option],
+        },
+      };
+    });
+  }
+
+  function isOption(val: unknown): val is Option {
+    return typeof val === "object" && val !== null && "value" in val;
+  }
+
+  function isSelected(
+    qid: string,
+    option: Option,
+    type: "radio" | "multiple" | "rating",
+  ) {
+    const current = answers[qid]?.value;
+
+    if (type === "multiple") {
+      return (
+        Array.isArray(current) &&
+        current.some((x) => isOption(x) && x.value === option.value)
+      );
+    }
+
+    return (
+      !Array.isArray(current) &&
+      isOption(current) &&
+      current.value === option.value
+    );
+  }
+
+  // ========================================================
+  // GROUPING
+  // ========================================================
+
+  const groupedData: Record<string, Question[]> = questions.reduce(
+    (acc, item) => {
+      const key = item.fullpath;
+
+      if (!acc[key]) acc[key] = [];
+
+      acc[key].push(item);
+
+      return acc;
+    },
+    {} as Record<string, Question[]>,
+  );
+
+  // ========================================================
+  // SUBMIT STEP
+  // ========================================================
+  function hasQuestions(step: "admin" | "fakultas" | "prodi") {
+    return previewData.some((item: any) => {
+      if (step === "admin") {
+        return item.CreatedBy == null || item.CreatedBy == "admin" || item.CreatedBy == "admin lpm";
+      }
+
+      if (step === "fakultas") {
+        return item.CreatedBy === "fakultas";
+      }
+
+      if (step === "prodi") {
+        return item.CreatedBy === "prodi";
+      }
+
+      return false;
+    });
+  }
+
+  function handleNextStep() {
+    const steps: ("admin" | "fakultas" | "prodi")[] = [
+      "admin",
+      "fakultas",
+      "prodi",
+    ];
+
+    const currentIndex = steps.indexOf(activeStep);
+
+    for (let i = currentIndex + 1; i < steps.length; i++) {
+      const nextStep = steps[i];
+
+      if (hasQuestions(nextStep)) {
+        setActiveStep(nextStep);
+        return;
+      }
+    }
+
+    alert("Preview selesai");
+  }
+
+  return (
+    <QuestionerLayout activeStep={activeStep} onNextStep={handleNextStep}>
+      <form
+        className=""
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleNextStep();
+        }}
+      >
+        {Object.entries(groupedData)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([group, groupQuestions]) => (
+            <section key={group} className="space-y-10">
+              {/* GROUP HEADER */}
+              <header className="mb-4">
+                <h2 className="text-3xl md:text-4xl font-headline font-extrabold text-on-surface tracking-tight">
+                  {group}
+                </h2>
+              </header>
+
+              {/* QUESTIONS */}
+              <div className="space-y-8">
+                {groupQuestions.map((q, index) => (
+                  <div
+                    key={q.uuid}
+                    className="
+                      bg-surface
+                      border border-outline-variant/20
+                      rounded-3xl
+                      p-6 md:p-8
+                      shadow-sm
+                      transition-all
+                    "
+                  >
+                    {/* QUESTION HEADER */}
+                    <div className="mb-8">
+                      <div className="flex items-start gap-4">
+                        <div
+                          className="
+                            min-w-10
+                            w-10
+                            h-10
+                            rounded-2xl
+                            bg-primary
+                            text-white
+                            flex
+                            items-center
+                            justify-center
+                            font-bold
+                            shadow-lg
+                          "
+                        >
+                          {index + 1}
+                        </div>
+
+                        <div className="flex-1">
+                          <h3
+                            className="
+                              text-lg md:text-xl
+                              font-bold
+                              text-on-surface
+                              leading-relaxed
+                            "
+                          >
+                            {q.pertanyaan}
+                          </h3>
+
+                          {q.required && (
+                            <p className="text-sm text-error mt-2 font-medium">
+                              * Pertanyaan wajib diisi
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* RATING */}
+                    {q.tipe === "rating" && (
+                      <div className="grid grid-cols-5 gap-3">
+                        {q.pilihan.map((opt) => {
+                          const active = isSelected(q.uuid, opt, "rating");
+
+                          return (
+                            <button
+                              type="button"
+                              key={opt.value}
+                              onClick={() => handleRadio(q.uuid, opt)}
+                              className={`
+                                h-16
+                                rounded-2xl
+                                border
+                                font-bold
+                                text-lg
+                                transition-all
+                                duration-200
+                                ${
+                                  active
+                                    ? `
+                                      bg-primary
+                                      text-white
+                                      border-primary
+                                      shadow-xl
+                                      scale-[1.03]
+                                    `
+                                    : `
+                                      bg-surface-container-low
+                                      border-outline-variant/30
+                                      hover:border-primary
+                                      hover:bg-primary/5
+                                      hover:scale-[1.02]
+                                    `
+                                }
+                              `}
+                            >
+                              {opt.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* RADIO */}
+                    {q.tipe === "radio" && (
+                      <div className="space-y-4">
+                        {q.pilihan.map((opt) => {
+                          const active = isSelected(q.uuid, opt, "radio");
+
+                          return (
+                            <button
+                              key={opt.value}
+                              type="button"
+                              onClick={() => handleRadio(q.uuid, opt)}
+                              className={`
+                                w-full
+                                text-left
+                                rounded-2xl
+                                border
+                                px-5
+                                py-4
+                                transition-all
+                                duration-200
+                                ${
+                                  active
+                                    ? `
+                                      border-primary
+                                      bg-primary/10
+                                      shadow-md
+                                    `
+                                    : `
+                                      border-outline-variant/30
+                                      hover:border-primary/40
+                                      hover:bg-surface-container-low
+                                    `
+                                }
+                              `}
+                            >
+                              <div className="flex items-center gap-4">
+                                <div
+                                  className={`
+                                    w-5
+                                    h-5
+                                    rounded-full
+                                    border-2
+                                    flex
+                                    items-center
+                                    justify-center
+                                    transition-all
+                                    ${
+                                      active
+                                        ? "border-primary"
+                                        : "border-outline"
+                                    }
+                                  `}
+                                >
+                                  {active && (
+                                    <div className="w-2.5 h-2.5 rounded-full bg-primary" />
+                                  )}
+                                </div>
+
+                                <span className="font-semibold text-on-surface">
+                                  {opt.label}
+                                </span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* MULTIPLE */}
+                    {q.tipe === "multiple" && (
+                      <div className="space-y-4">
+                        {q.pilihan.map((opt) => {
+                          const active = isSelected(q.uuid, opt, "multiple");
+
+                          return (
+                            <button
+                              key={opt.value}
+                              type="button"
+                              onClick={() => handleMultiple(q.uuid, opt)}
+                              className={`
+                                w-full
+                                text-left
+                                rounded-2xl
+                                border
+                                px-5
+                                py-4
+                                transition-all
+                                duration-200
+                                ${
+                                  active
+                                    ? `
+                                      border-primary
+                                      bg-primary/10
+                                      shadow-md
+                                    `
+                                    : `
+                                      border-outline-variant/30
+                                      hover:border-primary/40
+                                      hover:bg-surface-container-low
+                                    `
+                                }
+                              `}
+                            >
+                              <div className="flex items-center gap-4">
+                                <div
+                                  className={`
+                                    w-5
+                                    h-5
+                                    rounded-md
+                                    border-2
+                                    flex
+                                    items-center
+                                    justify-center
+                                    transition-all
+                                    ${
+                                      active
+                                        ? `
+                                          border-primary
+                                          bg-primary
+                                        `
+                                        : "border-outline"
+                                    }
+                                  `}
+                                >
+                                  {active && (
+                                    <div className="w-2 h-2 bg-white rounded-sm" />
+                                  )}
+                                </div>
+
+                                <span className="font-semibold text-on-surface">
+                                  {opt.label}
+                                </span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          ))}
+
+        {/* SUBMIT */}
+        <div className="pt-6">
+          <button
+            type="submit"
+            className="
+              w-full
+              py-5
+              rounded-2xl
+              bg-gradient-to-r
+              from-primary
+              to-primary-container
+              text-on-primary
+              font-bold
+              text-lg
+              shadow-2xl
+              hover:scale-[1.01]
+              active:scale-[0.99]
+              transition-all
+            "
+          >
+            {activeStep === "admin"
+              ? "Lanjut ke Fakultas"
+              : activeStep === "fakultas"
+                ? "Lanjut ke Prodi"
+                : "Submit Preview"}
+          </button>
+        </div>
+      </form>
+    </QuestionerLayout>
+  );
+}

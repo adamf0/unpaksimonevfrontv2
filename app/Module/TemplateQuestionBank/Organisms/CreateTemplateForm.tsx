@@ -20,7 +20,7 @@ export function CreateTemplateForm() {
     register,
     formState: { errors },
   } = useFormContext();
-  const { questionState, setQuestionQuery } = useTemplateQuestionContext();
+  const { questionQuery, questionState, setQuestionQuery } = useTemplateQuestionContext();
 
   /** =========================
    * OPTIONS
@@ -49,7 +49,7 @@ export function CreateTemplateForm() {
                 label="Bank Soal"
                 placeholder="Pilih Bank Soal"
                 options={bankOptions}
-                value={field.value}
+                value={field.value ?? questionQuery.banksoal}
                 onChange={(val) => {
                   field.onChange(val);
                   setQuestionQuery((prev: any) => ({

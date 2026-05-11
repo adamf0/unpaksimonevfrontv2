@@ -50,7 +50,7 @@ export default async function AdminPanelTemplateServer({
     redirect("/action/logout?r=F0");  //di login page berhasil menampilkan toast
   }
 
-  console.log("SERVER USER:", user);
+  // console.log("SERVER USER:", user);
 
   return (
     <AdminPanelTemplate userProfile={user}>

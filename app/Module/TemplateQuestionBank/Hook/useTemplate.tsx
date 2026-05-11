@@ -328,16 +328,46 @@ export function useTemplate() {
     };
   }, []);
 
+  function resetQuestionTable() {
+    setQuestionState((prev) => ({
+      ...prev,
+      data: [],
+      total: 0,
+      selected: null,
+      loading: false,
+    }));
+  }
+
   useEffect(() => {
-    if (!questionQuery.banksoal) return;
+    const empty =
+      !questionQuery.banksoal ||
+      (Array.isArray(questionQuery.banksoal) &&
+        questionQuery.banksoal.length === 0);
+
+    if (empty) {
+      resetQuestionTable();
+
+      return;
+    }
+
     loadData();
   }, [questionQuery.banksoal, questionState.flag]);
 
   useEffect(() => {
-    if (!questionQuery.banksoal) return;
+    const empty =
+      !questionQuery.banksoal ||
+      (Array.isArray(questionQuery.banksoal) &&
+        questionQuery.banksoal.length === 0);
+
+    if (empty) return;
 
     clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(loadData, 300);
+
+    debounceRef.current = setTimeout(() => {
+      loadData();
+    }, 300);
+
+    return () => clearTimeout(debounceRef.current);
   }, [questionQuery]);
 
   return {

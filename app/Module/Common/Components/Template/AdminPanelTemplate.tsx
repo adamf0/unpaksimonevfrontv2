@@ -1,8 +1,16 @@
 "use client";
 
-import { useState, useEffect, createContext, useContext } from "react";
+import {
+  useState,
+  useEffect,
+  createContext,
+  useContext,
+  useMemo,
+} from "react";
+
 import Sidebar from "../Organisms/Sidebar";
 import Header from "../Organisms/Header";
+
 import { MenuItem } from "../../Attribut/MenuItem";
 import { usePathname, useRouter } from "next/navigation";
 import { AccountInfo } from "../../Attribut/AccountInfo";
@@ -11,11 +19,19 @@ import { useTokenWatcher } from "../../Hook/tokenWatcher";
 /* ===============================
    CONTEXT USER PROFILE
 ================================= */
+
+type ModeType = "preview" | "builder";
+
 type AdminPanelContextType = {
   userProfile: AccountInfo;
+
+  // MODE
+  mode: ModeType;
+  setMode: React.Dispatch<React.SetStateAction<ModeType>>;
 };
 
-const AdminPanelContext = createContext<AdminPanelContextType | null>(null);
+const AdminPanelContext =
+  createContext<AdminPanelContextType | null>(null);
 
 export const useAdminPanel = (): AdminPanelContextType => {
   const ctx = useContext(AdminPanelContext);
@@ -35,16 +51,38 @@ export default function AdminPanelTemplate({
   children: React.ReactNode;
 }) {
   useTokenWatcher();
-  const router = useRouter();
 
+  const router = useRouter();
   const pathname = usePathname();
+
   const [isOpen, setIsOpen] = useState(false);
+
+  // =========================================
+  // MODE
+  // =========================================
+
+  const [mode, setMode] = useState<ModeType>("builder");
+
+  // hanya aktif di /template
+  const isTemplatePage = useMemo(() => {
+    return pathname.startsWith("/template");
+  }, [pathname]);
+
+  // reset otomatis saat pindah halaman
+  useEffect(() => {
+    if (!isTemplatePage) {
+      setMode("builder");
+    }
+  }, [isTemplatePage]);
+
+  // =========================================
+  // SIDEBAR
+  // =========================================
 
   const toggleSidebar = () => setIsOpen((v) => !v);
 
   const closeSidebar = () => setIsOpen(false);
 
-  // auto handle resize (ganti script lama)
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 768) setIsOpen(true);
@@ -55,7 +93,8 @@ export default function AdminPanelTemplate({
 
     window.addEventListener("resize", handleResize);
 
-    return () => window.removeEventListener("resize", handleResize);
+    return () =>
+      window.removeEventListener("resize", handleResize);
   }, []);
 
   const BASE_MENU_ITEMS: MenuItem[] = [
@@ -98,7 +137,7 @@ export default function AdminPanelTemplate({
     {
       icon: "description",
       label: "Template Kuesioner",
-      active: pathname == "/template",
+      active: pathname.startsWith("/template"),
       onClick: () => {
         closeSidebar();
         router.push("/template");
@@ -127,7 +166,10 @@ export default function AdminPanelTemplate({
   const MENU_ITEMS: MenuItem[] = BASE_MENU_ITEMS.filter((item) => {
     if (userProfile?.Level === "admin") return true;
 
-    if (userProfile?.Level === "fakultas" || userProfile?.Level === "prodi") {
+    if (
+      userProfile?.Level === "fakultas" ||
+      userProfile?.Level === "prodi"
+    ) {
       return item.label !== "Account";
     }
 
@@ -152,17 +194,26 @@ export default function AdminPanelTemplate({
       danger: true,
       onClick: () => {
         closeSidebar();
+
         sessionStorage.removeItem("access_token");
         sessionStorage.removeItem("refresh_token");
         sessionStorage.removeItem("access_token_exp");
-        
+
         router.push("/action/logout");
       },
     },
   ];
 
   return (
-    <AdminPanelContext.Provider value={{ userProfile }}>
+    <AdminPanelContext.Provider
+      value={{
+        userProfile,
+
+        // MODE
+        mode,
+        setMode,
+      }}
+    >
       <div className="antialiased">
         <Sidebar
           isOpen={isOpen}
@@ -174,14 +225,14 @@ export default function AdminPanelTemplate({
         <div
           onClick={closeSidebar}
           className={`
-    fixed inset-0 bg-black/40 z-40 md:hidden
-    transition-opacity duration-300
-    ${
-      isOpen
-        ? "opacity-100 pointer-events-auto"
-        : "opacity-0 pointer-events-none"
-    }
-  `}
+            fixed inset-0 bg-black/40 z-40 md:hidden
+            transition-opacity duration-300
+            ${
+              isOpen
+                ? "opacity-100 pointer-events-auto"
+                : "opacity-0 pointer-events-none"
+            }
+          `}
         />
 
         <main className="md:ml-64 min-h-screen text-on-surface">
@@ -194,7 +245,9 @@ export default function AdminPanelTemplate({
             }}
           />
 
-          <div className="py-8 max-w-7xl mx-12 space-y-10">{children}</div>
+          <div className={mode=="preview"? "max-w-7xl":"py-8 max-w-7xl mx-12 space-y-10"}>
+            {children}
+          </div>
         </main>
       </div>
     </AdminPanelContext.Provider>
