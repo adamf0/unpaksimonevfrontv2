@@ -375,7 +375,7 @@ export function useQuestionerBuilder() {
       const required = stepQuestions.filter((q) => q.required);
 
       const allDone = required.every((q) => {
-        const ans = dataAnsware[q.id];
+        const ans = dataAnsware[q.id!];
 
         if (!ans) return false;
 
@@ -387,7 +387,7 @@ export function useQuestionerBuilder() {
       });
 
       const freetextValid = required.every((q) =>
-        isFreetextValid(q, dataAnsware[q.id]),
+        isFreetextValid(q, dataAnsware[q.id!]),
       );
 
       if (required.length > 0 && allDone && freetextValid) {

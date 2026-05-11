@@ -47,7 +47,7 @@ export default function ReportTemplate() {
 
   const prevFilterRef = useRef<any>(null);
   const [bankOptions, setBankOptions] = useState<any[]>([]);
-  const [semesterOptions, setSemesterOptions] = useState<any[]>([]);
+  // const [semesterOptions, setSemesterOptions] = useState<any[]>([]);
 
   // =========================
   // OPTIONS
@@ -55,15 +55,15 @@ export default function ReportTemplate() {
   useEffect(() => {
     if (!dataBankSoal?.length) return;
 
-    setSemesterOptions(
-      adaptSelectOptions(
-        dataBankSoal.map((b: any) => ({
-          value: b.Semester,
-          label: b.Semester,
-        })),
-        { valueKey: "value", labelKey: "label" },
-      ),
-    );
+    // setSemesterOptions(
+    //   adaptSelectOptions(
+    //     dataBankSoal.map((b: any) => ({
+    //       value: b.Semester,
+    //       label: b.Semester,
+    //     })),
+    //     { valueKey: "value", labelKey: "label" },
+    //   ),
+    // );
 
     setBankOptions(
       adaptSelectOptions(dataBankSoal, {
@@ -99,7 +99,7 @@ export default function ReportTemplate() {
         bankSoalOptions={bankOptions}
         fakultasOptions={[]}
         prodiOptions={[]}
-        semesterOptions={semesterOptions}
+        semesterOptions={[]}
         onApply={(val) => {
           if (!val?.bankSoal?.label) return;
 
