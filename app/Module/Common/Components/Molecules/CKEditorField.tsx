@@ -198,7 +198,6 @@ export function CKEditorField({
             toolbar: [
               "bold",
               "italic",
-              "underline",
               "|",
               "bulletedList",
               "numberedList",

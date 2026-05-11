@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import AnimatedButton from "../../Common/Components/Molecules/AnimatedButton";
 import { InputField } from "../../Common/Components/Molecules/InputField";
 import { useForm, Controller } from "react-hook-form";
@@ -15,6 +15,11 @@ export function CreateCategoryForm() {
   const { state, actionCategory, loadData, setState } = useCategoryContext();
   const { pushToast } = useToast();
 
+  const defaultFormValues: FormValues = {
+    kategori: "",
+    subKategori: null,
+  };
+
   const {
     control,
     register,
@@ -23,10 +28,7 @@ export function CreateCategoryForm() {
     formState: { errors },
     setValue,
   } = useForm<FormValues>({
-    defaultValues: {
-      kategori: "",
-      subKategori: null,
-    },
+    defaultValues: defaultFormValues,
   });
 
   const options = adaptSelectOptions(state.source, {
@@ -66,10 +68,7 @@ export function CreateCategoryForm() {
       );
       pushToast("Berhasil simpan");
 
-      reset({
-        kategori: "",
-        subKategori: null,
-      });
+      reset(defaultFormValues);
 
       // keluar dari mode edit
       setState((prev: any) => ({
@@ -132,13 +131,27 @@ export function CreateCategoryForm() {
         )}
       />
 
-      <div className="col-span-1 md:col-span-2 pt-4">
+      <div className="col-span-1 md:col-span-2 pt-4 flex flex-col sm:flex-row gap-3">
+        <button
+          type="button"
+          onClick={() => {
+            reset(defaultFormValues);
+            setState((prev: any) => ({
+              ...prev,
+              selected: null,
+            }));
+          }}
+          className="w-full sm:w-auto px-6 py-4 rounded-xl border border-outline bg-surface text-on-surface font-bold hover:bg-surface-container transition-colors"
+        >
+          Cancel
+        </button>
+
         <AnimatedButton
           type="submit"
-          className="w-full bg-gradient-to-r from-primary to-primary-container text-on-primary font-bold py-4 rounded-xl hover:scale-[1.02] transition-transform indigo-shadow"
+          className="w-full bg-gradient-to-r from-primary to-primary-container text-on-primary font-bold py-4 rounded-xl hover:scale-[1.02] transition-transform"
           icon=""
         >
-          Register New Category
+          {state.selected ? "Update Category" : "Register New Category"}
         </AnimatedButton>
       </div>
     </form>

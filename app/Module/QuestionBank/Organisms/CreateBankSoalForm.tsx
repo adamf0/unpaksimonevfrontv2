@@ -3,39 +3,39 @@
 import { Controller, useForm } from "react-hook-form";
 import AnimatedButton from "../../Common/Components/Molecules/AnimatedButton";
 import { InputField } from "../../Common/Components/Molecules/InputField";
-import { TextareaField } from "../../Common/Components/Molecules/TextareaField";
 import { useEffect } from "react";
 import { useQuestionBankContext } from "../Context/QuestionBankProvider";
 import { useToast } from "../../Common/Context/ToastContext";
 import { handleCloudflareError } from "../../Common/Error/axiosErrorHandler";
 import { FormValues } from "../Attribut/FormValues";
 import { CKEditorField } from "../../Common/Components/Molecules/CKEditorField";
-import { isEmpty } from "../../Common/Service/utility";
 
 export function CreateBankSoalForm() {
-  const { state, actionBankSoal, setState, loadData } = useQuestionBankContext();
+  const { state, actionBankSoal, setState, loadData } =
+    useQuestionBankContext();
   const { pushToast } = useToast();
+
+  const defaultFormValues: FormValues = {
+    judul: "",
+    semester: "",
+    konten: "",
+    deskripsi: "",
+  };
 
   const {
     control,
     register,
     handleSubmit,
     formState: { errors },
-    setValue,
     reset,
   } = useForm<FormValues>({
-    defaultValues: {
-      judul: "",
-      semester: "",
-      konten: "",
-      deskripsi: "",
-    },
+    defaultValues: defaultFormValues,
   });
 
   useEffect(() => {
-    console.log(state)
+    console.log(state);
     if (!state.selected) return;
-    if (state.action=="time") return;
+    if (state.action == "time") return;
 
     reset({
       judul: state.selected.judul ?? "",
@@ -56,12 +56,7 @@ export function CreateBankSoalForm() {
       );
       pushToast("Berhasil simpan");
 
-      reset({
-        judul: "",
-        semester: "",
-        konten: "",
-        deskripsi: "",
-      });
+      reset(defaultFormValues);
 
       // hapus selected mode edit -> kembali create
       if (state?.selected) {
@@ -148,18 +143,33 @@ export function CreateBankSoalForm() {
               />
             )}
           />
-          
         </div>
       </div>
 
       {/* BUTTON */}
-      <div className="flex justify-end pt-4">
+      <div className="col-span-1 md:col-span-2 pt-4 flex flex-col sm:flex-row gap-3">
+        <button
+          type="button"
+          onClick={() => {
+            reset(defaultFormValues);
+            setState((prev: any) => ({
+              ...prev,
+              selected: null,
+            }));
+          }}
+          className="w-full sm:w-auto px-6 py-4 rounded-xl border border-outline bg-surface text-on-surface font-bold hover:bg-surface-container transition-colors"
+        >
+          Cancel
+        </button>
+
         <AnimatedButton
           type="submit"
-          className="bg-primary hover:bg-primary-dim text-white px-10 py-4 rounded-xl font-bold flex items-center gap-3 shadow-lg shadow-primary/20 transition-all active:scale-95"
-          icon="save"
+          className="w-full bg-gradient-to-r from-primary to-primary-container text-on-primary font-bold py-4 rounded-xl hover:scale-[1.02] transition-transform"
+          icon=""
         >
-          Simpan Pertanyaan
+          {state.selected
+            ? "Update Question Bank"
+            : "Register New Question Bank"}
         </AnimatedButton>
       </div>
     </form>

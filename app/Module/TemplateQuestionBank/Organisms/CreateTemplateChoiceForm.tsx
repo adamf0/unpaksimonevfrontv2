@@ -238,7 +238,7 @@ export default function CreateTemplateChoiceForm({
           type="button"
           onClick={onReset}
           disabled={formState.isSubmitting}
-          className="bg-gradient-to-br from-primary to-primary-container text-on-primary px-8 py-3 rounded-xl font-bold shadow-lg hover:scale-[1.02]"
+          className="w-full sm:w-auto px-6 py-4 rounded-xl border border-outline bg-surface text-on-surface font-bold hover:bg-surface-container transition-colors"
         >
           {formState.isSubmitting ? "Menyimpan..." : "Pertanyaan Baru"}
         </AnimatedButton>

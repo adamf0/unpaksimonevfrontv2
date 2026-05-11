@@ -36,6 +36,17 @@ export function CreateUserForm() {
     "prodi",
   ];
 
+  const defaultFormValues: FormValues = {
+    name: "",
+    username: "",
+    password: "",
+    fullname: "",
+    email: "",
+    level: null,
+    fakultas: null,
+    prodi: null,
+  };
+
   const {
     register,
     control,
@@ -46,16 +57,7 @@ export function CreateUserForm() {
     setError,
     formState: { errors },
   } = useForm<FormValues>({
-    defaultValues: {
-      name: "",
-      username: "",
-      password: "",
-      fullname: "",
-      email: "",
-      level: null,
-      fakultas: null,
-      prodi: null,
-    },
+    defaultValues: defaultFormValues,
   });
 
   const selectedLevel = watch("level");
@@ -161,16 +163,7 @@ export function CreateUserForm() {
       );
       pushToast("Berhasil simpan");
 
-      reset({
-        name: "",
-        username: "",
-        password: "",
-        fullname: "",
-        email: "",
-        level: null,
-        fakultas: null,
-        prodi: null,
-      });
+      reset(defaultFormValues);
 
       // hapus selected mode edit -> kembali create
       if (state?.selected) {
@@ -366,13 +359,27 @@ export function CreateUserForm() {
       />
 
       {/* Submit */}
-      <div className="col-span-1 md:col-span-2 pt-4">
+      <div className="col-span-1 md:col-span-2 pt-4 flex flex-col sm:flex-row gap-3">
+        <button
+          type="button"
+          onClick={() => {
+            reset(defaultFormValues);
+            setState((prev: any) => ({
+              ...prev,
+              selected: null,
+            }));
+          }}
+          className="w-full sm:w-auto px-6 py-4 rounded-xl border border-outline bg-surface text-on-surface font-bold hover:bg-surface-container transition-colors"
+        >
+          Cancel
+        </button>
+
         <AnimatedButton
           type="submit"
           className="w-full bg-gradient-to-r from-primary to-primary-container text-on-primary font-bold py-4 rounded-xl hover:scale-[1.02] transition-transform"
           icon=""
         >
-          Register New Account
+          {state.selected ? "Update Account" : "Register New Account"}
         </AnimatedButton>
       </div>
     </form>
