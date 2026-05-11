@@ -43,6 +43,8 @@ export type KuesionerReportContextType = {
   query: any;
   setQuery: React.Dispatch<React.SetStateAction<any>>;
   resetFilters: () => void;
+
+  filteredDetail: any,
 };
 
 // =========================

@@ -5,7 +5,6 @@ import { Payload } from "../Attribut/Payload";
 import { KuesionerResult } from "../Attribut/KuesionerResult";
 import { handleCloudflareError } from "../../Common/Error/axiosErrorHandler";
 import { useToast } from "../../Common/Context/ToastContext";
-import { isEmpty } from "../../Common/Service/utility";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 const ModeDemo = process.env.NEXT_PUBLIC_DEMO == "1";
@@ -702,5 +701,7 @@ export function useKuesionerReport() {
     query,
     setQuery,
     resetFilters,
+
+    filteredDetail,
   };
 }

@@ -10,8 +10,12 @@ import { adaptSelectOptions } from "../../Common/Adapter/adaptSelectOptions";
 import { useKuesionerReportContext } from "../Context/KuesionerReportContext";
 import { FilterSidebar } from "../../Common/Components/Template/FilterSidebar";
 import { ReportFilterForm } from "../Molecules/ReportFilterForm";
-import { Filter } from "lucide-react";
 import FilterButton from "../Atoms/FilterButton";
+import {
+  exportDetailKuesioner,
+  exportRekapKuesioner,
+} from "../Service/ReportExport";
+import ExportFab from "../Atoms/ExportFab";
 
 export default function ReportTemplate() {
   const {
@@ -37,6 +41,8 @@ export default function ReportTemplate() {
     openFilter,
     closeFilter,
     resetFilters,
+
+    filteredDetail,
   } = useKuesionerReportContext();
 
   const prevFilterRef = useRef<any>(null);
@@ -78,7 +84,7 @@ export default function ReportTemplate() {
     loadDataDetail(payload);
   };
 
-  console.log("groupedByFullPath", groupedByFullPath);
+  console.log("◉ groupedByFullPath", query);
 
   return (
     <>
@@ -114,7 +120,16 @@ export default function ReportTemplate() {
         }}
       />
 
-      <FilterButton query={query} openFilter={openFilter} />
+      <div className="fixed bottom-6 right-6 flex flex-col items-end gap-3 z-50">
+        <ExportFab
+          disabled={!query.bankSoal}
+          filteredDetail={filteredDetail}
+          groupedByFullPath={groupedByFullPath}
+          exportRekapKuesioner={exportRekapKuesioner}
+          exportDetailKuesioner={exportDetailKuesioner}
+        />
+        <FilterButton query={query} openFilter={openFilter} disabled={!query.bankSoal}/>
+      </div>
 
       <FilterSidebar
         open={open}

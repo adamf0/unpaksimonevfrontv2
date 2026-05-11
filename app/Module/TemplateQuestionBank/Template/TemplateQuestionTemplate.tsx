@@ -127,7 +127,7 @@ export default function TemplateQuestionTemplate() {
 
               <HistoryButton
                 onClick={() => {
-                  console.log("ganti flag");
+                  console.log("◉ ganti flag");
                   toggleFlag();
                 }}
               />
