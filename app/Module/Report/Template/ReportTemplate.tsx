@@ -6,7 +6,6 @@ import ChartQuestionSection from "../Organisms/ChartQuestionSection";
 import FilterSection from "../Organisms/FiltersSection";
 import FourYearChart from "../Molecules/FourYearChart";
 import { useEffect, useRef, useState } from "react";
-import { adaptSelectOptions } from "../../Common/Adapter/adaptSelectOptions";
 import { useKuesionerReportContext } from "../Context/KuesionerReportContext";
 import { FilterSidebar } from "../../Common/Components/Template/FilterSidebar";
 import { ReportFilterForm } from "../Molecules/ReportFilterForm";
@@ -16,6 +15,7 @@ import {
   exportRekapKuesioner,
 } from "../Service/ReportExport";
 import ExportFab from "../Atoms/ExportFab";
+import { adaptSelectOptionsMerge } from "../../Common/Adapter/adaptSelectOptionsMerge";
 
 export default function ReportTemplate() {
   const {
@@ -66,10 +66,11 @@ export default function ReportTemplate() {
     // );
 
     setBankOptions(
-      adaptSelectOptions(dataBankSoal, {
-        valueKey: "UUID",
-        labelKey: "Judul",
-      }),
+      adaptSelectOptionsMerge(dataBankSoal, {
+          valueKey: "UUID",
+          labelKeys: ["Judul", "Semester"],
+          template: "%s (%s)",
+        })
     );
   }, [dataBankSoal]);
 

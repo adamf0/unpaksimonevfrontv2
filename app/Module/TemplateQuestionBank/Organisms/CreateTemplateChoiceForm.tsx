@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useFormContext } from "react-hook-form";
 
 import Icon from "../../Common/Components/Atoms/Icon";
@@ -26,6 +26,7 @@ export default function CreateTemplateChoiceForm({
   onReset: () => void;
   isEdit: boolean;
 }) {
+  const debounceRef = useRef<Record<number, NodeJS.Timeout>>({});
   const { register, formState, watch, setValue } = useFormContext<FormValues>();
 
   const { questionState } = useTemplateQuestionContext();
@@ -48,6 +49,25 @@ export default function CreateTemplateChoiceForm({
     }, 3000);
   };
 
+  const updateOption = async (uuid: string, label: string, payload: any) => {
+    try {
+      const fd = new FormData();
+
+      fd.append("template_pertanyaan", payload?.UUIDTemplatePertanyaan ?? "-");
+      fd.append("jawaban", label);
+      fd.append("nilai", "1");
+      fd.append("isFreeText", String(payload?.IsFreeText ?? "0"));
+
+      await apiCall.put(`/templatejawaban/${uuid}`, fd, {
+        headers: {
+          Authorization: `Bearer ${sessionStorage.getItem("access_token")}`,
+        },
+      });
+    } catch (err: any) {
+      pushToast(err?.response?.data?.message || "Gagal update opsi");
+    }
+  };
+
   /** =========================
    * ADD OPTION
    * ========================= */
@@ -67,6 +87,10 @@ export default function CreateTemplateChoiceForm({
 
     if (selected?.tipe === "rating" && !isFree) {
       pushToast("rating tidak boleh di tambah");
+      return;
+    }
+    if (selected?.tipe === "rating" && isFree) {
+      pushToast("free text tidak boleh tambah di rating");
       return;
     }
 
@@ -95,10 +119,11 @@ export default function CreateTemplateChoiceForm({
       const newOptions = [
         ...options,
         {
-          uuid: newUUID,
+          value: newUUID,
           label: isFree ? "lainnya" : "masukkan jawabannya",
           payload: {
             UUID: newUUID,
+            UUIDTemplatePertanyaan: selected.uuid,
             Jawaban: isFree ? "lainnya" : "masukkan jawabannya",
             Nilai: 0,
             IsFreeText: isFree ? "1" : "0",
@@ -165,7 +190,8 @@ export default function CreateTemplateChoiceForm({
         <div className="flex items-center gap-2">
           <Button
             type="button"
-            className="flex items-center gap-2 text-primary text-sm font-bold hover:text-primary/50"
+            className="flex items-center gap-2 text-primary text-sm font-bold hover:text-primary/50 disabled:opacity-40"
+            disabled={formState.isSubmitting}
             onClick={() => addOption()}
           >
             <Icon name="add_circle" />
@@ -174,7 +200,8 @@ export default function CreateTemplateChoiceForm({
 
           <Button
             type="button"
-            className="flex items-center gap-2 text-primary text-sm font-bold hover:text-primary/50"
+            className="flex items-center gap-2 text-primary text-sm font-bold hover:text-primary/50 disabled:opacity-40"
+            disabled={formState.isSubmitting}
             onClick={() => addOption(true)}
           >
             <Icon name="add_circle" />
@@ -202,7 +229,42 @@ export default function CreateTemplateChoiceForm({
                 field?.payload?.IsFreeText === "1" ||
                 questionState?.selected?.tipe === "rating"
               }
-              register={register(`options.${index}.label` as const)}
+              register={register(`options.${index}.label` as const, {
+                onChange: (e) => {
+                  const value = e.target.value;
+
+                  const newOptions = [...options];
+
+                  newOptions[index].label = value;
+
+                  setValue("options", newOptions, {
+                    shouldDirty: true,
+                  });
+
+                  // debounce autosave
+                  clearTimeout(debounceRef.current[index]);
+
+                  debounceRef.current[index] = setTimeout(async () => {
+                    await updateOption(
+                      String(field?.value ?? "-"),
+                      value,
+                      field?.payload,
+                    );
+                  }, 800);
+                },
+
+                // onBlur: async (e) => {
+                //   const value = e.target.value;
+
+                //   clearTimeout(debounceRef.current[index]);
+
+                //   await updateOption(
+                //     String(field?.value ?? "-"),
+                //     value,
+                //     field?.payload,
+                //   );
+                // },
+              })}
             />
 
             <AnimatedButton

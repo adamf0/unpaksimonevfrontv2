@@ -40,6 +40,7 @@ export default function TemplateQuestionFormWrapper() {
     questionState,
     setQuestionState,
     actionQuestion,
+    loadSinglePertanyaan,
   } = useTemplateQuestionContext();
 
   const {loadPreview} = useTemplatePreview();
@@ -55,6 +56,7 @@ export default function TemplateQuestionFormWrapper() {
     if (!questionState.selected) return;
 
     const s = questionState.selected;
+    console.log("s",s)
 
     methods.reset({
       banksoal: questionQuery?.banksoal,
@@ -183,6 +185,11 @@ export default function TemplateQuestionFormWrapper() {
       );
 
       if (!uuid) throw new Error("UUID tidak ditemukan");
+
+      if(!isEditMode){
+        const pertanyaan = await loadSinglePertanyaan(uuid);
+        setQuestionState((p) => ({ ...p, selected: pertanyaan }));
+      }
 
       if (isRating) {
         let ratingOptions: any[] = [];

@@ -60,7 +60,7 @@ export default function FilterSection({
           renderItem={renderItem}
         />
 
-        <SelectField
+        {/* <SelectField
           label="Semester"
           placeholder="Pilih Semester"
           options={semesterOptions}
@@ -73,7 +73,7 @@ export default function FilterSection({
           }
           mode="single"
           renderItem={renderItem}
-        />
+        /> */}
 
         <div className="flex items-end sm:col-span-2 xl:col-span-1">
           <button

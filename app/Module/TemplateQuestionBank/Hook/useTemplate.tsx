@@ -226,6 +226,34 @@ export function useTemplate() {
     }
   };
 
+  const loadSinglePertanyaan = async (uuid?: string) => {
+    const res = await apiCall.get(`/templatepertanyaan/${uuid}`);
+    const data = res?.data;
+
+    return data
+      ? {
+          id: data.ID,
+          uuid: data.UUID,
+          judul: data.Pertanyaan,
+          kategori: isEmpty(data.UuidKategori)
+            ? null
+            : {
+                uuid: data.UuidKategori,
+                kategori: data.Kategori,
+              },
+          tipe: data.JenisPilihan,
+          bobot: data.Bobot,
+          require: data.Required,
+          status:
+            data.Status == "delete" || !isEmpty(data?.DeletedAt)
+              ? "deleted"
+              : data.Status,
+          createdBy: data?.CreatedBy ?? "(LPM)",
+          deletedtime: data?.DeletedAt,
+        }
+      : null;
+  };
+
   /** =========================
    * GENERIC SSE LOADER
    * ========================= */
@@ -385,6 +413,7 @@ export function useTemplate() {
     loadData,
 
     actionQuestion,
+    loadSinglePertanyaan,
 
     resetFiltersQuestion: () => setQuestionQuery(initialQueryState),
 

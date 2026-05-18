@@ -7,6 +7,7 @@ import { Toggle } from "../Atoms/Toggle";
 import { Option } from "../../Common/Components/Attribut/Option";
 import { useTemplateQuestionContext } from "../Context/TemplateQuestionProvider";
 import { adaptSelectOptions } from "../../Common/Adapter/adaptSelectOptions";
+import { adaptSelectOptionsMerge } from "../../Common/Adapter/adaptSelectOptionsMerge";
 
 const tipeOptions: Option[] = [
   { label: "Radio Button", value: "radio" },
@@ -20,14 +21,16 @@ export function CreateTemplateForm() {
     register,
     formState: { errors },
   } = useFormContext();
-  const { questionQuery, questionState, setQuestionQuery } = useTemplateQuestionContext();
+  const { questionQuery, questionState, setQuestionQuery } =
+    useTemplateQuestionContext();
 
   /** =========================
    * OPTIONS
    * ========================= */
-  const bankOptions = adaptSelectOptions(questionState.dataBank, {
+  const bankOptions = adaptSelectOptionsMerge(questionState.dataBank, {
     valueKey: "UUID",
-    labelKey: "Judul",
+    labelKeys: ["Judul", "Semester"],
+    template: "%s (%s)",
   });
 
   const kategoriOptions = adaptSelectOptions(questionState.dataKategori, {
