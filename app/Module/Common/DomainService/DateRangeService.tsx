@@ -12,6 +12,7 @@ export class DateRangeService {
   constructor(
     private readonly start: DateTimeVO,
     private readonly end: DateTimeVO,
+    private readonly listext: any[],
   ) {}
 
   getStatus(now: DateTimeVO): RangeStatus {
@@ -31,7 +32,7 @@ export class DateRangeService {
       return "SCHEDULED";
     }
 
-    if (current <= end) {
+    if (current <= end || this.listext.length>0) {
       return "ACTIVE";
     }
 

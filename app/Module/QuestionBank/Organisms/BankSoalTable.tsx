@@ -17,6 +17,7 @@ import { useToast } from "../../Common/Context/ToastContext";
 import { handleCloudflareError } from "../../Common/Error/axiosErrorHandler";
 import { BankSoalItem } from "../Attribut/BankSoalItem";
 import { useAdminPanel } from "../../Common/Components/Template/AdminPanelTemplate";
+import { BankSoalItemExt } from "../Attribut/BankSoalItemExt";
 
 interface Props {
   data: any[];
@@ -131,7 +132,6 @@ export function BankSoalTable({
         }));
       }
     };
-    
 
     /**
      * jika sudah delete
@@ -168,7 +168,7 @@ export function BankSoalTable({
         name: "copy",
         icon: "copy_all",
         className: "hover:text-primary",
-        onClick: () => onCopy(bank)
+        onClick: () => onCopy(bank),
       },
       {
         name: "time",
@@ -245,9 +245,20 @@ export function BankSoalTable({
           </tr>
         ) : (
           banks.map((bank) => {
+            const activeOnly =
+              bank?.listextend?.filter((item: BankSoalItemExt) => {
+                const now = new Date();
+
+                return (
+                  now >= new Date(item.TanggalMulai) &&
+                  now <= new Date(item.TanggalAkhir)
+                );
+              }) ?? [];
+
             const rangeService = new DateRangeService(
               bank.tanggalmulai,
               bank.tanggalakhir,
+              activeOnly
             );
 
             const rangeStatus = rangeService.getStatus(
