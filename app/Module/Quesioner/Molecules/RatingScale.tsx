@@ -12,7 +12,7 @@ type Props = {
 
 export default function RatingScale({
   minLabel = "Sangat Buruk",
-  maxLabel = "Sanget Baik",
+  maxLabel = "Sangat Baik",
   max = 5,
   value,
   onChange,

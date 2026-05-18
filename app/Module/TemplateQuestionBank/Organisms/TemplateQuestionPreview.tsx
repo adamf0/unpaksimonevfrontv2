@@ -18,7 +18,7 @@ function mapQuestions(RAW_DATA : TemplatePertanyaanWithAnswareDefault[], step: "
   return RAW_DATA.filter((item: any) => {
     // ADMIN
     if (step === "admin") {
-      return item.CreatedBy == null;
+      return item.CreatedBy == null || item.CreatedBy == "admin" || item.CreatedBy == "admin lpm";
     }
 
     // FAKULTAS

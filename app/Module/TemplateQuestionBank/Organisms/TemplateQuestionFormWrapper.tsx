@@ -56,7 +56,6 @@ export default function TemplateQuestionFormWrapper() {
     if (!questionState.selected) return;
 
     const s = questionState.selected;
-    console.log("s",s)
 
     methods.reset({
       banksoal: questionQuery?.banksoal,
