@@ -414,6 +414,7 @@ export function useTemplate() {
     loadData,
 
     actionQuestion,
+    loadSinglePertanyaan,
 
     resetFiltersQuestion: () => setQuestionQuery(initialQueryState),
 
