@@ -118,7 +118,7 @@ export default function InitialSection({
             onStart();
           }
         }}
-        disabled={!isActive}
+        disabled={!isActive || availableSteps.length==0}
         className={cn(
           "w-full py-4 rounded-xl font-bold transition transform disabled:opacity-60 disabled:cursor-not-allowed",
 
