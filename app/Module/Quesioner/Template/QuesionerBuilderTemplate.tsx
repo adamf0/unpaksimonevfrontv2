@@ -8,7 +8,7 @@ import QuestionForm from "../Organisms/QuestionForm";
 import InitialSection from "../Organisms/InitialSection";
 import { useQuestionerBuilder } from "../Hook/useQuestionerBuilder";
 import { useEffect, useState } from "react";
-import { isEmpty, toNumber } from "../../Common/Service/utility";
+import { toNumber } from "../../Common/Service/utility";
 
 type Props = {
   uuid: string;
@@ -34,7 +34,7 @@ export default function QuesionerBuilderTemplate({ uuid }: Props) {
 
     activeStep,
     filteredData,
-    // availableSteps,
+    availableSteps,
 
     // ================= ACTIONS =================
     handleSubmit,
@@ -53,6 +53,7 @@ export default function QuesionerBuilderTemplate({ uuid }: Props) {
     // setToast,
     // setData,
     loadData,
+    dataQuestion,
   } = useQuestionerBuilder();
 
   const { loading, dataAnsware, error } = state;
@@ -87,6 +88,21 @@ export default function QuesionerBuilderTemplate({ uuid }: Props) {
     }
   }, [uuid]);
 
+  useEffect(() => {
+    const token = sessionStorage.getItem("access_token");
+
+    if (!token) {
+      setStatus("problem");
+      return;
+    }
+
+    setState((prev) => ({
+      ...prev,
+      userFakultas: state.userInfo?.RefFakultas,
+      userProdi: state.userInfo?.RefProdi,
+    }));
+  }, [state.userInfo]);
+
   const setAnswers = (cb: any) => {
     setState((prev) => ({
       ...prev,
@@ -117,11 +133,19 @@ export default function QuesionerBuilderTemplate({ uuid }: Props) {
           SectionError(status, errorContext, uuid)
         ) : (
           <InitialSection
+            availableSteps={availableSteps}
             summary={{
-              admin: filteredData.filter((x) => x.created === "admin").length,
-              fakultas: filteredData.filter((x) => x.created === "fakultas")
-                .length,
-              prodi: filteredData.filter((x) => x.created === "prodi").length,
+              admin: dataQuestion.filter((x) => x.created === "admin").length,
+              fakultas: dataQuestion.filter(
+                (x) =>
+                  x.created === "fakultas" &&
+                  x.createdBy === String(state.userInfo?.RefFakultas ?? ""),
+              ).length,
+              prodi: dataQuestion.filter(
+                (x) =>
+                  x.created === "prodi" &&
+                  x.createdBy === String(state.userInfo?.RefProdi ?? ""),
+              ).length,
             }}
             info={{
               title: state.data?.Judul || "-",
@@ -129,9 +153,9 @@ export default function QuesionerBuilderTemplate({ uuid }: Props) {
               semester: state.data?.Semester || "-",
             }}
             identity={{
-              audiens: "adam furoqon - 065117251",
-              fakultas: "Hukum",
-              prodi: "Hukum (S1)",
+              audiens: state.userInfo?.Name ?? "",
+              fakultas: state.userInfo?.Fakultas ?? "",
+              prodi: state.userInfo?.Prodi ?? "",
             }}
             onStart={() => setStatus("process")}
             TotalInput={toNumber(state.data?.TotalInput)}
@@ -203,6 +227,8 @@ function SectionError(
   };
 
   return (
-    <div className="pt-32 pb-20 px-8 max-w-6xl mx-auto flex flex-col gap-32">{renderStatusSection()}</div>
+    <div className="pt-32 pb-20 px-8 max-w-6xl mx-auto flex flex-col gap-32">
+      {renderStatusSection()}
+    </div>
   );
 }

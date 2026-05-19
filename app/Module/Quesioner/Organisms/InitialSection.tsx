@@ -23,6 +23,7 @@ type Props = {
 
   TotalInput: number;
   TotalPertanyaan: number;
+  availableSteps: string[];
 };
 
 export default function InitialSection({
@@ -32,6 +33,7 @@ export default function InitialSection({
   identity,
   TotalInput,
   TotalPertanyaan,
+  availableSteps,
 }: Props) {
   const items = [
     {
@@ -63,7 +65,7 @@ export default function InitialSection({
 
         {/* TAHUN + SEMESTER */}
         <p className="text-lg text-on-surface-variant">
-          {info.year} • Semester {info.semester}
+          Semester {info.semester}
         </p>
 
         {/* IDENTITAS */}
@@ -131,7 +133,7 @@ export default function InitialSection({
           ? "Data Tidak Valid"
           : isSuccess
             ? "Kuesioner Lengkap"
-            : "Mulai Kuesioner"}
+            : availableSteps.length>0? "Mulai Kuesioner" : "Kuesioner Expired"}
       </button>
     </div>
   );

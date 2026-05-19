@@ -6,12 +6,14 @@ import { AnswerState } from "../Attribut/AnswerState";
 import { Option } from "../Attribut/Option";
 import { handleCloudflareError } from "../../Common/Error/axiosErrorHandler";
 import apiCall from "../../Common/External/APICall";
+import { AccountInfo } from "../../Common/Attribut/AccountInfo";
 
 type LoadingState = "kuesioner" | "pertanyaan" | "form" | null;
 
 type BankSoalState = {
   dataQuestion: Question[];
   dataAnsware: AnswerState;
+  userInfo: AccountInfo | null;
   data: any;
 
   loading: LoadingState;
@@ -27,13 +29,14 @@ export function useQuestionerBuilder() {
   const [state, setState] = useState<BankSoalState>({
     dataQuestion: [],
     dataAnsware: {},
+    userInfo: null,
     data: null,
 
     loading: null,
     error: null,
 
-    // userFakultas: "hukum",
-    // userProdi: "hukum (s1)",
+    userFakultas: null,
+    userProdi: null,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -47,6 +50,7 @@ export function useQuestionerBuilder() {
 
   const [initialized, setInitialized] = useState(false);
 
+  type AvailableRole = "admin" | "fakultas" | "prodi";
   const STEPS: Array<"admin" | "fakultas" | "prodi"> = [
     "admin",
     "fakultas",
@@ -55,6 +59,107 @@ export function useQuestionerBuilder() {
 
   const { dataQuestion, dataAnsware, data, loading, userFakultas, userProdi } =
     state;
+
+  function isDateActive(start?: string | null, end?: string | null) {
+    if (!start || !end) {
+      return false;
+    }
+
+    const now = new Date();
+
+    return now >= new Date(start) && now <= new Date(end);
+  }
+
+  function getAvailableRoleByTime(
+    kuesioner: any,
+    userInfo: AccountInfo | null,
+  ): AvailableRole[] {
+    const result: AvailableRole[] = [];
+
+    // ---------- ADMIN ----------
+
+    if (isDateActive(kuesioner.TanggalMulai, kuesioner.TanggalAkhir)) {
+      result.push("admin");
+    }
+
+    // ---------- EXTENSION ----------
+
+    for (const item of kuesioner.ListExt || []) {
+      // FAKULTAS
+
+      if (
+        item.Role === "fakultas" &&
+        item.KodeFakultas === userInfo?.RefFakultas &&
+        isDateActive(item.TanggalMulai, item.TanggalAkhir)
+      ) {
+        result.push("fakultas");
+      }
+
+      // PRODI
+
+      if (
+        item.Role === "prodi" &&
+        item.KodeProdi === userInfo?.RefProdi &&
+        isDateActive(item.TanggalMulai, item.TanggalAkhir)
+      ) {
+        result.push("prodi");
+      }
+    }
+
+    return [...new Set(result)];
+  }
+
+  function getAvailableRoleByQuestion(
+    dataQuestion: Question[],
+    userFakultas?: string | null,
+    userProdi?: string | null,
+  ): AvailableRole[] {
+    const STEPS: AvailableRole[] = ["admin", "fakultas", "prodi"];
+
+    return STEPS.filter((step) => {
+      // ---------- ADMIN ----------
+
+      if (step === "admin") {
+        return dataQuestion.some((q) => q.created === "admin");
+      }
+
+      // ---------- FAKULTAS ----------
+
+      if (step === "fakultas") {
+        return dataQuestion.some(
+          (q) => q.created === "fakultas" && q.createdBy === userFakultas,
+        );
+      }
+
+      // ---------- PRODI ----------
+
+      if (step === "prodi") {
+        return dataQuestion.some(
+          (q) => q.created === "prodi" && q.createdBy === userProdi,
+        );
+      }
+
+      return false;
+    });
+  }
+
+  function getAvailableQuestioner(
+    kuesioner: any,
+    userInfo: AccountInfo | null,
+    dataQuestion: Question[],
+    userFakultas?: string | null,
+    userProdi?: string | null,
+  ): AvailableRole[] {
+    const availableByTime = getAvailableRoleByTime(kuesioner, userInfo);
+
+    const availableByQuestion = getAvailableRoleByQuestion(
+      dataQuestion,
+      userFakultas,
+      userProdi,
+    );
+
+    return availableByTime.filter((role) => availableByQuestion.includes(role));
+  }
 
   /* =====================================================
      LOAD SINGLE QUESTION
@@ -120,7 +225,7 @@ export function useQuestionerBuilder() {
 
       const token = sessionStorage.getItem("access_token");
 
-      const [res, resJawaban] = await Promise.all([
+      const [res, resJawaban, resUser] = await Promise.all([
         apiCall.get(`kuesioners/active/${uuidKuesioner}`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -132,14 +237,22 @@ export function useQuestionerBuilder() {
             Authorization: `Bearer ${token}`,
           },
         }),
+
+        apiCall.get(`whoami`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }),
       ]);
 
       const kuesioner = res.data?.data ?? res.data;
       const jawaban = resJawaban.data?.data ?? resJawaban.data;
+      const userInfo: AccountInfo | null = resUser?.data;
 
       setState((p) => ({
         ...p,
         data: kuesioner,
+        userInfo: userInfo,
       }));
 
       const targets: string[] = Array.isArray(kuesioner?.TargetPertanyaan)
@@ -284,32 +397,45 @@ export function useQuestionerBuilder() {
   /* =====================================================
      AVAILABLE STEP
   ===================================================== */
+  // const availableSteps = useMemo(() => {
+  //   return STEPS.filter((step) => {
+  //     if (step === "admin") {
+  //       return dataQuestion.some((q) => q.created === "admin");
+  //     }
+
+  //     if (step === "fakultas") {
+  //       return dataQuestion.some(
+  //         (q) => q.created === "fakultas" && q.createdBy === userFakultas,
+  //       );
+  //     }
+
+  //     if (step === "prodi") {
+  //       return dataQuestion.some(
+  //         (q) => q.created === "prodi" && q.createdBy === userProdi,
+  //       );
+  //     }
+
+  //     return false;
+  //   });
+  // }, [dataQuestion, userFakultas, userProdi]);
   const availableSteps = useMemo(() => {
-    return STEPS.filter((step) => {
-      if (step === "admin") {
-        return dataQuestion.some((q) => q.created === "admin");
-      }
+    if (!state.data || !state.userInfo) {
+      return [];
+    }
 
-      if (step === "fakultas") {
-        return dataQuestion.some(
-          (q) => q.created === "fakultas" && q.createdBy === userFakultas,
-        );
-      }
-
-      if (step === "prodi") {
-        return dataQuestion.some(
-          (q) => q.created === "prodi" && q.createdBy === userProdi,
-        );
-      }
-
-      return false;
-    });
-  }, [dataQuestion, userFakultas, userProdi]);
+    return getAvailableQuestioner(
+      state.data,
+      state.userInfo,
+      dataQuestion,
+      userFakultas,
+      userProdi,
+    );
+  }, [state.data, state.userInfo, dataQuestion, userFakultas, userProdi]);
 
   const activeStep =
     availableSteps.length > 0
       ? availableSteps[Math.min(stepIndex.current, availableSteps.length - 1)]
-      : null;
+      : null; //[note] untuk debug tinggal ganti static misal "fakultas"
 
   /* =====================================================
      FILTER DATA
@@ -317,7 +443,7 @@ export function useQuestionerBuilder() {
   const filteredData = useMemo(() => {
     if (!activeStep) return [];
 
-    return dataQuestion.filter((q) => {
+    return dataQuestion.filter((q: Question) => {
       if (q.created !== activeStep) return false;
 
       if (q.created === "admin") return true;
@@ -327,6 +453,12 @@ export function useQuestionerBuilder() {
       return false;
     });
   }, [activeStep, dataQuestion, userFakultas, userProdi]);
+
+  console.log(
+    `activeStep: ${activeStep}`,
+    `availableSteps: ${JSON.stringify(availableSteps)}`,
+    dataQuestion,
+  );
 
   /* =====================================================
      VALIDATION
@@ -632,5 +764,6 @@ export function useQuestionerBuilder() {
     isSelected,
 
     handleSubmit,
+    dataQuestion,
   };
 }

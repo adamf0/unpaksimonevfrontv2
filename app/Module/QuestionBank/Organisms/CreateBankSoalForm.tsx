@@ -109,7 +109,6 @@ export function CreateBankSoalForm() {
           />
         </div>
 
-        {/* Konten [pr] ckeditor*/}
         <div className="col-span-2">
           <Controller
             name="konten"

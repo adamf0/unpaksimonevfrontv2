@@ -163,6 +163,8 @@ export default function AdminPanelTemplate({
     },
   ];
 
+  const hiddenMenus = ["Account", "Kategori"];
+
   const MENU_ITEMS: MenuItem[] = BASE_MENU_ITEMS.filter((item) => {
     if (userProfile?.Level === "admin") return true;
 
@@ -170,7 +172,7 @@ export default function AdminPanelTemplate({
       userProfile?.Level === "fakultas" ||
       userProfile?.Level === "prodi"
     ) {
-      return item.label !== "Account";
+      return !hiddenMenus.includes(item.label);
     }
 
     return false;
@@ -240,8 +242,8 @@ export default function AdminPanelTemplate({
             onToggleSidebar={toggleSidebar}
             title=""
             user={{
-              name: "Admin Utama",
-              role: "Super Administrator",
+              name: String(userProfile?.Name ?? "-"),
+              role: String(userProfile?.Level ?? "--"),
             }}
           />
 

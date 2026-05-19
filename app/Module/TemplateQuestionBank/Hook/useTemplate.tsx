@@ -107,7 +107,6 @@ export function useTemplate() {
       const rows = res?.data?.data ?? [];
       const total = res?.data?.total ?? 0;
 
-      console.log(rows)
       setQuestionState((p) => ({
         ...p,
         data: rows,

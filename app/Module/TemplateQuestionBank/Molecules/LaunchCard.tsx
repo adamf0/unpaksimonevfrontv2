@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import Card from "../../Common/Components/Atoms/Card";
 import Icon from "../../Common/Components/Atoms/Icon";
 import { useAdminPanel } from "../../Common/Components/Template/AdminPanelTemplate";
@@ -8,6 +10,18 @@ import { useTemplateQuestionContext } from "../Context/TemplateQuestionProvider"
 export function LaunchCard() {
   const { setMode } = useAdminPanel();
   const { questionQuery } = useTemplateQuestionContext();
+
+  // ✅ hydration safe
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // ✅ jangan render sebelum client ready
+  if (!mounted) {
+    return null;
+  }
 
   const isBankSoalEmpty =
     !questionQuery?.banksoal ||

@@ -165,12 +165,6 @@ export function BankSoalTable({
      */
     const actions: ActionItem[] = [
       {
-        name: "copy",
-        icon: "copy_all",
-        className: "hover:text-primary",
-        onClick: () => onCopy(bank),
-      },
-      {
         name: "time",
         icon: "calendar_clock",
         className: "hover:text-primary",
@@ -180,6 +174,15 @@ export function BankSoalTable({
         },
       },
     ];
+
+    if (String(userProfile?.Level ?? "") == "admin") {
+      actions.push({
+        name: "copy",
+        icon: "copy_all",
+        className: "hover:text-primary",
+        onClick: () => onCopy(bank),
+      });
+    }
 
     /**
      * owner only
@@ -258,7 +261,7 @@ export function BankSoalTable({
             const rangeService = new DateRangeService(
               bank.tanggalmulai,
               bank.tanggalakhir,
-              activeOnly
+              activeOnly,
             );
 
             const rangeStatus = rangeService.getStatus(

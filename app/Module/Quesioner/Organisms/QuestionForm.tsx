@@ -4,6 +4,8 @@ import { Option } from "../Attribut/Option";
 import { Question } from "../Attribut/Question";
 import RatingScale from "../Molecules/RatingScale";
 import SelectableOption from "../Molecules/SelectableOption";
+import empty_data from "../../../assets/empty_data.png";
+import Image from "next/image";
 
 type Props = {
   filteredData: Question[];
@@ -60,7 +62,7 @@ export default function QuestionForm(props: Props) {
   );
 
   // console.log("filteredData", filteredData); //groupkan dulu dari fullpath
-  return (
+  return filteredData.length > 0 ? (
     <>
       <form onSubmit={handleSubmit} className="space-y-10">
         {Object.entries(groupedData)
@@ -175,5 +177,37 @@ export default function QuestionForm(props: Props) {
         </div>
       )}
     </>
+  ) : (
+    <div className="flex items-center justify-center px-6">
+      <div
+        className="
+        p-10
+        text-center
+        space-y-6
+      "
+      >
+        {/* IMAGE */}
+        <div className="flex justify-center">
+          <Image src={empty_data} alt="No Form" className="w-64 max-w-full" />
+        </div>
+
+        {/* TEXT */}
+        <div className="space-y-2">
+          <h2 className="text-3xl font-black text-on-surface">
+            No Questionnaire Available
+          </h2>
+
+          <p className="text-on-surface-variant leading-relaxed">
+            There are currently no questionnaire forms available for your
+            account. This may be because the questionnaire period has not
+            started yet, has already ended, your faculty or study program is not
+            included in the active schedule, no questions have been created by
+            the administrator, faculty, or study program yet, the questionnaire
+            is still in draft status, or perhaps the developer was having a
+            rough day.
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }

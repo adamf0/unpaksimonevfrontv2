@@ -1,4 +1,3 @@
-// app/Module/Common/Components/Template/AdminPanelTemplateServer.tsx
 import AdminPanelTemplate from "./AdminPanelTemplate";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";

@@ -14,11 +14,18 @@ import { TemplatePertanyaanWithAnswareDefault } from "../Attribut/TemplatePertan
    MAPPER
 ========================================================= */
 
-function mapQuestions(RAW_DATA : TemplatePertanyaanWithAnswareDefault[], step: "admin" | "fakultas" | "prodi"): Question[] {
+function mapQuestions(
+  RAW_DATA: TemplatePertanyaanWithAnswareDefault[],
+  step: "admin" | "fakultas" | "prodi",
+): Question[] {
   return RAW_DATA.filter((item: any) => {
     // ADMIN
     if (step === "admin") {
-      return item.CreatedBy == null || item.CreatedBy == "admin" || item.CreatedBy == "admin lpm";
+      return (
+        item.CreatedBy == null ||
+        item.CreatedBy == "admin" ||
+        item.CreatedBy == "admin lpm"
+      );
     }
 
     // FAKULTAS
@@ -70,13 +77,16 @@ export default function TemplateQuestionPreview() {
   const [activeStep, setActiveStep] = useState<"admin" | "fakultas" | "prodi">(
     "admin",
   );
-  const {previewData} = useTemplatePreview();
+  const { previewData } = useTemplatePreview();
 
   // ========================================================
   // QUESTIONS
   // ========================================================
 
-  const questions = useMemo(() => mapQuestions(previewData , activeStep), [previewData, activeStep]);
+  const questions = useMemo(
+    () => mapQuestions(previewData, activeStep),
+    [previewData, activeStep],
+  );
 
   // ========================================================
   // ANSWERS
@@ -160,7 +170,11 @@ export default function TemplateQuestionPreview() {
   function hasQuestions(step: "admin" | "fakultas" | "prodi") {
     return previewData.some((item: any) => {
       if (step === "admin") {
-        return item.CreatedBy == null || item.CreatedBy == "admin" || item.CreatedBy == "admin lpm";
+        return (
+          item.CreatedBy == null ||
+          item.CreatedBy == "admin" ||
+          item.CreatedBy == "admin lpm"
+        );
       }
 
       if (step === "fakultas") {
@@ -194,6 +208,26 @@ export default function TemplateQuestionPreview() {
     }
 
     alert("Preview selesai");
+  }
+
+  const hasFakultasQuestions = useMemo(() => {
+    return previewData.some((item: any) => item.CreatedBy === "fakultas");
+  }, [previewData]);
+
+  const hasProdiQuestions = useMemo(() => {
+    return previewData.some((item: any) => item.CreatedBy === "prodi");
+  }, [previewData]);
+
+  function getSubmitLabel() {
+    if (hasFakultasQuestions) {
+      return "Lanjut ke Fakultas";
+    }
+
+    if (hasProdiQuestions) {
+      return "Lanjut ke Prodi";
+    }
+
+    return "Selesai Preview";
   }
 
   return (
@@ -481,11 +515,7 @@ export default function TemplateQuestionPreview() {
               transition-all
             "
           >
-            {activeStep === "admin"
-              ? "Lanjut ke Fakultas"
-              : activeStep === "fakultas"
-                ? "Lanjut ke Prodi"
-                : "Submit Preview"}
+            {getSubmitLabel()}
           </button>
         </div>
       </form>

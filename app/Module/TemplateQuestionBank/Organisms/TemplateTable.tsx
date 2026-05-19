@@ -8,6 +8,7 @@ import { CreatedByLabel } from "../Atoms/CreatedByLabel";
 import { useTemplateQuestionContext } from "../Context/TemplateQuestionProvider";
 import { isEmpty } from "../../Common/Service/utility";
 import { DeletedTime } from "../Molecules/DeletedTime";
+import { useAdminPanel } from "../../Common/Components/Template/AdminPanelTemplate";
 
 interface Props {
   data: any[];
@@ -24,6 +25,7 @@ export function TemplateTable({
 }: Props) {
   const { setQuestionState, actionQuestion, loadData } =
     useTemplateQuestionContext();
+  const { userProfile } = useAdminPanel();
 
   const datas: TemplateItem[] = (data || []).map((item: any) => {
     return {
@@ -58,72 +60,84 @@ export function TemplateTable({
     const deleted = !isEmpty(item.deletedtime);
 
     // 🔥 PRIORITY 1: deleted state (override semua)
-    if (deleted) {
-      return [
-        {
-          name: "restore",
-          icon: "restore",
-          className: "hover:text-primary",
-          onClick: async () => {
-            await handleAction(item?.uuid, item, "restore");
-            await loadData();
+    const level = String(userProfile?.Level ?? "");
+    let owner = "admin";
+    if(level=="fakultas"){
+      owner = `FAKULTAS ${String(userProfile?.Fakultas ?? "")}`
+    } else if(level=="prodi"){
+      owner = String(userProfile?.Prodi ?? "")
+    }
+
+    if(String(userProfile?.Level ?? "") == "admin" || owner == item.createdBy){
+      if (deleted) {
+        return [
+          {
+            name: "restore",
+            icon: "restore",
+            className: "hover:text-primary",
+            onClick: async () => {
+              await handleAction(item?.uuid, item, "restore");
+              await loadData();
+            },
           },
+          {
+            name: "force_delete",
+            icon: "delete_forever",
+            className: "hover:text-error",
+            onClick: () => openForceDelete?.(item),
+          },
+        ];
+      }
+
+      // 🔥 BASE ACTIONS (SELALU ADA, TIDAK DUPLIKAT)
+      const actions: ActionItem[] = [
+        {
+          name: "edit",
+          icon: "edit",
+          className: "hover:text-primary",
+          onClick: () =>
+            setQuestionState((prev: any) => ({
+              ...prev,
+              selected: item,
+            })),
         },
         {
-          name: "force_delete",
-          icon: "delete_forever",
+          name: "delete",
+          icon: "delete",
           className: "hover:text-error",
-          onClick: () => openForceDelete?.(item),
+          onClick: () => openDelete?.(item),
         },
       ];
+
+      // 🔥 DYNAMIC ACTION BERDASARKAN STATUS
+      if (item.status === "draf") {
+        actions.push({
+          name: "active",
+          icon: "check",
+          className: "!text-green-600 hover:text-success",
+          onClick: async () => {
+            await handleAction(item?.uuid, item, "active");
+            await loadData();
+          },
+        });
+      }
+
+      if (item.status === "active") {
+        actions.push({
+          name: "draf",
+          icon: "draft",
+          className: "hover:text-primary",
+          onClick: async () => {
+            await handleAction(item?.uuid, item, "draf");
+            await loadData();
+          },
+        });
+      }
+
+      return actions;
     }
 
-    // 🔥 BASE ACTIONS (SELALU ADA, TIDAK DUPLIKAT)
-    const actions: ActionItem[] = [
-      {
-        name: "edit",
-        icon: "edit",
-        className: "hover:text-primary",
-        onClick: () =>
-          setQuestionState((prev: any) => ({
-            ...prev,
-            selected: item,
-          })),
-      },
-      {
-        name: "delete",
-        icon: "delete",
-        className: "hover:text-error",
-        onClick: () => openDelete?.(item),
-      },
-    ];
-
-    // 🔥 DYNAMIC ACTION BERDASARKAN STATUS
-    if (item.status === "draf") {
-      actions.push({
-        name: "active",
-        icon: "check",
-        className: "!text-green-600 hover:text-success",
-        onClick: async () => {
-          await handleAction(item?.uuid, item, "active");
-          await loadData();
-        },
-      });
-    }
-
-    if (item.status === "active") {
-      actions.push({
-        name: "draf",
-        icon: "draft",
-        className: "hover:text-primary",
-        onClick: async () => {
-          await handleAction(item?.uuid, item, "draf");
-          await loadData();
-        },
-      });
-    }
-
-    return actions;
+    return [];
   };
 
   return (

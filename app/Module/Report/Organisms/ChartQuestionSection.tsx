@@ -136,7 +136,7 @@ export default function ChartQuestionSection({
     );
   }
 
-  console.log("full_path", full_path, "ratingQuestions",ratingQuestions)
+  // console.log("full_path", full_path, "ratingQuestions",ratingQuestions)
 
   return (
     <section className="mb-10">
