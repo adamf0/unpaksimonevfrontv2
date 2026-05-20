@@ -16,6 +16,8 @@ import {
 } from "../Service/ReportExport";
 import ExportFab from "../Atoms/ExportFab";
 import { adaptSelectOptionsMerge } from "../../Common/Adapter/adaptSelectOptionsMerge";
+import { Payload } from "../Attribut/Payload";
+import { useToast } from "../../Common/Context/ToastContext";
 
 export default function ReportTemplate() {
   const {
@@ -41,9 +43,11 @@ export default function ReportTemplate() {
     openFilter,
     closeFilter,
     resetFilters,
+    resetDataDetail,
 
     filteredDetail,
   } = useKuesionerReportContext();
+  const { pushToast } = useToast();
 
   const prevFilterRef = useRef<any>(null);
   const [bankOptions, setBankOptions] = useState<any[]>([]);
@@ -67,10 +71,10 @@ export default function ReportTemplate() {
 
     setBankOptions(
       adaptSelectOptionsMerge(dataBankSoal, {
-          valueKey: "UUID",
-          labelKeys: ["Judul", "Semester"],
-          template: "%s (%s)",
-        })
+        valueKey: "UUID",
+        labelKeys: ["Judul", "Semester"],
+        template: "%s (%s)",
+      }),
     );
   }, [dataBankSoal]);
 
@@ -80,10 +84,27 @@ export default function ReportTemplate() {
   const handleReloadDetail = () => {
     const payload = prevFilterRef.current;
 
-    if (!payload) return;
+    if (!payload?.length) return;
 
     loadDataDetail(payload);
   };
+
+  function hasDifferentJudul(bankSoal: any[]): boolean {
+    const uniqueJudul = new Set(
+      bankSoal.map((item: any) => {
+        const judul = item.payload?.Judul?.trim() || "";
+        const semester = item.payload?.Semester ?? "";
+
+        return judul
+          .replace(`(${semester})`, "")
+          .replace(" - Semester Ganjil", "")
+          .replace(" - Semester Genap", "")
+          .trim();
+      }),
+    );
+
+    return uniqueJudul.size > 1;
+  }
 
   console.log("◉ groupedByFullPath", query);
 
@@ -101,35 +122,50 @@ export default function ReportTemplate() {
         fakultasOptions={[]}
         prodiOptions={[]}
         semesterOptions={[]}
-        onApply={(val) => {
-          if (!val?.bankSoal?.label) return;
+        onApply={async (val) => {
+          if (hasDifferentJudul(val.bankSoal)) {
+            pushToast("bank soal tidak boleh beda sumber");
+            resetDataDetail();
+            setQuery((prev: any) => ({
+              ...prev,
+              bankSoal: [],
+            }));
+            return;
+          }
 
+          if (!val?.bankSoal?.length) return;
+          
           setQuery((prev: any) => ({
             ...prev,
-            bankSoal: val?.bankSoal,
+            bankSoal: val.bankSoal,
           }));
+          resetDataDetail();
 
-          const payload = {
-            judul: val.bankSoal.label,
+          const payloads: Payload[] = val.bankSoal.map((item: any) => ({
+            judul: item.label,
             semester: val?.semester?.label ?? "",
             is4year: "0",
-          };
+          }));
 
-          prevFilterRef.current = payload;
+          prevFilterRef.current = payloads;
 
-          loadDataDetail(payload);
+          await loadDataDetail(payloads);
         }}
       />
 
       <div className="fixed bottom-6 right-6 flex flex-col items-end gap-3 z-50">
         <ExportFab
-          disabled={!query.bankSoal}
+          disabled={!query.bankSoal?.length}
           filteredDetail={filteredDetail}
           groupedByFullPath={groupedByFullPath}
           exportRekapKuesioner={exportRekapKuesioner}
           exportDetailKuesioner={exportDetailKuesioner}
         />
-        <FilterButton query={query} openFilter={openFilter} disabled={!query.bankSoal}/>
+        <FilterButton
+          query={query}
+          openFilter={openFilter}
+          disabled={!query.bankSoal?.length}
+        />
       </div>
 
       <FilterSidebar

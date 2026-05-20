@@ -20,7 +20,7 @@ export default function FilterSection({
   onApply,
 }: Props) {
   const [filter, setFilter] = useState<FilterValue>({
-    bankSoal: null,
+    bankSoal: [],
     fakultas: null,
     prodi: null,
     semester: null,
@@ -56,7 +56,7 @@ export default function FilterSection({
               bankSoal: val,
             }))
           }
-          mode="single"
+          mode="multiple"
           renderItem={renderItem}
         />
 

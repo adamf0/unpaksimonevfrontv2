@@ -9,13 +9,15 @@ import { useToast } from "../../Common/Context/ToastContext";
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 const ModeDemo = process.env.NEXT_PUBLIC_DEMO == "1";
 
+type OptionBank = { value: string; label: string };
+
 type QueryState = {
   kode_fakultas: string | null;
   nama_fakultas: string | null;
   kode_prodi: string | null;
   nama_prodi: string | null;
 
-  bankSoal: { value: string; label: string } | null;
+  bankSoal: OptionBank[];
 };
 
 export function useKuesionerReport() {
@@ -52,7 +54,7 @@ export function useKuesionerReport() {
     nama_fakultas: null,
     kode_prodi: null,
     nama_prodi: null,
-    bankSoal: null,
+    bankSoal: [],
   });
 
   const openFilter = () => setOpen(true);
@@ -152,7 +154,7 @@ export function useKuesionerReport() {
   // =========================
   // FETCH DETAIL DATA
   // =========================
-  async function loadDataDetail(payload: Payload) {
+  async function loadDataDetail(payloads: Payload[]) {
     setLoadingDetail(true);
     setErrDataDetail(null);
     await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -166,63 +168,74 @@ export function useKuesionerReport() {
         throw new Error("Simulasi error random (genap)");
       }
 
-      const formData = new FormData();
-      formData.append("judul", payload.judul);
-      formData.append("semester", payload.semester);
-      formData.append("is4year", payload.is4year);
+      const results = await Promise.all(
+        payloads.map(async (payload) => {
+          const formData = new FormData();
 
-      const res = await fetch(`${BASE_URL}/kuesioners/report`, {
-        method: "POST",
-        headers: {
-          Accept: "text/event-stream",
-          Authorization: `Bearer ${sessionStorage.getItem("access_token")}`,
-        },
-        body: formData,
-        signal: controller.signal,
-      });
+          formData.append("judul", payload.judul);
+          // formData.append("semester", payload.semester);
+          formData.append("is4year", payload.is4year);
 
-      if (!res.ok || !res.body) throw new Error("Network error");
+          const res = await fetch(`${BASE_URL}/kuesioners/report`, {
+            method: "POST",
+            headers: {
+              Accept: "text/event-stream",
+              Authorization: `Bearer ${sessionStorage.getItem("access_token")}`,
+            },
+            body: formData,
+          });
 
-      const reader = res.body.getReader();
-      readerRef.current = reader;
-
-      const decoder = new TextDecoder("utf-8");
-
-      let buffer = "";
-      let temp: KuesionerResult[] = [];
-
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const chunks = buffer.split("\n\n");
-        buffer = chunks.pop() || "";
-
-        for (const chunk of chunks) {
-          const line = chunk.trim();
-          if (!line.startsWith("data:")) continue;
-
-          const val = line.replace("data:", "").trim();
-
-          if (val === "start") {
-            temp = [];
-            continue;
+          if (!res.ok || !res.body) {
+            throw new Error("Network error");
           }
 
-          if (val === "done") {
-            setDataDetail(temp);
-            setLoadingDetail(false);
-            return;
+          const reader = res.body.getReader();
+
+          const decoder = new TextDecoder("utf-8");
+
+          let buffer = "";
+          let temp: KuesionerResult[] = [];
+
+          while (true) {
+            const { value, done } = await reader.read();
+
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+
+            const chunks = buffer.split("\n\n");
+
+            buffer = chunks.pop() || "";
+
+            for (const chunk of chunks) {
+              const line = chunk.trim();
+
+              if (!line.startsWith("data:")) continue;
+
+              const val = line.replace("data:", "").trim();
+
+              if (val === "start") {
+                temp = [];
+                continue;
+              }
+
+              if (val === "done") {
+                return temp;
+              }
+
+              try {
+                temp.push(JSON.parse(val));
+              } catch {}
+            }
           }
 
-          try {
-            temp.push(JSON.parse(val));
-          } catch {}
-        }
+          return temp;
+        }),
+      );
 
-        setDataDetail([...temp]);
-      }
+      const merged = results.flat();
+
+      setDataDetail(merged);
     } catch (error: any) {
       if (!error.response) return setErrDataDetail("Server error");
 
@@ -304,64 +317,83 @@ export function useKuesionerReport() {
   // =========================
   // Template SOAL
   // =========================
-  async function loadTemplateSoal(uuidbanksoal: any) {
-    console.log("panggil", uuidbanksoal);
+  async function loadTemplateSoal(uuidbanksoals: string[]) {
+    console.log("panggil", uuidbanksoals);
     setLoadingTemplate(true);
 
     try {
-      const res = await fetch(
-        `${BASE_URL}/templatepertanyaan/${uuidbanksoal}/banksoal`,
-        {
-          method: "GET",
-          headers: {
-            Accept: "text/event-stream",
-            Authorization: `Bearer ${sessionStorage.getItem("access_token")}`,
-          },
-        },
+      const results = await Promise.all(
+        uuidbanksoals.map(async (uuidbanksoal) => {
+          const res = await fetch(
+            `${BASE_URL}/templatepertanyaan/${uuidbanksoal}/banksoal`,
+            {
+              method: "GET",
+              headers: {
+                Accept: "text/event-stream",
+                Authorization: `Bearer ${sessionStorage.getItem(
+                  "access_token",
+                )}`,
+              },
+            },
+          );
+
+          if (!res.ok || !res.body) {
+            throw new Error("Network error");
+          }
+
+          const reader = res.body.getReader();
+
+          const decoder = new TextDecoder("utf-8");
+
+          let buffer = "";
+
+          let temp: any[] = [];
+
+          while (true) {
+            const { value, done } = await reader.read();
+
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+
+            const chunks = buffer.split("\n\n");
+
+            buffer = chunks.pop() || "";
+
+            for (const chunk of chunks) {
+              const line = chunk.trim();
+
+              if (!line.startsWith("data:")) continue;
+
+              const val = line.replace("data:", "").trim();
+
+              if (val === "start") {
+                temp = [];
+                continue;
+              }
+
+              if (val === "done") {
+                return temp;
+              }
+
+              try {
+                temp.push(JSON.parse(val));
+              } catch {}
+            }
+          }
+
+          return temp;
+        }),
       );
 
-      if (!res.ok || !res.body) throw new Error("Network error");
+      const merged = results
+        .flat()
+        .filter(
+          (item, index, self) =>
+            index === self.findIndex((x) => x.UUID === item.UUID),
+        );
 
-      const reader = res.body.getReader();
-      readerRef.current = reader;
-
-      const decoder = new TextDecoder("utf-8");
-
-      let buffer = "";
-      let temp: any[] = [];
-
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const chunks = buffer.split("\n\n");
-        buffer = chunks.pop() || "";
-
-        for (const chunk of chunks) {
-          const line = chunk.trim();
-          if (!line.startsWith("data:")) continue;
-
-          const val = line.replace("data:", "").trim();
-
-          if (val === "start") {
-            temp = [];
-            continue;
-          }
-
-          if (val === "done") {
-            setDataTemplate(temp);
-            setLoadingTemplate(false);
-            return;
-          }
-
-          try {
-            temp.push(JSON.parse(val));
-          } catch {}
-        }
-
-        setDataTemplate([...temp]);
-      }
+      setDataTemplate(merged);
     } catch (error: any) {
       console.error(error);
     } finally {
@@ -568,14 +600,10 @@ export function useKuesionerReport() {
     const answerMap: Record<string, AnswerAgg> = {};
 
     // =========================
-    // 1. BUILD ANSWER MAP
+    // BUILD ANSWER MAP
     // =========================
     for (const item of filteredDetail) {
-      const key = item.Pertanyaan;
-      if (!key) continue;
-
-      const value = item.Jawaban || item.FreeText;
-      if (!value) continue;
+      const key = `${item.FullPath}||${item.Pertanyaan}`;
 
       if (!answerMap[key]) {
         answerMap[key] = {
@@ -584,10 +612,14 @@ export function useKuesionerReport() {
         };
       }
 
-      // count
+      const value = item.Jawaban || item.FreeText;
+
+      if (!value) continue;
+
+      // count jawaban
       answerMap[key].count[value] = (answerMap[key].count[value] || 0) + 1;
 
-      // store raw row (untuk "data")
+      // simpan raw data
       if (!answerMap[key].data[value]) {
         answerMap[key].data[value] = [];
       }
@@ -596,14 +628,16 @@ export function useKuesionerReport() {
     }
 
     // =========================
-    // 2. GROUP BY FULLPATH
+    // GROUP BY FULLPATH
     // =========================
     const map: Record<string, any> = {};
 
     for (const t of dataTemplate) {
       const fullPath = t.FullPath || "-";
-      const key = t.Pertanyaan;
 
+      const questionKey = `${fullPath}||${t.Pertanyaan}`;
+
+      // init category
       if (!map[fullPath]) {
         map[fullPath] = {
           fullPath,
@@ -611,7 +645,17 @@ export function useKuesionerReport() {
         };
       }
 
-      const agg = key ? answerMap[key] : undefined;
+      // =========================
+      // CEK DUPLIKAT PERTANYAAN
+      // =========================
+      const existingQuestion = map[fullPath].pertanyaan.find(
+        (x: any) => x.title === t.Pertanyaan,
+      );
+
+      // skip kalau sudah ada
+      if (existingQuestion) continue;
+
+      const agg = answerMap[questionKey];
 
       let jawaban: any[] = [];
 
@@ -639,7 +683,7 @@ export function useKuesionerReport() {
       nama_fakultas: null,
       kode_prodi: null,
       nama_prodi: null,
-      bankSoal: null,
+      bankSoal: [],
     });
   };
 
@@ -659,10 +703,14 @@ export function useKuesionerReport() {
   }, []);
 
   useEffect(() => {
-    if (!query.bankSoal?.value) return;
+    if (!query.bankSoal?.length) return;
 
-    loadTemplateSoal(query.bankSoal.value);
+    loadTemplateSoal(query.bankSoal.map((item) => item.value));
   }, [query.bankSoal]);
+
+  function resetDataDetail(){
+    setDataDetail([]);
+  }
 
   return {
     data,
@@ -701,6 +749,7 @@ export function useKuesionerReport() {
     query,
     setQuery,
     resetFilters,
+    resetDataDetail,
 
     filteredDetail,
   };

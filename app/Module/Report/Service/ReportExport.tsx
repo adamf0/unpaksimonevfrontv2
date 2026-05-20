@@ -29,7 +29,9 @@ export function exportRekapKuesioner({ rows }: { rows: any[] }) {
   const seen = new Set<string>();
 
   const uniqueRows = rows.filter((item) => {
-    const key = item.NIDN?.trim() || item.NIP?.trim() || item.NPM?.trim();
+    const identity = item.NIDN?.trim() || item.NIP?.trim() || item.NPM?.trim();
+    const key = `${identity}_${item.Judul} (${item.Semester})`;
+ 
     if (!key || seen.has(key)) return false;
 
     seen.add(key);
@@ -49,6 +51,7 @@ export function exportRekapKuesioner({ rows }: { rows: any[] }) {
       "",
     Fakultas: item.Fakultas ?? "",
     Prodi: item.Prodi ?? "",
+    Kuesioner: `${item.Judul} (${item.Semester})`,
   }));
 
   const wb = XLSX.utils.book_new();

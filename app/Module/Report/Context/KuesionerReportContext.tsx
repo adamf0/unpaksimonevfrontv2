@@ -24,7 +24,7 @@ export type KuesionerReportContextType = {
   errdataDetail: string | null;
 
   loadData: () => Promise<void>;
-  loadDataDetail: (payload: Payload) => Promise<void>;
+  loadDataDetail: (payload: Payload[]) => Promise<void>;
   loadBankSoal: () => Promise<void>;
   loadDataFakultas: () => void;
   loadDataProdi: () => void;
@@ -43,6 +43,7 @@ export type KuesionerReportContextType = {
   query: any;
   setQuery: React.Dispatch<React.SetStateAction<any>>;
   resetFilters: () => void;
+  resetDataDetail: () => void;
 
   filteredDetail: any,
 };
