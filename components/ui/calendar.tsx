@@ -27,9 +27,9 @@ function normalizeRange(value: DateRange | undefined): DateRange | undefined {
 }
 
 
-type CalendarProps = Omit<
+type CalendarProps = Extract<
   DayPickerProps,
-  "mode" | "selected" | "onSelect"
+  { mode?: "range" }
 >;
 
 function Calendar({
