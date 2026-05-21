@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  compress: true,
   reactStrictMode: false,
   productionBrowserSourceMaps: false,
   generateBuildId: async () => "build",

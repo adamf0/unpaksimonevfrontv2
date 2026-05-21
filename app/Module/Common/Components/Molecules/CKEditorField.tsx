@@ -2,10 +2,22 @@
 
 import DOMPurify from "dompurify";
 import Label from "../Atoms/Label";
+import "ckeditor5/ckeditor5.css";
 
 import { CKEditor } from "@ckeditor/ckeditor5-react";
+
+import {
+  ClassicEditor,
+  Bold,
+  Italic,
+  Essentials,
+  Paragraph,
+  List,
+  BlockQuote,
+  Undo,
+  type EditorConfig,
+} from "ckeditor5";
 // @ts-ignore
-import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
 
 interface CKEditorFieldProps {
   label: string;
@@ -190,7 +202,19 @@ export function CKEditorField({
           editor={ClassicEditor}
           data={safeValue}
           config={{
+            licenseKey: "GPL",
+            
             placeholder,
+
+            plugins: [
+              Essentials,
+              Paragraph,
+              Bold,
+              Italic,
+              List,
+              BlockQuote,
+              Undo,
+            ],
 
             /**
              * TOOLBAR SUPER STRICT

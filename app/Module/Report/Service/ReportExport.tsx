@@ -1,6 +1,6 @@
 "use client";
 
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 
 /* =========================================================
  * AUTO WIDTH
@@ -18,23 +18,61 @@ function autoWidth(data: any[]) {
       if (len > max) max = len;
     }
 
-    return { wch: Math.min(max + 5, 60) };
+    return {
+      width: Math.min(max + 5, 60),
+    };
   });
+}
+
+/* =========================================================
+ * DOWNLOAD HELPER
+ * ========================================================= */
+async function downloadWorkbook(
+  workbook: ExcelJS.Workbook,
+  filename: string,
+) {
+  const buffer = await workbook.xlsx.writeBuffer();
+
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+
+  const url = window.URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+
+  document.body.appendChild(a);
+  a.click();
+
+  document.body.removeChild(a);
+
+  window.URL.revokeObjectURL(url);
 }
 
 /* =========================================================
  * EXPORT REKAP
  * ========================================================= */
-export function exportRekapKuesioner({ rows }: { rows: any[] }) {
+export async function exportRekapKuesioner({
+  rows,
+}: {
+  rows: any[];
+}) {
   const seen = new Set<string>();
 
   const uniqueRows = rows.filter((item) => {
-    const identity = item.NIDN?.trim() || item.NIP?.trim() || item.NPM?.trim();
+    const identity =
+      item.NIDN?.trim() ||
+      item.NIP?.trim() ||
+      item.NPM?.trim();
+
     const key = `${identity}_${item.Judul} (${item.Semester})`;
- 
+
     if (!key || seen.has(key)) return false;
 
     seen.add(key);
+
     return true;
   });
 
@@ -54,28 +92,55 @@ export function exportRekapKuesioner({ rows }: { rows: any[] }) {
     Kuesioner: `${item.Judul} (${item.Semester})`,
   }));
 
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.json_to_sheet(mapped);
+  const workbook = new ExcelJS.Workbook();
 
-  ws["!cols"] = autoWidth(mapped);
+  const worksheet = workbook.addWorksheet("Rekap");
 
-  XLSX.utils.book_append_sheet(wb, ws, "Rekap");
-  XLSX.writeFile(wb, `rekap_kuesioner_${Date.now()}.xlsx`);
+  if (mapped.length > 0) {
+    worksheet.columns = Object.keys(mapped[0]).map(
+      (key, index) => ({
+        header: key,
+        key,
+        width: autoWidth(mapped)[index]?.width || 20,
+      }),
+    );
+
+    mapped.forEach((row) => {
+      worksheet.addRow(row);
+    });
+  }
+
+  /* =========================
+   * HEADER STYLE
+   * ========================= */
+  worksheet.getRow(1).font = {
+    bold: true,
+  };
+
+  await downloadWorkbook(
+    workbook,
+    `rekap_kuesioner_${Date.now()}.xlsx`,
+  );
 }
 
 /* =========================================================
- * EXPORT DETAIL (REFACTORED + SCALABLE)
+ * EXPORT DETAIL
  * ========================================================= */
-export function exportDetailKuesioner({ grouped }: { grouped: any[] }) {
-  const wb = XLSX.utils.book_new();
+export async function exportDetailKuesioner({
+  grouped,
+}: {
+  grouped: any[];
+}) {
+  const workbook = new ExcelJS.Workbook();
+
+  const worksheet = workbook.addWorksheet("Detail");
 
   const rows: any[] = [];
-  const merges: any[] = [];
 
-  let rowIndex = 1;
+  let rowIndex = 2;
 
-  let fpStart = 1;
-  let qStart = 1;
+  let fpStart = 2;
+  let qStart = 2;
 
   let currentFP = "";
   let currentQ = "";
@@ -83,7 +148,7 @@ export function exportDetailKuesioner({ grouped }: { grouped: any[] }) {
   let grandTotal = 0;
 
   /* =========================================================
-   * STATE CACHE (LOCAL REF FOR SPEED)
+   * STATE CACHE
    * ========================================================= */
   let fp: string;
   let qTitle: string;
@@ -91,21 +156,23 @@ export function exportDetailKuesioner({ grouped }: { grouped: any[] }) {
   let jawaban: any[];
 
   /* =========================================================
-   * PHASE 1 + 2 COMBINED (OPTIMIZED LOOP)
+   * BUILD ROWS
    * ========================================================= */
   for (let i = 0; i < grouped.length; i++) {
     const group = grouped[i];
+
     fp = group.fullPath;
 
     const pertanyaanList = group.pertanyaan;
 
     for (let p = 0; p < pertanyaanList.length; p++) {
       const pItem = pertanyaanList[p];
+
       qTitle = pItem.title;
       jawaban = pItem.jawaban;
 
-      // compute subtotal ONCE
       subtotal = 0;
+
       for (let j = 0; j < jawaban.length; j++) {
         subtotal += Number(jawaban[j].total) || 0;
       }
@@ -115,44 +182,6 @@ export function exportDetailKuesioner({ grouped }: { grouped: any[] }) {
       for (let j = 0; j < jawaban.length; j++) {
         const ans = jawaban[j];
 
-        /* =========================
-         * FULLPATH MERGE
-         * ========================= */
-        if (fp !== currentFP) {
-          if (currentFP && rowIndex - 1 > fpStart) {
-            merges.push({
-              s: { r: fpStart, c: 0 },
-              e: { r: rowIndex - 1, c: 0 },
-            });
-          }
-
-          currentFP = fp;
-          fpStart = rowIndex;
-        }
-
-        /* =========================
-         * PERTANYAAN + SUBTOTAL MERGE
-         * ========================= */
-        if (qTitle !== currentQ || fp !== currentFP) {
-          if (currentQ && rowIndex - 1 > qStart) {
-            merges.push({
-              s: { r: qStart, c: 1 },
-              e: { r: rowIndex - 1, c: 1 },
-            });
-
-            merges.push({
-              s: { r: qStart, c: 4 },
-              e: { r: rowIndex - 1, c: 4 },
-            });
-          }
-
-          currentQ = qTitle;
-          qStart = rowIndex;
-        }
-
-        /* =========================
-         * ROW PUSH (LIGHT OBJECT)
-         * ========================= */
         rows.push({
           FullPath: fp,
           Pertanyaan: qTitle,
@@ -167,28 +196,6 @@ export function exportDetailKuesioner({ grouped }: { grouped: any[] }) {
   }
 
   /* =========================================================
-   * FINAL MERGE FLUSH
-   * ========================================================= */
-  if (rowIndex - 1 > fpStart) {
-    merges.push({
-      s: { r: fpStart, c: 0 },
-      e: { r: rowIndex - 1, c: 0 },
-    });
-  }
-
-  if (rowIndex - 1 > qStart) {
-    merges.push({
-      s: { r: qStart, c: 1 },
-      e: { r: rowIndex - 1, c: 1 },
-    });
-
-    merges.push({
-      s: { r: qStart, c: 4 },
-      e: { r: rowIndex - 1, c: 4 },
-    });
-  }
-
-  /* =========================================================
    * GRAND TOTAL
    * ========================================================= */
   rows.push({
@@ -200,14 +207,118 @@ export function exportDetailKuesioner({ grouped }: { grouped: any[] }) {
   });
 
   /* =========================================================
-   * WRITE SHEET
+   * COLUMNS
    * ========================================================= */
-  const ws = XLSX.utils.json_to_sheet(rows);
+  worksheet.columns = [
+    {
+      header: "FullPath",
+      key: "FullPath",
+      width: autoWidth(rows)[0]?.width || 30,
+    },
+    {
+      header: "Pertanyaan",
+      key: "Pertanyaan",
+      width: autoWidth(rows)[1]?.width || 30,
+    },
+    {
+      header: "Jawaban",
+      key: "Jawaban",
+      width: autoWidth(rows)[2]?.width || 20,
+    },
+    {
+      header: "Total",
+      key: "Total",
+      width: autoWidth(rows)[3]?.width || 15,
+    },
+    {
+      header: "Subtotal",
+      key: "Subtotal",
+      width: autoWidth(rows)[4]?.width || 15,
+    },
+  ];
 
-  ws["!cols"] = autoWidth(rows);
-  ws["!merges"] = merges;
+  /* =========================================================
+   * INSERT ROWS
+   * ========================================================= */
+  rows.forEach((row) => {
+    worksheet.addRow(row);
+  });
 
-  XLSX.utils.book_append_sheet(wb, ws, "Detail");
+  /* =========================================================
+   * HEADER STYLE
+   * ========================================================= */
+  worksheet.getRow(1).font = {
+    bold: true,
+  };
 
-  XLSX.writeFile(wb, `detail_kuesioner_${Date.now()}.xlsx`);
+  /* =========================================================
+   * MERGE LOGIC
+   * ========================================================= */
+  rowIndex = 2;
+
+  for (let i = 0; i < grouped.length; i++) {
+    const group = grouped[i];
+
+    fp = group.fullPath;
+
+    const pertanyaanList = group.pertanyaan;
+
+    const fpMergeStart = rowIndex;
+
+    for (let p = 0; p < pertanyaanList.length; p++) {
+      const pItem = pertanyaanList[p];
+
+      qTitle = pItem.title;
+      jawaban = pItem.jawaban;
+
+      const qMergeStart = rowIndex;
+
+      rowIndex += jawaban.length;
+
+      const qMergeEnd = rowIndex - 1;
+
+      if (qMergeEnd > qMergeStart) {
+        worksheet.mergeCells(
+          `B${qMergeStart}:B${qMergeEnd}`,
+        );
+
+        worksheet.mergeCells(
+          `E${qMergeStart}:E${qMergeEnd}`,
+        );
+      }
+    }
+
+    const fpMergeEnd = rowIndex - 1;
+
+    if (fpMergeEnd > fpMergeStart) {
+      worksheet.mergeCells(
+        `A${fpMergeStart}:A${fpMergeEnd}`,
+      );
+    }
+  }
+
+  /* =========================================================
+   * ALIGNMENT
+   * ========================================================= */
+  worksheet.eachRow((row) => {
+    row.eachCell((cell) => {
+      cell.alignment = {
+        vertical: "middle",
+        horizontal: "center",
+        wrapText: true,
+      };
+
+      cell.border = {
+        top: { style: "thin" },
+        left: { style: "thin" },
+        bottom: { style: "thin" },
+        right: { style: "thin" },
+      };
+    });
+  });
+
+  await downloadWorkbook(
+    workbook,
+    `detail_kuesioner_${Date.now()}.xlsx`,
+  );
 }
