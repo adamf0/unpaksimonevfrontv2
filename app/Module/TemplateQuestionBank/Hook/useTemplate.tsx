@@ -183,7 +183,11 @@ export function useTemplate() {
   ) => {
     if (isEmpty(mode)) throw new Error("instruksi ditolak");
 
-    if (mode == "delete") {
+    if (mode == "copy") {
+      const res = await apiCall.post(`/templatepertanyaan/${uuid}/copy`);
+      return res.data?.uuid;
+    }
+    else if (mode == "delete") {
       const res = await apiCall.delete(`/templatepertanyaan/${uuid}`);
       return res.data?.uuid;
     } else if (mode == "force_delete") {

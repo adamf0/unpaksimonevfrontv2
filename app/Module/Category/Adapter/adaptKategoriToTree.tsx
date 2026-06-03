@@ -4,10 +4,9 @@ export function adaptKategoriToTree(data: any[]): TreeItem[] {
   const map = new Map<string, TreeItem>();
   const roots: TreeItem[] = [];
 
-  // STEP 1
   for (const item of data) {
-    map.set(String(item.ID), {
-      id: String(item.ID),
+    map.set(item.UUID, {
+      deletedat: item.DeletedAt,
       uuid: item.UUID,
       name: item.NamaKategori,
       type: "folder",
@@ -15,18 +14,17 @@ export function adaptKategoriToTree(data: any[]): TreeItem[] {
     });
   }
 
-  // STEP 2
   for (const item of data) {
-    const node = map.get(String(item.ID));
+    const node = map.get(item.UUID);
+
     if (!node) continue;
 
-    if (item.IdSubKategori) {
-      const parent = map.get(String(item.IdSubKategori));
+    if (item.UuidSubKategori) {
+      const parent = map.get(item.UuidSubKategori);
 
       if (parent) {
         parent.children?.push(node);
       } else {
-        // 🔥 fallback kalau parent tidak ditemukan
         roots.push(node);
       }
     } else {

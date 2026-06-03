@@ -15,6 +15,7 @@ interface Props {
   loading: boolean;
   openDelete: (item: TemplateItem) => void;
   openForceDelete: (item: TemplateItem) => void;
+  onCopy: (item: any) => void;
 }
 
 export function TemplateTable({
@@ -22,6 +23,7 @@ export function TemplateTable({
   loading = false,
   openDelete,
   openForceDelete,
+  onCopy,
 }: Props) {
   const { setQuestionState, actionQuestion, loadData } =
     useTemplateQuestionContext();
@@ -62,13 +64,16 @@ export function TemplateTable({
     // 🔥 PRIORITY 1: deleted state (override semua)
     const level = String(userProfile?.Level ?? "");
     let owner = "admin";
-    if(level=="fakultas"){
-      owner = `FAKULTAS ${String(userProfile?.Fakultas ?? "")}`
-    } else if(level=="prodi"){
-      owner = String(userProfile?.Prodi ?? "")
+    if (level == "fakultas") {
+      owner = `FAKULTAS ${String(userProfile?.Fakultas ?? "")}`;
+    } else if (level == "prodi") {
+      owner = String(userProfile?.Prodi ?? "");
     }
 
-    if(String(userProfile?.Level ?? "") == "admin" || owner == item.createdBy){
+    if (
+      String(userProfile?.Level ?? "") == "admin" ||
+      owner == item.createdBy
+    ) {
       if (deleted) {
         return [
           {
@@ -91,6 +96,12 @@ export function TemplateTable({
 
       // 🔥 BASE ACTIONS (SELALU ADA, TIDAK DUPLIKAT)
       const actions: ActionItem[] = [
+        {
+          name: "copy",
+          icon: "copy_all",
+          className: "hover:text-primary",
+          onClick: () => onCopy(item),
+        },
         {
           name: "edit",
           icon: "edit",

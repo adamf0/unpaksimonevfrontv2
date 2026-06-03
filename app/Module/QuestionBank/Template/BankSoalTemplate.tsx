@@ -91,7 +91,7 @@ export default function BankSoalTemplate() {
     data: null,
   });
 
-  async function copyHandler(data: any) { //[pr] copy data bank soal sudah, tapi masih belum copy template dan jawaban
+  async function copyHandler(data: any) {
     try {
       const uuid = await actionBankSoal(data?.uuid, null, "copy");
       pushToast("Berhasil copy");

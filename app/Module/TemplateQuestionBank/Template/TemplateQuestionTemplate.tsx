@@ -17,10 +17,13 @@ import { HistoryButton } from "../../Common/Components/Molecules/HistoryButton";
 import TemplateQuestionPreview from "../Organisms/TemplateQuestionPreview";
 import { useAdminPanel } from "../../Common/Components/Template/AdminPanelTemplate";
 import BannerPreview from "../Molecules/BannerPreview";
+import { useToast } from "../../Common/Context/ToastContext";
+import { handleCloudflareError } from "../../Common/Error/axiosErrorHandler";
 
 export default function TemplateQuestionTemplate() {
   const {
     questionState,
+    setQuestionState,
     questionQuery,
     setQuestionQuery,
     isFilterOpen,
@@ -33,11 +36,11 @@ export default function TemplateQuestionTemplate() {
   } = useTemplateQuestionContext();
 
   const { mode, setMode } = useAdminPanel();
-
   const [modal, setModal] = useState<any>({
     type: null,
     data: null,
   });
+  const { pushToast } = useToast();
 
   async function onDelete() {
     try {
@@ -59,9 +62,33 @@ export default function TemplateQuestionTemplate() {
     }
   }
 
+  async function copyHandler(data: any) {
+    try {
+      const uuid = await actionQuestion(data?.uuid, undefined, "copy");
+      pushToast("Berhasil copy");
+
+      setQuestionState((prev: any) => ({
+        ...prev,
+        selected: null,
+      }));
+    } catch (error: any) {
+      console.error(error);
+      if (!error.response) return pushToast("Server error");
+
+      const { status, data } = error.response;
+
+      const cf = handleCloudflareError(status);
+      if (cf) return pushToast(cf);
+
+      pushToast(data?.message || "Error");
+    }
+
+    await loadData();
+  }
+
   return mode == "preview" ? (
     <>
-      <BannerPreview onBack={()=>setMode("builder")}/>
+      <BannerPreview onBack={() => setMode("builder")} />
       <TemplateQuestionPreview />
     </>
   ) : (
@@ -151,6 +178,7 @@ export default function TemplateQuestionTemplate() {
                 data: item,
               })
             }
+            onCopy={copyHandler}
           />
         </div>
 

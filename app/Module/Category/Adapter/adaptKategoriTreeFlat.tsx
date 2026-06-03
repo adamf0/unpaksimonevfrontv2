@@ -12,7 +12,7 @@ export default function adaptKategoriTreeFlat(
       : item.name;
 
     const currentNode: KategoriFlat = {
-      id: item.id,
+      // id: item.id,
       uuid: item.uuid,
       uuidSub: parentUuid,
       full_text: currentPath,

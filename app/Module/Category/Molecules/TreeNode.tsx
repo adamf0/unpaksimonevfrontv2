@@ -1,11 +1,12 @@
 "use client";
 
 import Icon from "../../Common/Components/Atoms/Icon";
+import { isEmpty } from "../../Common/Service/utility";
 import { TreeItem } from "../Attribut/TreeItem";
 
 export function TreeNode({ item }: { item: TreeItem }) {
   return (
-    <div className="group/tree-item" data-id={item.id} data-uuid={item.uuid} data-name={item.name}>
+    <div className="group/tree-item" data-deleted={item.deletedat} data-uuid={item.uuid} data-name={item.name}>
       {/* NODE */}
       <div className="flex items-center justify-between p-4 bg-surface-container-low rounded-xl border-l-4 border-primary hover:bg-surface-container-high transition-all">
         {/* LEFT */}
@@ -19,14 +20,14 @@ export function TreeNode({ item }: { item: TreeItem }) {
         </div>
 
         {/* ACTION */}
-        <div className="flex gap-2 opacity-0 group-hover/tree-item:opacity-100 transition-opacity">
+        {/* <div className="flex gap-2 opacity-0 group-hover/tree-item:opacity-100 transition-opacity">
           <button className="hover:text-primary">
             <Icon name="edit" />
           </button>
           <button className="hover:text-error">
             <Icon name="delete" />
           </button>
-        </div>
+        </div> */}
       </div>
 
       {/* 🔥 WAJIB ADA UNTUK N LEVEL */}

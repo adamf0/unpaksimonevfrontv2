@@ -5,6 +5,7 @@ import Sortable from "sortablejs";
 import type { Options } from "sortablejs";
 import { TreeItem } from "../Attribut/TreeItem";
 import { TreeNode } from "./TreeNode";
+import { isEmpty } from "../../Common/Service/utility";
 
 interface TreeViewProps {
   data: TreeItem[];
@@ -31,7 +32,7 @@ export function TreeView({ data, onChange }: TreeViewProps) {
       children.forEach((el) => {
         const htmlEl = el as HTMLElement;
 
-        const id = htmlEl.dataset.id || "";
+        const deleted = htmlEl.dataset.deleted || "";
         const uuid = htmlEl.dataset.uuid || "";
         const name = htmlEl.dataset.name || "";
 
@@ -46,9 +47,10 @@ export function TreeView({ data, onChange }: TreeViewProps) {
         const hasChildren = childrenNodes.length > 0;
 
         const node: TreeItem = {
-          id,
+          // id,
           uuid,
           name,
+          deletedat: deleted,
           type: hasChildren ? "folder" : "file",
           children: hasChildren ? buildTreeFromDOM(childContainer!) : [],
         };
