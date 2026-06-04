@@ -316,27 +316,39 @@ export function useCategory() {
 
     if (mode == "copy") {
       const res = await apiCall.post(`/kategori/${uuid}/copy`);
+      await loadDataSource();
+
       return res.data?.uuid;
     } else if (mode == "delete") {
       const res = await apiCall.delete(`/kategori/${uuid}`);
+      await loadDataSource();
+
       return res.data?.uuid;
     } else if (mode == "force_delete") {
       const res = await apiCall.delete(`/kategori/${uuid}/force`);
+      await loadDataSource();
+      
       return res.data?.uuid;
     } else if (mode == "restore") {
       const res = await apiCall.put(`/kategori/${uuid}/restore`);
+      await loadDataSource();
+
       return res.data?.uuid;
     } else if (mode == "draf") {
       const formData = new FormData();
       formData.append("status", "draf");
 
       const res = await apiCall.put(`/kategori/${uuid}/status`, formData);
+      await loadDataSource();
+
       return res.data?.uuid;
     } else if (mode == "active") {
       const formData = new FormData();
       formData.append("status", "active");
 
       const res = await apiCall.put(`/kategori/${uuid}/status`, formData);
+      await loadDataSource();
+
       return res.data?.uuid;
     } else {
       const formData = new FormData();
@@ -346,6 +358,8 @@ export function useCategory() {
       const res = uuid
         ? await apiCall.put(`/kategori/${uuid}`, formData)
         : await apiCall.post("/kategori", formData);
+
+      await loadDataSource();
 
       return res.data?.uuid;
     }
