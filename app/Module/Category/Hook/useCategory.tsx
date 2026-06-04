@@ -10,6 +10,7 @@ import { BaseQuery } from "../../Common/Attribut/BaseQuery";
 import { BaseResultState } from "../../Common/Attribut/BaseResultState";
 import { isEmpty } from "../../Common/Service/utility";
 import { FormValues } from "../Attribut/FormValues";
+import KategoriFlat from "../Attribut/KategoriFlat";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -316,8 +317,7 @@ export function useCategory() {
     if (mode == "copy") {
       const res = await apiCall.post(`/kategori/${uuid}/copy`);
       return res.data?.uuid;
-    }
-    else if (mode == "delete") {
+    } else if (mode == "delete") {
       const res = await apiCall.delete(`/kategori/${uuid}`);
       return res.data?.uuid;
     } else if (mode == "force_delete") {
@@ -351,6 +351,21 @@ export function useCategory() {
     }
   };
 
+  const updateTree = async (payload: KategoriFlat[]) => {
+    const formData = new FormData();
+    formData.append("payload", JSON.stringify(payload));
+
+    const res = await apiCall.put(`/kategori`, formData);
+
+    setState((p) => ({
+      ...p,
+      source: [],
+    }));
+
+    await loadDataSource();
+    return res.data;
+  };
+
   /** =========================
    * RESET
    * ========================= */
@@ -382,7 +397,9 @@ export function useCategory() {
     setCurrent,
     toggleFlag,
     loadData,
+    loadDataSource,
     actionCategory,
+    updateTree,
     resetFilters,
     filterCount: (q: QueryState) => filterBuilder.countFilled(q),
   };

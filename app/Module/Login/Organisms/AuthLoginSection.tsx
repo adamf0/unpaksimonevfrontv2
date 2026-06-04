@@ -132,7 +132,7 @@ export default function AuthLoginSection() {
       formData.append("username", input.username);
       formData.append("password", input.password);
 
-      const { data } = await apiCall.post("/login", formData);
+      const { data } = await apiCall.post("/login", formData); //[pr] beda path
       const accessToken = data?.access_token;
       const refreshToken = data?.refresh_token;
 

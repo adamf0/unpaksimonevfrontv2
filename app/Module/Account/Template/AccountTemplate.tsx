@@ -11,6 +11,8 @@ import { UserItem } from "../Attribut/UserItem";
 import { useAccountContext } from "../Context/AccountProvider";
 import { HistoryButton } from "../../Common/Components/Molecules/HistoryButton";
 import dynamic from "next/dynamic";
+import { useToast } from "../../Common/Context/ToastContext";
+import { handleCloudflareError } from "../../Common/Error/axiosErrorHandler";
 
 const StatsCard = dynamic(
   () => import("../Molecules/StatsCard").then((mod) => mod.StatsCard),
@@ -82,6 +84,7 @@ export default function AccountTemplate() {
     filterCount,
     toggleFlag,
   } = useAccountContext();
+  const { pushToast } = useToast();
 
   const [modal, setModal] = useState<{
     type: ModalType;
@@ -98,8 +101,15 @@ export default function AccountTemplate() {
       await actionAccount(modal.data.UUID, undefined, "delete");
       setModal({ type: null, data: null });
       await loadData();
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      if (!error.response) return pushToast("Server error");
+
+      const { status, data } = error.response;
+
+      const cf = handleCloudflareError(status);
+      if (cf) return pushToast(cf);
+
+      pushToast(data?.message || "Error");
     }
   }
 
@@ -110,8 +120,15 @@ export default function AccountTemplate() {
       await actionAccount(modal.data.UUID, undefined, "force_delete");
       setModal({ type: null, data: null });
       await loadData();
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      if (!error.response) return pushToast("Server error");
+
+      const { status, data } = error.response;
+
+      const cf = handleCloudflareError(status);
+      if (cf) return pushToast(cf);
+
+      pushToast(data?.message || "Error");
     }
   }
 

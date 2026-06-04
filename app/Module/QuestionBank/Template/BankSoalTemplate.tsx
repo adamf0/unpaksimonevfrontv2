@@ -120,8 +120,15 @@ export default function BankSoalTemplate() {
       await actionBankSoal(modal.data?.uuid, undefined, "delete");
       setModal({ type: null, data: null });
       await loadData();
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      if (!error.response) return pushToast("Server error");
+
+      const { status, data } = error.response;
+
+      const cf = handleCloudflareError(status);
+      if (cf) return pushToast(cf);
+
+      pushToast(data?.message || "Error");
     }
   }
 
@@ -130,8 +137,15 @@ export default function BankSoalTemplate() {
       await actionBankSoal(modal.data?.uuid, undefined, "force_delete");
       setModal({ type: null, data: null });
       await loadData();
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      if (!error.response) return pushToast("Server error");
+
+      const { status, data } = error.response;
+
+      const cf = handleCloudflareError(status);
+      if (cf) return pushToast(cf);
+
+      pushToast(data?.message || "Error");
     }
   }
 

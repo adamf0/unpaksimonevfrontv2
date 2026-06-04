@@ -2,8 +2,11 @@
 
 import Icon from "@/app/Module/Common/Components/Atoms/Icon";
 import AnimatedButton from "../../Common/Components/Molecules/AnimatedButton";
+import { useRouter } from "next/navigation";
 
 export default function Hero() {
+  const router = useRouter();
+
   return (
     <section className="px-6 py-16 md:py-24 max-w-7xl mx-auto" id="home">
       <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -25,10 +28,11 @@ export default function Hero() {
           </p>
 
           <AnimatedButton
+            onClick={()=>router.push("/login")}
             className="px-8 py-4 bg-gradient-to-br from-primary to-primary-container text-white rounded-xl"
             icon="arrow_forward"
           >
-            Start Surveying
+            Start Login
           </AnimatedButton>
         </div>
 

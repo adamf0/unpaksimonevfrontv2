@@ -6,6 +6,8 @@ import dynamic from "next/dynamic";
 import { Suspense, useState } from "react";
 import { useCategoryContext } from "../Context/CategoryProvider";
 import Modal from "../../Common/Components/Organisms/Modal";
+import { useToast } from "../../Common/Context/ToastContext";
+import { handleCloudflareError } from "../../Common/Error/axiosErrorHandler";
 
 const KategoriTreeSection = dynamic(
   () =>
@@ -96,13 +98,22 @@ export default function CategoryTemplate() {
     data: null,
   });
 
+  const { pushToast } = useToast();
+
   async function onDelete() {
     try {
       await actionCategory(modal.data?.uuid, undefined, "delete");
       setModal({ type: null, data: null });
       await loadData();
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      if (!error.response) return pushToast("Server error");
+
+      const { status, data } = error.response;
+
+      const cf = handleCloudflareError(status);
+      if (cf) return pushToast(cf);
+
+      pushToast(data?.message || "Error");
     }
   }
 
@@ -111,8 +122,15 @@ export default function CategoryTemplate() {
       await actionCategory(modal.data?.uuid, undefined, "force_delete");
       setModal({ type: null, data: null });
       await loadData();
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      if (!error.response) return pushToast("Server error");
+
+      const { status, data } = error.response;
+
+      const cf = handleCloudflareError(status);
+      if (cf) return pushToast(cf);
+
+      pushToast(data?.message || "Error");
     }
   }
 
