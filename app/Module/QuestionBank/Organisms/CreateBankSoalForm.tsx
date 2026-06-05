@@ -15,6 +15,8 @@ export function CreateBankSoalForm() {
     useQuestionBankContext();
   const { pushToast } = useToast();
 
+  const allowedFields = ["judul", "semester", "konten", "deskripsi"];
+
   const defaultFormValues: FormValues = {
     judul: "",
     semester: "",
@@ -28,6 +30,7 @@ export function CreateBankSoalForm() {
     handleSubmit,
     formState: { errors },
     reset,
+    setError,
   } = useForm<FormValues>({
     defaultValues: defaultFormValues,
   });
@@ -69,6 +72,21 @@ export function CreateBankSoalForm() {
       if (!error.response) return pushToast("Server error");
 
       const { status, data } = error.response;
+
+      if (data?.code?.endsWith(".Validation")) {
+        const messages = data.message;
+
+        Object.keys(messages).forEach((field) => {
+          if (!allowedFields.includes(field)) return;
+
+          setError(field as keyof FormValues, {
+            type: "server",
+            message: messages[field],
+          });
+        });
+
+        return;
+      }
 
       const cf = handleCloudflareError(status);
       if (cf) return pushToast(cf);

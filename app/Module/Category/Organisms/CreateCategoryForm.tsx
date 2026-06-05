@@ -15,6 +15,8 @@ export function CreateCategoryForm() {
   const { state, actionCategory, loadData, setState } = useCategoryContext();
   const { pushToast } = useToast();
 
+  const allowedFields = ["kategori", "subKategori"];
+
   const defaultFormValues: FormValues = {
     kategori: "",
     subKategori: null,
@@ -27,6 +29,7 @@ export function CreateCategoryForm() {
     reset,
     formState: { errors },
     setValue,
+    setError,
   } = useForm<FormValues>({
     defaultValues: defaultFormValues,
   });
@@ -76,10 +79,24 @@ export function CreateCategoryForm() {
         selected: null,
       }));
     } catch (error: any) {
-      console.error(error);
       if (!error.response) return pushToast("Server error");
 
       const { status, data } = error.response;
+
+      if (data?.code?.endsWith(".Validation")) {
+        const messages = data.message;
+
+        Object.keys(messages).forEach((field) => {
+          if (!allowedFields.includes(field)) return;
+
+          setError(field as keyof FormValues, {
+            type: "server",
+            message: messages[field],
+          });
+        });
+
+        return;
+      }
 
       const cf = handleCloudflareError(status);
       if (cf) return pushToast(cf);
