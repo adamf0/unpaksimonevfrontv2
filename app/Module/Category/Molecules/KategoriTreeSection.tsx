@@ -14,7 +14,6 @@ export function KategoriTreeSection() {
   const [tree, setTree] = useState<KategoriFlat[]>([]);
   const { pushToast } = useToast();
 
-  console.log("hei", state.source)
   useEffect(()=>{
     setTreeData(adaptKategoriToTree(state.source || []))
   },[state.source]);
@@ -25,7 +24,6 @@ export function KategoriTreeSection() {
   }
 
   async function handlerUpdate() {
-    console.log(JSON.stringify(tree));
     try {
       await updateTree(tree);
     } catch (error: any) {

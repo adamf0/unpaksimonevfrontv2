@@ -1,134 +1,211 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import Sortable from "sortablejs";
-import type { Options } from "sortablejs";
-import { TreeItem } from "../Attribut/TreeItem";
-import { TreeNode } from "./TreeNode";
-import { isEmpty } from "../../Common/Service/utility";
+import {
+  DndContext,
+  closestCenter,
+  DragEndEvent,
+  DragMoveEvent,
+} from "@dnd-kit/core";
 
-interface TreeViewProps {
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
+import { TreeItem } from "../Attribut/TreeItem";
+import { FlattenedItem } from "../Attribut/FlattenedItem";
+
+import TreeRow from "./TreeRow";
+import { flattenTree } from "../Hook/flattenTree";
+import { buildTree } from "../Hook/buildTree";
+
+interface Props {
   data: TreeItem[];
-  onChange?: (data: TreeItem[]) => void;
+  onChange?: (
+    tree: TreeItem[]
+  ) => void;
 }
 
-export function TreeView({ data, onChange }: TreeViewProps) {
-  const rootRef = useRef<HTMLDivElement>(null);
-  const sortablesRef = useRef<Sortable[]>([]);
+export function TreeView({
+  data,
+  onChange,
+}: Props) {
+  const initial =
+    useMemo(
+      () => flattenTree(data),
+      [data]
+    );
+
+  const [
+    items,
+    setItems,
+  ] = useState<
+    FlattenedItem[]
+  >(initial);
+
+  const [
+    offsetX,
+    setOffsetX,
+  ] = useState(0);
 
   useEffect(() => {
-    if (!rootRef.current) return;
-
-    const root = rootRef.current;
-
-    // 🔥 BUILD TREE FROM DOM
-    const buildTreeFromDOM = (container: HTMLElement): TreeItem[] => {
-      const items: TreeItem[] = [];
-
-      const children = container.querySelectorAll(
-        ":scope > .group\\/tree-item",
-      );
-
-      children.forEach((el) => {
-        const htmlEl = el as HTMLElement;
-
-        const deleted = htmlEl.dataset.deleted || "";
-        const uuid = htmlEl.dataset.uuid || "";
-        const name = htmlEl.dataset.name || "";
-
-        const childContainer = htmlEl.querySelector(
-          ":scope > .child-sort",
-        ) as HTMLElement | null;
-
-        const childrenNodes = childContainer
-          ? childContainer.querySelectorAll(":scope > .group\\/tree-item")
-          : [];
-
-        const hasChildren = childrenNodes.length > 0;
-
-        const node: TreeItem = {
-          // id,
-          uuid,
-          name,
-          deletedat: deleted,
-          type: hasChildren ? "folder" : "file",
-          children: hasChildren ? buildTreeFromDOM(childContainer!) : [],
-        };
-
-        items.push(node);
-      });
-
-      return items;
-    };
-
-    const sortableConfig: Options = {
-      animation: 150,
-      handle: ".drag-handle",
-      draggable: ".group\\/tree-item",
-      ghostClass: "opacity-50",
-      group: {
-        name: "nested",
-        pull: true,
-        put: true,
-      },
-      fallbackOnBody: true,
-      swapThreshold: 0.65,
-      invertSwap: true,
-      fallbackTolerance: 5,
-      dragoverBubble: true,
-
-      // 🔥 ON CHANGE
-      onEnd: () => {
-        if (!rootRef.current) return;
-
-        const newTree = buildTreeFromDOM(rootRef.current);
-        console.log("NEW TREE:", newTree);
-
-        onChange?.(newTree);
-      },
-    };
-
-    // 🔥 SAFE DESTROY
-    sortablesRef.current.forEach((s) => {
-      try {
-        if (s?.el && document.body.contains(s.el)) {
-          s.destroy();
-        }
-      } catch {}
-    });
-
-    sortablesRef.current = [];
-
-    // 🔥 INIT
-    const initSortable = (container: HTMLElement) => {
-      const sortable = new Sortable(container, sortableConfig);
-      sortablesRef.current.push(sortable);
-    };
-
-    initSortable(root);
-
-    root.querySelectorAll(".child-sort").forEach((el) => {
-      initSortable(el as HTMLElement);
-    });
-
-    return () => {
-      sortablesRef.current.forEach((s) => {
-        try {
-          if (s?.el && document.body.contains(s.el)) {
-            s.destroy();
-          }
-        } catch {}
-      });
-
-      sortablesRef.current = [];
-    };
+    setItems(
+      flattenTree(data)
+    );
   }, [data]);
 
+  function rebuildParent(
+    list: FlattenedItem[]
+  ) {
+    const stack: string[] =
+      [];
+
+    list.forEach((item) => {
+      stack.length =
+        item.depth;
+
+      item.parentUuid =
+        stack[
+          item.depth - 1
+        ] ?? null;
+
+      stack[
+        item.depth
+      ] = item.uuid;
+    });
+
+    return list;
+  }
+
+  function handleMove(
+    event: DragMoveEvent
+  ) {
+    setOffsetX(
+      event.delta.x
+    );
+  }
+
+  function handleEnd(
+    event: DragEndEvent
+  ) {
+    const {
+      active,
+      over,
+    } = event;
+
+    if (!over) {
+      return;
+    }
+
+    const oldIndex =
+      items.findIndex(
+        (x) =>
+          x.uuid ===
+          active.id
+      );
+
+    const newIndex =
+      items.findIndex(
+        (x) =>
+          x.uuid ===
+          over.id
+      );
+
+    if (
+      oldIndex === -1 ||
+      newIndex === -1
+    ) {
+      return;
+    }
+
+    const moved =
+      arrayMove(
+        items,
+        oldIndex,
+        newIndex
+      );
+
+    const current =
+      moved[newIndex];
+
+    const previous =
+      moved[newIndex - 1];
+
+    let depth =
+      previous?.depth ?? 0;
+
+    if (offsetX > 40) {
+      depth++;
+    }
+
+    if (offsetX < -40) {
+      depth--;
+    }
+
+    depth = Math.max(
+      0,
+      depth
+    );
+
+    current.depth =
+      depth;
+
+    rebuildParent(
+      moved
+    );
+
+    setItems(moved);
+
+    const tree =
+      buildTree(moved);
+
+    onChange?.(tree);
+
+    setOffsetX(0);
+  }
+
   return (
-    <div ref={rootRef} className="space-y-2">
-      {data.map((item) => (
-        <TreeNode key={item.uuid} item={item} />
-      ))}
-    </div>
+    <DndContext
+      collisionDetection={
+        closestCenter
+      }
+      onDragMove={
+        handleMove
+      }
+      onDragEnd={
+        handleEnd
+      }
+    >
+      <SortableContext
+        items={items.map(
+          (x) => x.uuid
+        )}
+        strategy={
+          verticalListSortingStrategy
+        }
+      >
+        <div className="space-y-2">
+          {items.map(
+            (item) => (
+              <TreeRow
+                key={
+                  item.uuid
+                }
+                item={
+                  item
+                }
+              />
+            )
+          )}
+        </div>
+      </SortableContext>
+    </DndContext>
   );
 }

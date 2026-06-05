@@ -327,7 +327,7 @@ export function useCategory() {
     } else if (mode == "force_delete") {
       const res = await apiCall.delete(`/kategori/${uuid}/force`);
       await loadDataSource();
-      
+
       return res.data?.uuid;
     } else if (mode == "restore") {
       const res = await apiCall.put(`/kategori/${uuid}/restore`);
@@ -371,10 +371,10 @@ export function useCategory() {
 
     const res = await apiCall.put(`/kategori`, formData);
 
-    setState((p) => ({
-      ...p,
-      source: [],
-    }));
+    if (esRef.current) {
+      esRef.current.close();
+      esRef.current = null;
+    }
 
     await loadDataSource();
     return res.data;

@@ -1,40 +1,79 @@
 "use client";
 
+import {
+  useDraggable,
+  useDroppable,
+} from "@dnd-kit/core";
+
+import { CSS } from "@dnd-kit/utilities";
+
 import Icon from "../../Common/Components/Atoms/Icon";
-import { isEmpty } from "../../Common/Service/utility";
 import { TreeItem } from "../Attribut/TreeItem";
 
-export function TreeNode({ item }: { item: TreeItem }) {
+interface Props {
+  item: TreeItem;
+}
+
+export function TreeNode({
+  item,
+}: Props) {
+  const draggable =
+    useDraggable({
+      id: item.uuid,
+    });
+
+  const droppable =
+    useDroppable({
+      id: item.uuid,
+    });
+
+  const style = {
+    transform: CSS.Translate.toString(
+      draggable.transform
+    ),
+  };
+
   return (
-    <div className="group/tree-item" data-deleted={item.deletedat} data-uuid={item.uuid} data-name={item.name}>
-      {/* NODE */}
-      <div className="flex items-center justify-between p-4 bg-surface-container-low rounded-xl border-l-4 border-primary hover:bg-surface-container-high transition-all">
-        {/* LEFT */}
+    <div
+      ref={droppable.setNodeRef}
+      className="group/tree-item"
+    >
+      <div
+        ref={draggable.setNodeRef}
+        style={style}
+        {...draggable.listeners}
+        {...draggable.attributes}
+        className="flex items-center justify-between p-4 bg-surface-container-low rounded-xl border-l-4 border-primary hover:bg-surface-container-high transition-all"
+      >
         <div className="flex items-center gap-3 sm:gap-4">
           <Icon
             name="drag_indicator"
-            className="drag-handle cursor-move text-outline-variant"
+            className="cursor-move text-outline-variant"
           />
-          <Icon name={item.type === "file" ? "description" : "folder_open"} />
-          <span className="font-bold">{item.name}</span>
-        </div>
 
-        {/* ACTION */}
-        {/* <div className="flex gap-2 opacity-0 group-hover/tree-item:opacity-100 transition-opacity">
-          <button className="hover:text-primary">
-            <Icon name="edit" />
-          </button>
-          <button className="hover:text-error">
-            <Icon name="delete" />
-          </button>
-        </div> */}
+          <Icon
+            name={
+              item.children?.length
+                ? "folder_open"
+                : "description"
+            }
+          />
+
+          <span className="font-bold">
+            {item.name}
+          </span>
+        </div>
       </div>
 
-      {/* 🔥 WAJIB ADA UNTUK N LEVEL */}
-      <div className="ml-6 sm:ml-12 mt-2 space-y-2 border-l-2 border-surface-container-high pl-4 sm:pl-8 child-sort min-h-[20px]">
-        {item.children?.map((child) => (
-          <TreeNode key={child.uuid} item={child} />
-        ))}
+      <div className="ml-6 sm:ml-12 mt-2 space-y-2 border-l-2 border-surface-container-high pl-4 sm:pl-8 min-h-[20px]">
+        {item.children?.map(
+          (child) => (
+            <TreeNode
+              key={child.uuid}
+              item={child}
+            />
+          )
+        )}
       </div>
     </div>
   );
