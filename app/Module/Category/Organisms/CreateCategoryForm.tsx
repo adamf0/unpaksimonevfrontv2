@@ -15,7 +15,7 @@ export function CreateCategoryForm() {
   const { state, actionCategory, loadData, setState } = useCategoryContext();
   const { pushToast } = useToast();
 
-  const allowedFields = ["kategori", "subKategori"];
+  const allowedFields = ["kategori"];
 
   const defaultFormValues: FormValues = {
     kategori: "",

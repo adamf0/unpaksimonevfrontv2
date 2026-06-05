@@ -123,7 +123,7 @@ export function CreateBankSoalForm() {
             register={register("semester", {
               required: "Semester wajib diisi",
             })}
-            error={errors.judul?.message}
+            error={errors.semester?.message}
           />
         </div>
 

@@ -1,6 +1,6 @@
 export type FormValues = {
   judul: string;
-  semester: any;
+  semester: string;
   konten?: string;
   deskripsi?: string;
 };
