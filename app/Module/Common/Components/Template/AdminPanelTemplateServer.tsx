@@ -8,6 +8,15 @@ export default async function AdminPanelTemplateServer({
 }: {
   children: React.ReactNode;
 }) {
+  if (process.env.NEXT_EXPORT === "true") {
+    const dummyUser = { Name: "Static User", Level: "admin" } as any;
+    return (
+      <AdminPanelTemplate userProfile={dummyUser}>
+        {children}
+      </AdminPanelTemplate>
+    );
+  }
+
   const cookieStore = cookies();
   const token = (await cookieStore).get("access_token")?.value;
 

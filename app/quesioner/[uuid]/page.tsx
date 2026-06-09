@@ -7,6 +7,12 @@ type Props = {
   }>;
 };
 
+export async function generateStaticParams() {
+  return [
+    { uuid: "default" }
+  ];
+}
+
 export default async function Page({ params }: Props) {
   const { uuid } = await params;
 

@@ -68,7 +68,12 @@ export function useKuesionerReport() {
 
     setLoading(true);
     setErrData(null);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise((resolve) =>
+      setTimeout(
+        resolve,
+        process.env.NODE_ENV === "test" ? 0 : 1000,
+      ),
+    );
 
     const controller = new AbortController();
     controllerRef.current = controller;
@@ -157,7 +162,12 @@ export function useKuesionerReport() {
   async function loadDataDetail(payloads: Payload[]) {
     setLoadingDetail(true);
     setErrDataDetail(null);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise((resolve) =>
+      setTimeout(
+        resolve,
+        process.env.NODE_ENV === "test" ? 0 : 1000,
+      ),
+    );
 
     const controller = new AbortController();
     controllerRef.current = controller;

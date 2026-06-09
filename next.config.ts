@@ -1,85 +1,79 @@
 import type { NextConfig } from "next";
 
+const isExport = process.env.NEXT_EXPORT === "true";
+const repoName = process.env.GITHUB_REPOSITORY ? `/${process.env.GITHUB_REPOSITORY.split("/")[1]}` : "";
+
 const nextConfig: NextConfig = {
-  output: "standalone",
+  output: isExport ? "export" : "standalone",
+  basePath: isExport ? repoName : undefined,
+  assetPrefix: isExport ? repoName : undefined,
   compress: true,
   reactStrictMode: false,
   productionBrowserSourceMaps: false,
   generateBuildId: async () => "build",
   poweredByHeader: false,
   devIndicators: false,
-  headers() {
-    return [
-      {
-        source: "/(.*)",
-        headers: [
-          // prevent MIME sniffing
-          {
-            key: "X-Content-Type-Options",
-            value: "nosniff",
-          },
+  ...(isExport
+    ? {}
+    : {
+        async headers() {
+          return [
+            {
+              source: "/(.*)",
+              headers: [
+                // prevent MIME sniffing
+                {
+                  key: "X-Content-Type-Options",
+                  value: "nosniff",
+                },
 
-          // clickjacking protection
-          {
-            key: "X-Frame-Options",
-            value: "DENY",
-          },
+                // clickjacking protection
+                {
+                  key: "X-Frame-Options",
+                  value: "DENY",
+                },
 
-          // XSS basic protection (legacy but still useful)
-          {
-            key: "X-XSS-Protection",
-            value: "1; mode=block",
-          },
+                // XSS basic protection (legacy but still useful)
+                {
+                  key: "X-XSS-Protection",
+                  value: "1; mode=block",
+                },
 
-          // referrer control
-          {
-            key: "Referrer-Policy",
-            value: "strict-origin-when-cross-origin",
-          },
+                // referrer control
+                {
+                  key: "Referrer-Policy",
+                  value: "strict-origin-when-cross-origin",
+                },
 
-          // permissions lockdown
-          {
-            key: "Permissions-Policy",
-            value: "geolocation=(), microphone=(), camera=(), payment=()",
-          },
+                // permissions lockdown
+                {
+                  key: "Permissions-Policy",
+                  value: "geolocation=(), microphone=(), camera=(), payment=()",
+                },
 
-          // enforce HTTPS (browser side)
-          {
-            key: "Strict-Transport-Security",
-            value: "max-age=31536000; includeSubDomains; preload",
-          },
+                // enforce HTTPS (browser side)
+                {
+                  key: "Strict-Transport-Security",
+                  value: "max-age=31536000; includeSubDomains; preload",
+                },
 
-          // content security policy (IMPORTANT)
-          // {
-          //   key: "Content-Security-Policy",
-          //   value: `
-          //     default-src 'self';
-          //     script-src 'self';
-          //     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-          //     font-src 'self' https://fonts.gstatic.com;
-          //     img-src 'self' data:;
-          //     connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com;
-          //     frame-ancestors 'none';
-          //   `
-          //     .replace(/\s{2,}/g, " ")
-          //     .trim(),
-          // },
+                // prevent caching sensitive data
+                {
+                  key: "Cache-Control",
+                  value: "no-store, no-cache, must-revalidate",
+                },
 
-          // prevent caching sensitive data
-          {
-            key: "Cache-Control",
-            value: "no-store, no-cache, must-revalidate",
-          },
-
-          {
-            key: "X-Robots-Tag",
-            value: "noindex, nofollow, noarchive",
-          },
-        ],
-      },
-    ];
-  },
+                {
+                  key: "X-Robots-Tag",
+                  value: "noindex, nofollow, noarchive",
+                },
+              ],
+            },
+          ];
+        },
+      }),
   images: {
+    unoptimized: isExport,
     remotePatterns: [
       {
         protocol: "https",

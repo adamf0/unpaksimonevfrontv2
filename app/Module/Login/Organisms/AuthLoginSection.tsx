@@ -161,6 +161,7 @@ export default function AuthLoginSection() {
     } catch (error: any) {
       if (!error.response) {
         pushToast("Ada masalah pada server");
+        return;
       }
 
       const { status, data } = error.response;

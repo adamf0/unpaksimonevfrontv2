@@ -1,36 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Unpak Simonev - Frontend Portal
 
-## Getting Started
+Frontend application for the **Simonev** monitoring and evaluation system, built on Next.js 16 (React 19) and structured with Domain-Driven Design (DDD) and the Atomic Design Pattern.
 
-First, run the development server:
+---
 
+## 📖 Architecture & Documentation
+
+We have established comprehensive technical documentation to assist developers:
+
+1.  **[Tech Stack & Package Specifications](file:///Users/adamf/Documents/next_project/unpaksimonev/docs/TECH_STACK.md)**: Specifications for frameworks, design assets, and development libraries.
+2.  **[System Flow & Activity Diagrams](file:///Users/adamf/Documents/next_project/unpaksimonev/docs/FLOW_DIAGRAMS.md)**: Flowcharts detailing the login validations, redirects, and background token refresh lifecycles.
+3.  **[DDD & Atomic Design Architecture](file:///Users/adamf/Documents/next_project/unpaksimonev/docs/DDD_ATOMIC_ARCHITECTURE.md)**: Breakdown of pure Domain models, application adapters, and structural atomic UI presentation components (Atoms, Molecules, Organisms, Templates). Includes the generated system architecture diagram.
+4.  **[Developer & Contribution Guide](file:///Users/adamf/Documents/next_project/unpaksimonev/docs/CONTRIBUTING.md)**: Local installation instructions, git conventions, directory structure guidelines, and specifications checklists.
+
+---
+
+## 🚀 Getting Started
+
+### 1. Running the Development Server
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+Open [http://localhost:4000](http://localhost:4000) to view the portal locally.
+
+### 2. Running the Test Suite
+This project implements a test-driven ecosystem using **Vitest** and **JSDOM** to ensure 100% regression safety.
+```bash
+# Run tests once
+npm test
+
+# Run tests in watch mode
+npm run test:watch
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🛠️ CI/CD Pipelines
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This repository includes configured workflows under `.github/workflows/`:
+1.  **Auto Release Docker**: Bumps versions and compiles a standalone production container pushed directly to Docker Hub.
+2.  **CI/CD Test and Deploy**: Compiles and runs all Vitest unit tests, generates a static HTML build (`out/`), and automatically deploys the latest frontend resources to **GitHub Pages** upon pushing to the `main` branch.
