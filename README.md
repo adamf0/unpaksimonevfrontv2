@@ -38,6 +38,7 @@ npm run test:watch
 
 ## 🛠️ CI/CD Pipelines
 
-This repository includes configured workflows under `.github/workflows/`:
-1.  **Auto Release Docker**: Bumps versions and compiles a standalone production container pushed directly to Docker Hub.
-2.  **CI/CD Test and Deploy**: Compiles and runs all Vitest unit tests, generates a static HTML build (`out/`), and automatically deploys the latest frontend resources to **GitHub Pages** upon pushing to the `main` branch.
+This repository includes a consolidated GitHub Actions workflow under `.github/workflows/npm-publish.yml`:
+1.  **Unit Testing**: Runs the complete Vitest test suite on all pushes and pull requests.
+2.  **HTML Test Report Documentation**: On pushes to `main`, compiles the Vitest test execution output to an interactive static HTML report and deploys it directly to **GitHub Pages** as project test documentation.
+3.  **Auto Release & Docker Publish**: On pushes to `main` (after tests pass), automatically bumps the patch version, creates a Git version tag, builds the production container, and pushes the image to Docker Hub.
