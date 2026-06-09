@@ -57,8 +57,10 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Generate HTML Test Report
-        run: npx vitest run --reporter=html
+      - name: Generate HTML Test & Coverage Reports
+        run: |
+          npx vitest run --reporter=html --coverage
+          cp -r coverage html/coverage
 
       - name: Upload Pages Deployment Artifact
         uses: actions/upload-pages-artifact@v3
