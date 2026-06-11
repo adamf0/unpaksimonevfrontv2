@@ -10,7 +10,11 @@ const mockContextValue = {
     action: null as any,
   },
   actionBankSoal: vi.fn(),
-  setState: vi.fn(),
+  setState: vi.fn((cb) => {
+    if (typeof cb === "function") {
+      cb({ selected: null, action: null });
+    }
+  }),
   loadData: vi.fn(),
 };
 
@@ -18,9 +22,10 @@ vi.mock("../Context/QuestionBankProvider", () => ({
   useQuestionBankContext: () => mockContextValue,
 }));
 
+const mockPushToast = vi.fn();
 vi.mock("../../Common/Context/ToastContext", () => ({
   useToast: () => ({
-    pushToast: vi.fn(),
+    pushToast: mockPushToast,
   }),
 }));
 
@@ -89,5 +94,154 @@ describe("CreateBankSoalForm Component", () => {
 
     expect(await screen.findByText("Judul wajib diisi")).toBeInTheDocument();
     expect(await screen.findByText("Semester wajib diisi")).toBeInTheDocument();
+  });
+
+  it("should handle cancel button click", async () => {
+    const user = userEvent.setup();
+    render(<CreateBankSoalForm />);
+    const cancelButton = screen.getByRole("button", { name: /Cancel/i });
+    await user.click(cancelButton);
+    expect(mockContextValue.setState).toHaveBeenCalled();
+  });
+
+  it("should populate fields in edit mode and submit update", async () => {
+    const user = userEvent.setup();
+    mockContextValue.state.selected = {
+      uuid: "uuid-123",
+      judul: "Judul Edit",
+      semester: "202602",
+      konten: "Konten Edit",
+      deskripsi: "Deskripsi Edit",
+    };
+    mockContextValue.state.action = "edit";
+    mockContextValue.actionBankSoal.mockResolvedValueOnce("uuid-123");
+
+    render(<CreateBankSoalForm />);
+
+    const submitButton = screen.getByRole("button", { name: /Update Question Bank/i });
+    expect(submitButton).toBeInTheDocument();
+
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(mockContextValue.actionBankSoal).toHaveBeenCalledWith(
+        "uuid-123",
+        expect.objectContaining({
+          judul: "Judul Edit",
+          semester: "202602",
+          konten: "Konten Edit",
+          deskripsi: "Deskripsi Edit",
+        }),
+        "update"
+      );
+      expect(mockPushToast).toHaveBeenCalledWith("Berhasil simpan");
+    });
+  });
+
+  it("should not populate fields in edit mode if action is time", () => {
+    mockContextValue.state.selected = {
+      uuid: "uuid-123",
+      judul: "Judul Time",
+      semester: "202602",
+      konten: "Konten Time",
+      deskripsi: "Deskripsi Time",
+    };
+    mockContextValue.state.action = "time";
+
+    render(<CreateBankSoalForm />);
+
+    const titleInput = screen.getByTestId("input-judul");
+    expect(titleInput).toHaveValue("");
+  });
+
+  it("should handle partial/missing edit fields and fallback to empty string", () => {
+    mockContextValue.state.selected = {
+      uuid: "uuid-123",
+      judul: undefined,
+      semester: undefined,
+      konten: undefined,
+      deskripsi: undefined,
+    };
+    mockContextValue.state.action = "edit";
+
+    render(<CreateBankSoalForm />);
+
+    const titleInput = screen.getByTestId("input-judul");
+    expect(titleInput).toHaveValue("");
+  });
+
+  it("should handle submission errors (validation, cloudflare, server, generic)", async () => {
+    const user = userEvent.setup();
+    mockContextValue.state.selected = null;
+    mockContextValue.state.action = null;
+
+    // Case 1: Network error (no response)
+    mockContextValue.actionBankSoal.mockRejectedValueOnce(new Error("Network Error"));
+    render(<CreateBankSoalForm />);
+    
+    // Fill required fields
+    const titleInput = screen.getByTestId("input-judul");
+    const semesterInput = screen.getByTestId("input-semester");
+    await user.type(titleInput, "Ujian Pemrograman Web");
+    await user.type(semesterInput, "202601");
+    
+    const submitButton = screen.getByRole("button", { name: /Register New/i });
+    await user.click(submitButton);
+    await waitFor(() => {
+      expect(mockPushToast).toHaveBeenCalledWith("Server error");
+    });
+
+    // Case 2: Validation errors from server (ending with .Validation)
+    mockContextValue.actionBankSoal.mockRejectedValueOnce({
+      response: {
+        status: 422,
+        data: {
+          code: "Soal.Validation",
+          message: {
+            judul: "Judul tidak valid",
+            nonAllowedField: "Should be ignored",
+          },
+        },
+      },
+    });
+    await user.click(submitButton);
+    await waitFor(() => {
+      expect(screen.getByText("Judul tidak valid")).toBeInTheDocument();
+    });
+
+    // Case 3: Cloudflare error (status 524)
+    mockContextValue.actionBankSoal.mockRejectedValueOnce({
+      response: {
+        status: 524,
+      },
+    });
+    await user.click(submitButton);
+    await waitFor(() => {
+      expect(mockPushToast).toHaveBeenCalledWith("Timeout Occurred (524). Server terlalu lama merespon.");
+    });
+
+    // Case 4: Generic error response without message
+    mockContextValue.actionBankSoal.mockRejectedValueOnce({
+      response: {
+        status: 500,
+        data: {},
+      },
+    });
+    await user.click(submitButton);
+    await waitFor(() => {
+      expect(mockPushToast).toHaveBeenCalledWith("Error");
+    });
+
+    // Case 5: Generic error response with message
+    mockContextValue.actionBankSoal.mockRejectedValueOnce({
+      response: {
+        status: 500,
+        data: { message: "Internal Error Message" },
+      },
+    });
+    await user.click(submitButton);
+    await waitFor(() => {
+      expect(mockPushToast).toHaveBeenCalledWith("Internal Error Message");
+    });
   });
 });

@@ -10,6 +10,8 @@ import { LaunchCard } from "../Molecules/LaunchCard";
 import { QuickInfoCard } from "../Molecules/QuickInfoCard";
 import { StatusState } from "../Molecules/StatusState";
 import { TemplateFilterForm } from "../Molecules/TemplateFilterForm";
+import { Toggle } from "../Atoms/Toggle";
+import { CreatedByLabel } from "../Atoms/CreatedByLabel";
 
 // Mocks
 const pushToastMock = vi.fn();
@@ -221,6 +223,64 @@ describe("TemplateQuestionBank - Molecules Test Suite", () => {
           nama_fakultas: "",
         })
       );
+    });
+  });
+
+  describe("Toggle Atom Component", () => {
+    it("should render and toggle active state on click", () => {
+      const handleChange = vi.fn();
+      const { container } = render(<Toggle value={false} onChange={handleChange} />);
+      const div = container.firstChild as HTMLDivElement;
+      
+      expect(div.className).toContain("bg-slate-300");
+      fireEvent.click(div);
+      expect(div.className).toContain("bg-primary");
+      expect(handleChange).toHaveBeenCalledWith(true);
+    });
+
+    it("should support default value if not supplied", () => {
+      const { container } = render(<Toggle />);
+      const div = container.firstChild as HTMLDivElement;
+      expect(div.className).toContain("bg-slate-300");
+    });
+  });
+
+  describe("CreatedByLabel Atom Component", () => {
+    it("should return null if no item is provided", () => {
+      const { container } = render(<CreatedByLabel item={undefined} />);
+      expect(container.firstChild).toBeNull();
+    });
+
+    it("should format admin with name and fallback to (LPM) if empty", () => {
+      const { rerender } = render(<CreatedByLabel item={{ created: "admin", createdBy: "Rian" }} />);
+      expect(screen.getByText("Rian")).toBeDefined();
+
+      rerender(<CreatedByLabel item={{ created: "admin", createdBy: "" }} />);
+      expect(screen.getByText("(LPM)")).toBeDefined();
+    });
+
+    it("should format fakultas with name and fallback to - if empty", () => {
+      const { rerender } = render(<CreatedByLabel item={{ created: "fakultas", createdBy: "Teknik" }} />);
+      expect(screen.getByText("(Fakultas: Teknik)")).toBeDefined();
+
+      rerender(<CreatedByLabel item={{ created: "fakultas", createdBy: "" }} />);
+      expect(screen.getByText("(Fakultas: -)")).toBeDefined();
+    });
+
+    it("should format prodi with name and fallback to - if empty", () => {
+      const { rerender } = render(<CreatedByLabel item={{ created: "prodi", createdBy: "Informatika" }} />);
+      expect(screen.getByText("(Prodi: Informatika)")).toBeDefined();
+
+      rerender(<CreatedByLabel item={{ created: "prodi", createdBy: "" }} />);
+      expect(screen.getByText("(Prodi: -)")).toBeDefined();
+    });
+
+    it("should fallback to createdBy or (LPM) if role is not in map", () => {
+      const { rerender } = render(<CreatedByLabel item={{ created: "unknown", createdBy: "User X" }} />);
+      expect(screen.getByText("User X")).toBeDefined();
+
+      rerender(<CreatedByLabel item={{ created: "unknown", createdBy: "" }} />);
+      expect(screen.getByText("(LPM)")).toBeDefined();
     });
   });
 });

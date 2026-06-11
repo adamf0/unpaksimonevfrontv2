@@ -1,12 +1,16 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import React from "react";
 // Import mock first
 import { mockApiCall } from "./mocks/apiMocks";
 import { CategoryTable } from "../Organisms/CategoryTable";
 
 const mockContextValue = {
-  setState: vi.fn(),
+  setState: vi.fn((cb) => {
+    if (typeof cb === "function") {
+      cb({ selected: null });
+    }
+  }),
   actionCategory: vi.fn(),
   loadData: vi.fn(),
 };
@@ -89,6 +93,19 @@ describe("CategoryTable Component", () => {
     expect(actionWrapper[0]).toHaveTextContent("delete");
   });
 
+  it("should render loading text when loading is true", () => {
+    render(
+      <CategoryTable
+        data={[]}
+        loading={true}
+        openDelete={mockOpenDelete}
+        openForceDelete={mockOpenForceDelete}
+        onCopy={mockOnCopy}
+      />
+    );
+    expect(screen.getByText("Loading")).toBeInTheDocument();
+  });
+
   it("should trigger openDelete callback", () => {
     render(
       <CategoryTable
@@ -103,5 +120,114 @@ describe("CategoryTable Component", () => {
     fireEvent.click(deleteBtn);
 
     expect(mockOpenDelete).toHaveBeenCalled();
+  });
+
+  it("should trigger copy and edit action buttons", () => {
+    render(
+      <CategoryTable
+        data={mockCategories}
+        openDelete={mockOpenDelete}
+        openForceDelete={mockOpenForceDelete}
+        onCopy={mockOnCopy}
+      />
+    );
+
+    const copyBtn = screen.getAllByTestId("action-btn-copy")[0];
+    fireEvent.click(copyBtn);
+    expect(mockOnCopy).toHaveBeenCalled();
+
+    const editBtn = screen.getAllByTestId("action-btn-edit")[0];
+    fireEvent.click(editBtn);
+    expect(mockContextValue.setState).toHaveBeenCalled();
+  });
+
+  it("should render restore and force delete for deleted categories and click force delete", () => {
+    const deletedCategories = [
+      {
+        ...mockCategories[0],
+        DeletedAt: "2026-06-09 10:00:00",
+      },
+    ];
+
+    render(
+      <CategoryTable
+        data={deletedCategories}
+        openDelete={mockOpenDelete}
+        openForceDelete={mockOpenForceDelete}
+        onCopy={mockOnCopy}
+      />
+    );
+
+    const actionWrapper = screen.getByTestId("mock-action-buttons");
+    expect(actionWrapper).toHaveTextContent("restore");
+    expect(actionWrapper).toHaveTextContent("force delete");
+
+    const forceDeleteBtn = screen.getByTestId("action-btn-force-delete");
+    fireEvent.click(forceDeleteBtn);
+    expect(mockOpenForceDelete).toHaveBeenCalledWith(
+      expect.objectContaining({ uuid: "uuid-1" })
+    );
+  });
+
+  it("should handle restore action success and various error responses", async () => {
+    const deletedCategories = [
+      {
+        ...mockCategories[0],
+        DeletedAt: "2026-06-09 10:00:00",
+      },
+    ];
+
+    render(
+      <CategoryTable
+        data={deletedCategories}
+        openDelete={mockOpenDelete}
+        openForceDelete={mockOpenForceDelete}
+        onCopy={mockOnCopy}
+      />
+    );
+
+    const restoreBtn = screen.getByTestId("action-btn-restore");
+
+    // Case 1: Success
+    mockContextValue.actionCategory.mockResolvedValueOnce({ data: { uuid: "uuid-1" } });
+    fireEvent.click(restoreBtn);
+    await waitFor(() => {
+      expect(mockContextValue.actionCategory).toHaveBeenCalledWith("uuid-1", undefined, "restore");
+      expect(mockContextValue.loadData).toHaveBeenCalled();
+    });
+
+    // Case 2: Network error (no response)
+    mockContextValue.actionCategory.mockRejectedValueOnce(new Error("Network Error"));
+    fireEvent.click(restoreBtn);
+
+    // Case 3: Cloudflare error (status 520)
+    mockContextValue.actionCategory.mockRejectedValueOnce({
+      response: { status: 520, data: {} },
+    });
+    fireEvent.click(restoreBtn);
+
+    // Case 4: Standard error response without message
+    mockContextValue.actionCategory.mockRejectedValueOnce({
+      response: { status: 500, data: {} },
+    });
+    fireEvent.click(restoreBtn);
+
+    // Case 5: Standard error response with message
+    mockContextValue.actionCategory.mockRejectedValueOnce({
+      response: { status: 500, data: { message: "Internal Error" } },
+    });
+    fireEvent.click(restoreBtn);
+  });
+
+  it("should handle default prop values when they are omitted", () => {
+    const { container } = render(
+      <CategoryTable
+        openDelete={mockOpenDelete}
+        openForceDelete={mockOpenForceDelete}
+        onCopy={mockOnCopy}
+      />
+    );
+    const tbody = container.querySelector("tbody");
+    expect(tbody?.children.length).toBe(0);
   });
 });

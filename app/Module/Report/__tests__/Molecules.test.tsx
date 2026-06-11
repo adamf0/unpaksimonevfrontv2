@@ -11,6 +11,7 @@ import DistributionChart from "../Molecules/DistributionChart";
 import FourYearChart from "../Molecules/FourYearChart";
 import PieChart from "../Molecules/PieChart";
 import RatingChart from "../Molecules/RatingChart";
+import ProgramCard from "../Atoms/ProgramCard";
 
 // Mock Recharts
 vi.mock("recharts", () => ({
@@ -168,6 +169,15 @@ describe("Report - Molecules Test Suite", () => {
       render(<RatingChart title="Rating Soal" data={[{ label: "5", value: 20 }]} />);
       expect(screen.getByText("Rating Soal")).toBeDefined();
       expect(screen.getByText("Total Responden:")).toBeDefined();
+    });
+  });
+
+  describe("ProgramCard Atom Component", () => {
+    it("should render title, total, and percent stats", () => {
+      render(<ProgramCard title="Prodi Ilmu Komputer" total="150" percent="75%" />);
+      expect(screen.getByText("Prodi Ilmu Komputer")).toBeDefined();
+      expect(screen.getByText("150")).toBeDefined();
+      expect(screen.getByText("75%")).toBeDefined();
     });
   });
 });

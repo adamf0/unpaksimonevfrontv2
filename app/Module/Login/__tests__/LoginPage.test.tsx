@@ -21,4 +21,23 @@ describe("LoginPage Component", () => {
     expect(screen.getByTestId("auth-hero")).toBeDefined();
     expect(screen.getByTestId("auth-login")).toBeDefined();
   });
+
+  it("should render fallback skeletons under suspense", async () => {
+    vi.resetModules();
+    vi.doMock("../Organisms/AuthHeroSection", () => ({
+      default: () => {
+        throw new Promise(() => {});
+      },
+    }));
+    vi.doMock("../Organisms/AuthLoginSection", () => ({
+      default: () => {
+        throw new Promise(() => {});
+      },
+    }));
+
+    const { default: SuspendedLoginPage } = await import("../Page/LoginPage");
+    render(<SuspendedLoginPage />);
+
+    expect(screen.getByRole("main")).toBeDefined();
+  });
 });

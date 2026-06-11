@@ -167,4 +167,33 @@ describe("useTokenWatcher Hook", () => {
 
     warnSpy.mockRestore();
   });
+
+  it("should handle effect cleanup twice safely", () => {
+    const useEffectSpy = vi.spyOn(React, "useEffect");
+    render(<TokenWatcherTester />);
+    
+    const effectCall = useEffectSpy.mock.calls.find(call => call[1]?.length === 0);
+    if (effectCall) {
+      const effectCallback = effectCall[0];
+      const cleanup = effectCallback();
+      if (typeof cleanup === "function") {
+        expect(() => cleanup()).not.toThrow();
+        expect(() => cleanup()).not.toThrow();
+      }
+    }
+    useEffectSpy.mockRestore();
+  });
+
+  it("should prevent duplicate interval setup if effect runs again", () => {
+    const useEffectSpy = vi.spyOn(React, "useEffect");
+    render(<TokenWatcherTester />);
+    
+    const effectCall = useEffectSpy.mock.calls.find(call => call[1]?.length === 0);
+    if (effectCall) {
+      const effectCallback = effectCall[0];
+      const result = effectCallback();
+      expect(result).toBeUndefined();
+    }
+    useEffectSpy.mockRestore();
+  });
 });

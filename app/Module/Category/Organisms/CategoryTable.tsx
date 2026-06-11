@@ -68,7 +68,7 @@ export function mapCategory(api: any): CategoryItem {
    TABLE COMPONENT
 ========================= */
 export function CategoryTable({
-  data,
+  data = [],
   loading = false,
   openDelete,
   openForceDelete,

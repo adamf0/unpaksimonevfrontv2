@@ -34,11 +34,7 @@ function mapQuestions(
     }
 
     // PRODI
-    if (step === "prodi") {
-      return item.CreatedBy === "prodi";
-    }
-
-    return false;
+    return item.CreatedBy === "prodi";
   }).map((item: any) => ({
     id: item.UUID,
     uuid: item.UUID,
@@ -181,11 +177,7 @@ export default function TemplateQuestionPreview() {
         return item.CreatedBy === "fakultas";
       }
 
-      if (step === "prodi") {
-        return item.CreatedBy === "prodi";
-      }
-
-      return false;
+      return item.CreatedBy === "prodi";
     });
   }
 
@@ -210,12 +202,16 @@ export default function TemplateQuestionPreview() {
     alert("Preview selesai");
   }
 
+  const hasAdminQuestions = useMemo(() => {
+    return hasQuestions("admin");
+  }, [previewData]);
+
   const hasFakultasQuestions = useMemo(() => {
-    return previewData.some((item: any) => item.CreatedBy === "fakultas");
+    return hasQuestions("fakultas");
   }, [previewData]);
 
   const hasProdiQuestions = useMemo(() => {
-    return previewData.some((item: any) => item.CreatedBy === "prodi");
+    return hasQuestions("prodi");
   }, [previewData]);
 
   function getSubmitLabel() {

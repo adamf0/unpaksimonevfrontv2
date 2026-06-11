@@ -59,6 +59,19 @@ describe("adaptSelectOptions adapter", () => {
     expect(result).toHaveLength(1);
     expect(result[0].value).toBe("opt-3");
   });
+
+  it("should handle nullish coalescing default fallback values", () => {
+    const rawData = [
+      { uuid: "opt-1", name: null },
+      { uuid: "opt-2", name: undefined },
+    ];
+    const result = adaptSelectOptions(rawData as any, {
+      valueKey: "uuid",
+      labelKey: "name",
+    });
+    expect(result[0].label).toBe("");
+    expect(result[1].label).toBe("");
+  });
 });
 
 describe("adaptSelectOptionsMerge adapter", () => {
@@ -102,6 +115,25 @@ describe("adaptSelectOptionsMerge adapter", () => {
     });
 
     expect(result).toHaveLength(0);
+  });
+
+  it("should handle nullish coalescing defaults and overflow placeholders", () => {
+    const rawData = [
+      { id: "usr-1", first: null, last: undefined },
+    ];
+
+    const resultNullish = adaptSelectOptionsMerge(rawData as any, {
+      valueKey: "id",
+      labelKeys: ["first", "last"],
+    });
+    expect(resultNullish[0].label).toBe(" ");
+
+    const resultOverflow = adaptSelectOptionsMerge(rawData as any, {
+      valueKey: "id",
+      labelKeys: ["first"],
+      template: "%s - %s - %s",
+    });
+    expect(resultOverflow[0].label).toBe(" -  - ");
   });
 });
 

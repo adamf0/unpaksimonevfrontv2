@@ -1,5 +1,6 @@
-import "./mocks/apiMocks";
-import { describe, it, expect } from "vitest";
+import { mockAxios } from "./mocks/apiMocks";
+import apiCall from "../External/APICall";
+import { describe, it, expect, vi } from "vitest";
 import { isEmpty, toNumber, cn } from "../Service/utility";
 import { clipCreatedBy } from "../Service/clipData";
 import getTokenExpiry from "../Service/tokenExpiry";
@@ -104,6 +105,32 @@ describe("tokenExpiry service", () => {
     expect(getTokenExpiry("not.valid")).toBeNull();
     expect(getTokenExpiry("invalid-format-total")).toBeNull();
   });
+
+  it("should handle payloads that do not require base64 padding", () => {
+    const testHeader = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9";
+    // base64 of {"exp":1000000} -> length 20 (no padding needed)
+    const testPayload = "eyJleHAiOjEwMDAwMDB9";
+    const token = `${testHeader}.${testPayload}.sig`;
+    const exp = getTokenExpiry(token);
+    expect(exp).toBe(1000000 * 1000);
+  });
+
+  it("should return null if exp property is missing in payload", () => {
+    const testHeader = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9";
+    // base64 of {"user":"test"} -> length 20 (no padding needed)
+    const testPayload = "eyJ1c2VyIjoidGVzdCJ9";
+    const token = `${testHeader}.${testPayload}.sig`;
+    const exp = getTokenExpiry(token);
+    expect(exp).toBeNull();
+  });
+
+  it("should catch base64 decode errors and return null", () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const result = getTokenExpiry("header.invalidBase64!!@@.signature");
+    expect(result).toBeNull();
+    expect(errorSpy).toHaveBeenCalled();
+    errorSpy.mockRestore();
+  });
 });
 
 describe("axiosErrorHandler helper", () => {
@@ -111,6 +138,9 @@ describe("axiosErrorHandler helper", () => {
     expect(handleCloudflareError(520)).toContain("520");
     expect(handleCloudflareError(521)).toContain("Web Server Down");
     expect(handleCloudflareError(522)).toContain("Connection Timed Out");
+    expect(handleCloudflareError(523)).toContain("Origin Unreachable");
+    expect(handleCloudflareError(524)).toContain("Timeout Occurred");
+    expect(handleCloudflareError(525)).toContain("SSL Handshake Failed");
     expect(handleCloudflareError(526)).toContain("Invalid SSL Certificate");
   });
 
@@ -127,5 +157,40 @@ describe("axiosErrorHandler helper", () => {
   it("should examine headers content-type", () => {
     expect(isHtmlResponseByHeader({ "content-type": "text/html" })).toBe(true);
     expect(isHtmlResponseByHeader({ "content-type": "application/json" })).toBe(false);
+    expect(isHtmlResponseByHeader(null)).toBeFalsy();
+    expect(isHtmlResponseByHeader(undefined)).toBeFalsy();
+    expect(isHtmlResponseByHeader({})).toBeFalsy();
+  });
+});
+
+describe("APICall interceptors", () => {
+  it("should setup interceptors and handle request success/error callbacks", async () => {
+    expect(apiCall).toBeDefined();
+    const [requestSuccess, requestError] = mockAxios.interceptors.request.use.mock.calls[0];
+
+    // 1. Success callback without token and without abort signal
+    const config1: any = { headers: {} };
+    sessionStorage.clear();
+    const res1 = requestSuccess(config1);
+    expect(res1.headers.Authorization).toBeUndefined();
+    expect(res1.signal).toBeDefined();
+    expect(res1.__abortController).toBeDefined();
+
+    // 2. Success callback with token
+    sessionStorage.setItem("access_token", "test-token-123");
+    const config2: any = { headers: {} };
+    const res2 = requestSuccess(config2);
+    expect(res2.headers.Authorization).toBe("Bearer test-token-123");
+
+    // 3. Success callback when signal is already defined
+    const dummySignal = {} as any;
+    const config3: any = { headers: {}, signal: dummySignal };
+    const res3 = requestSuccess(config3);
+    expect(res3.signal).toBe(dummySignal);
+    expect(res3.__abortController).toBeUndefined();
+
+    // 4. Error callback
+    const dummyError = new Error("request error");
+    await expect(requestError(dummyError)).rejects.toThrow("request error");
   });
 });

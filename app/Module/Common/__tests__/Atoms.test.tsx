@@ -18,6 +18,19 @@ import ModalIcon from "../Components/Atoms/ModalIcon";
 import { SelectOptionIndicator } from "../Components/Atoms/SelectOptionIndicator";
 import Text from "../Components/Atoms/Text";
 
+// Import shadcn UI components for direct coverage tests
+import { Badge as UiBadge } from "../../../../components/ui/badge";
+import { Button as UiButton } from "../../../../components/ui/button";
+import {
+  Card as UiCard,
+  CardHeader as UiCardHeader,
+  CardFooter as UiCardFooter,
+  CardTitle as UiCardTitle,
+  CardAction as UiCardAction,
+  CardDescription as UiCardDescription,
+  CardContent as UiCardContent,
+} from "../../../../components/ui/card";
+
 describe("Badge Atom Component", () => {
   it("should render children and apply default style class", () => {
     render(<Badge>Draft</Badge>);
@@ -97,6 +110,25 @@ describe("Input Atom Component", () => {
     fireEvent.change(input, { target: { value: "New Value" } });
     expect(handleChange).toHaveBeenCalled();
   });
+
+  it("should trigger blur handlers and support react-hook-form registration", () => {
+    const handleBlur = vi.fn();
+    const mockRegister = {
+      name: "test-field",
+      onChange: vi.fn(),
+      onBlur: vi.fn(),
+      ref: vi.fn(),
+    };
+    render(<Input register={mockRegister} onBlur={handleBlur} placeholder="Type here" />);
+    const input = screen.getByPlaceholderText("Type here");
+
+    fireEvent.blur(input);
+    expect(handleBlur).toHaveBeenCalled();
+    expect(mockRegister.onBlur).toHaveBeenCalled();
+
+    fireEvent.change(input, { target: { value: "New Value" } });
+    expect(mockRegister.onChange).toHaveBeenCalled();
+  });
 });
 
 describe("Label Atom Component", () => {
@@ -150,5 +182,53 @@ describe("Text Atom Component", () => {
     expect(el).toBeDefined();
     expect(el.tagName).toBe("P");
     expect(el.className).toBe("custom-txt");
+  });
+});
+
+describe("shadcn UI Badge Component", () => {
+  it("should support rendering as another child element using asChild", () => {
+    render(
+      <UiBadge asChild>
+        <a href="#link">Link Badge</a>
+      </UiBadge>
+    );
+    const badge = screen.getByText("Link Badge");
+    expect(badge).toBeDefined();
+    expect(badge.tagName).toBe("A");
+  });
+});
+
+describe("shadcn UI Button Component", () => {
+  it("should support rendering as another child element using asChild", () => {
+    render(
+      <UiButton asChild>
+        <a href="#button">Link Button</a>
+      </UiButton>
+    );
+    const btn = screen.getByText("Link Button");
+    expect(btn).toBeDefined();
+    expect(btn.tagName).toBe("A");
+  });
+});
+
+describe("shadcn UI Card Components", () => {
+  it("should render all card sub-sections and apply custom classnames", () => {
+    render(
+      <UiCard size="sm">
+        <UiCardHeader>
+          <UiCardTitle>My Title</UiCardTitle>
+          <UiCardDescription>My Subtitle</UiCardDescription>
+          <UiCardAction>Action Text</UiCardAction>
+        </UiCardHeader>
+        <UiCardContent>Card Body</UiCardContent>
+        <UiCardFooter>Card Footer</UiCardFooter>
+      </UiCard>
+    );
+
+    expect(screen.getByText("My Title")).toBeDefined();
+    expect(screen.getByText("My Subtitle")).toBeDefined();
+    expect(screen.getByText("Action Text")).toBeDefined();
+    expect(screen.getByText("Card Body")).toBeDefined();
+    expect(screen.getByText("Card Footer")).toBeDefined();
   });
 });

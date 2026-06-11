@@ -1,8 +1,4 @@
 export function handleCloudflareError(status: number): string | null {
-  if (![520, 521, 522, 523, 524, 525, 526].includes(status)) {
-    return null;
-  }
-
   switch (status) {
     case 520:
       return "Unknown Error (520). Server tidak merespon dengan benar.";
@@ -19,7 +15,7 @@ export function handleCloudflareError(status: number): string | null {
     case 526:
       return "Invalid SSL Certificate (526). Sertifikat SSL tidak valid.";
     default:
-      return "Server sedang bermasalah. Coba lagi nanti.";
+      return null;
   }
 }
 

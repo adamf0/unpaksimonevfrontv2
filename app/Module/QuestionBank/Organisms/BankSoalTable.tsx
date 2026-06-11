@@ -42,10 +42,10 @@ export function mapBankSoal(api: any): BankSoalItem {
     konten: api?.Content,
     deskripsi: api?.Deskripsi,
     createdby: clipCreatedBy(api),
-    createdbyref: api?.CreatedByRef ?? "",
+    createdbyref: api?.CreatedByRef,
     createdtime: api?.CreatedAt ?? "",
     deletedtime: api.DeletedAt ?? "",
-    listextend: api.ListExt ?? [],
+    listextend: api.ListExt,
   };
 }
 

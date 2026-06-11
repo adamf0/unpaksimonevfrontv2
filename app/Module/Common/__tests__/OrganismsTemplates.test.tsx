@@ -63,6 +63,20 @@ describe("Modal Organism Component", () => {
     );
     expect(container.textContent).toBe("");
   });
+
+  it("should not trigger onClose when clicking inside the modal content card", () => {
+    const handleClose = vi.fn();
+    render(
+      <Modal open={true} onClose={handleClose} title="Hapus Data">
+        <div>Apakah Anda yakin?</div>
+      </Modal>
+    );
+
+    const content = screen.getByText("Apakah Anda yakin?");
+    fireEvent.click(content);
+    
+    expect(handleClose).not.toHaveBeenCalled();
+  });
 });
 
 describe("SelectField Component (Floating UI)", () => {
@@ -370,6 +384,21 @@ describe("AdminPanelTemplateServer Component (RSC)", () => {
     render(result);
     expect(screen.getByTestId("rsc-children")).toBeDefined();
     expect(screen.getByText("Dosen Rian")).toBeDefined();
+  });
+
+  it("should return early with dummy static user if NEXT_EXPORT is true", async () => {
+    const originalEnv = process.env.NEXT_EXPORT;
+    process.env.NEXT_EXPORT = "true";
+
+    const result = await AdminPanelTemplateServer({
+      children: <div data-testid="rsc-children">Static Content</div>,
+    });
+
+    render(result);
+    expect(screen.getByTestId("rsc-children")).toBeDefined();
+    expect(screen.getByText("Static User")).toBeDefined();
+
+    process.env.NEXT_EXPORT = originalEnv;
   });
 });
 
