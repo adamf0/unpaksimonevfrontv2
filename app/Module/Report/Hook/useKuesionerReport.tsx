@@ -50,9 +50,9 @@ export function useKuesionerReport() {
   const [summaryData, setSummaryData] = useState<ReportSummaryData | null>(null);
   const [loadingSummary, setLoadingSummary] = useState(false);
 
-  async function loadSummary(judul: string) {
+  async function loadSummary(judul: string, kodeFakultas?: string | null, kodeProdi?: string | null) {
     setLoadingSummary(true);
-    const res = await fetchAllReportSummaries(judul);
+    const res = await fetchAllReportSummaries(judul, kodeFakultas, kodeProdi);
     setSummaryData(res);
     setLoadingSummary(false);
     return res;

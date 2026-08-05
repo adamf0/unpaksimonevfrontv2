@@ -147,7 +147,7 @@ export default function ReportTemplate() {
 
           const selectedJudul = val.bankSoal[0]?.label || "";
           if (selectedJudul) {
-            await loadSummary(selectedJudul);
+            await loadSummary(selectedJudul, val.kode_fakultas, val.kode_prodi);
           }
 
           const payloads: Payload[] = val.bankSoal.map((item: any) => ({
@@ -165,6 +165,7 @@ export default function ReportTemplate() {
           disabled={!query.bankSoal?.length}
           filteredDetail={filteredDetail}
           groupedByFullPath={groupedByFullPath}
+          summaryData={summaryData}
           exportRekapKuesioner={exportRekapKuesioner}
           exportDetailKuesioner={exportDetailKuesioner}
         />
@@ -182,13 +183,26 @@ export default function ReportTemplate() {
           <div className="flex flex-col gap-2">
             <button
               className="w-full bg-primary text-white py-2 rounded-lg font-bold"
-              onClick={closeFilter}
+              onClick={() => {
+                closeFilter();
+                if (query.bankSoal?.length) {
+                  const selectedJudul = query.bankSoal[0].label;
+                  loadSummary(selectedJudul, query.kode_fakultas, query.kode_prodi);
+                }
+              }}
             >
               Apply Filters
             </button>
             <button
               type="button"
-              onClick={resetFilters}
+              onClick={() => {
+                resetFilters();
+                closeFilter();
+                if (query.bankSoal?.length) {
+                  const selectedJudul = query.bankSoal[0].label;
+                  loadSummary(selectedJudul, null, null);
+                }
+              }}
               className="w-full py-2 rounded-lg border border-red-300 text-red-600 font-bold hover:bg-red-50 transition"
             >
               Reset Filter

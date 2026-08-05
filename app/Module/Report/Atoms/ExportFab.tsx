@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 export default function ExportFab({
   filteredDetail,
   groupedByFullPath,
+  summaryData,
   exportRekapKuesioner,
   exportDetailKuesioner,
   disabled = false,
@@ -59,7 +60,7 @@ export default function ExportFab({
         <div className="flex flex-col gap-2 items-end text-sm">
           <button
             onClick={() => {
-              exportRekapKuesioner({ rows: filteredDetail });
+              exportRekapKuesioner({ rows: filteredDetail, summary: summaryData });
               setOpen(false);
             }}
             className="fab-action bg-emerald-600"
