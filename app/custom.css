@@ -199,7 +199,7 @@
   height: 24px;
 }
 
-:global(.material-symbols-outlined) {
+.material-symbols-outlined {
   display: block;
   line-height: 1;
   width: 24px;

@@ -49,7 +49,11 @@ export type KuesionerReportContextType = {
 
   summaryData: any;
   loadingSummary: boolean;
-  loadSummary: (judul: string) => Promise<any>;
+  loadSummary: (
+    judul: string,
+    kodeFakultas?: string | null,
+    kodeProdi?: string | null,
+  ) => Promise<any>;
 };
 
 // =========================

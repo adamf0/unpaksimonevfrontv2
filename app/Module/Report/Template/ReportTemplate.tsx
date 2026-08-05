@@ -147,7 +147,11 @@ export default function ReportTemplate() {
 
           const selectedJudul = val.bankSoal[0]?.label || "";
           if (selectedJudul) {
-            await loadSummary(selectedJudul, val.kode_fakultas, val.kode_prodi);
+            await loadSummary(
+              selectedJudul,
+              val.kode_fakultas || (val.fakultas ? String(val.fakultas.value) : null),
+              val.kode_prodi || (val.prodi ? String(val.prodi.value) : null),
+            );
           }
 
           const payloads: Payload[] = val.bankSoal.map((item: any) => ({
