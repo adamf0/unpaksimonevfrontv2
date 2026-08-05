@@ -33,7 +33,13 @@ describe("useKuesionerReport Hook - Stream Fetching", () => {
       "data: done\n\n",
     ];
 
-    global.fetch = vi.fn().mockImplementation(() => {
+    global.fetch = vi.fn().mockImplementation((url) => {
+      if (url.includes("/kuesioners/report_year")) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ data: [] }),
+        });
+      }
       return Promise.resolve(mockFetchStreamResponse(streamChunks));
     });
 
@@ -44,7 +50,7 @@ describe("useKuesionerReport Hook - Stream Fetching", () => {
     });
 
     expect(global.fetch).toHaveBeenCalledWith(
-      expect.stringContaining("/kuesioners/report"),
+      expect.stringContaining("/kuesioners/report_year"),
       expect.objectContaining({
         method: "POST",
         headers: expect.objectContaining({
@@ -53,7 +59,16 @@ describe("useKuesionerReport Hook - Stream Fetching", () => {
       })
     );
 
-    expect(result.current.data).toEqual([
+    let detailPromise;
+    act(() => {
+      detailPromise = result.current.loadDataDetail([{ judul: "Kues-1", is4year: "1" }]);
+    });
+
+    await act(async () => {
+      await detailPromise;
+    });
+
+    expect(result.current.dataDetail).toEqual([
       { ID: 1, Semester: "202610", NPM: "npm-1" },
       { ID: 2, Semester: "202610", NIDN: "nidn-1" },
     ]);

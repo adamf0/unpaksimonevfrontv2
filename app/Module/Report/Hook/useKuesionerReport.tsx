@@ -73,6 +73,9 @@ export function useKuesionerReport() {
   const openFilter = () => setOpen(true);
   const closeFilter = () => setOpen(false);
 
+  // =========================
+  // FETCH MAIN DATA
+  // =========================
   async function loadData() {
     setLoading(true);
     setErrData(null);
@@ -81,59 +84,33 @@ export function useKuesionerReport() {
     controllerRef.current = controller;
 
     try {
-      const res = await fetch(`${BASE_URL}/kuesioners/report`, {
+      const res = await fetch(`${BASE_URL}/kuesioners/report_year`, {
         method: "POST",
         headers: {
-          Accept: "text/event-stream",
           Authorization: `Bearer ${sessionStorage.getItem("access_token") || ""}`,
         },
         signal: controller.signal,
       });
 
-      if (!res.ok || !res.body) throw new Error("Server error");
+      if (!res.ok) throw new Error("Server error");
 
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder("utf-8");
+      const json = await res.json();
+      const list = json.data || json || [];
 
-      let buffer = "";
-      let temp: KuesionerResult[] = [];
-
-      while (true) {
-        const { value, done } = await reader.read();
-
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-
-        const chunks = buffer.split("\n\n");
-
-        buffer = chunks.pop() || "";
-
-        for (const chunk of chunks) {
-          const line = chunk.trim();
-
-          if (!line.startsWith("data:")) continue;
-
-          const val = line.replace("data:", "").trim();
-
-          if (val === "start") {
-            temp = [];
-            continue;
-          }
-
-          if (val === "done") {
-            setData(temp);
-            setLoading(false);
-            return;
-          }
-
-          try {
-            temp.push(JSON.parse(val));
-          } catch {}
-        }
-
-        setData([...temp]);
-      }
+      setSummaryData((prev) => ({
+        overview: prev?.overview || {
+          id: 0,
+          judul: "",
+          semester: "",
+          total_responden: 0,
+          total_jawaban: 0,
+          rata_rata_rating: 0,
+        },
+        distribusi_fakultas: prev?.distribusi_fakultas || [],
+        top_questions: prev?.top_questions || [],
+        kategori_summary: prev?.kategori_summary || [],
+        report_year: Array.isArray(list) ? list : [],
+      }));
     } catch (error: any) {
       if (error.name !== "AbortError") {
         setErrData("Server error");

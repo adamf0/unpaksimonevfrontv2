@@ -94,6 +94,18 @@ describe("useKuesionerReport Hook - Actions & Selectors", () => {
     ];
 
     global.fetch = vi.fn().mockImplementation((url) => {
+      if (url.includes("/kuesioners/report_year")) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              data: [
+                { tahun: "2026", total_mahasiswa: 1, total_dosen: 1, total_tendik: 0 },
+                { tahun: "2025", total_mahasiswa: 0, total_dosen: 0, total_tendik: 1 },
+              ],
+            }),
+        });
+      }
       if (url.includes("/kuesioners/report")) {
         return Promise.resolve(mockFetchStreamResponse(streamChunks));
       }
