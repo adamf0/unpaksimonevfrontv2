@@ -32,8 +32,8 @@ describe("useQuestionerBuilder Hook - Actions & Submission", () => {
         ...prev,
         data: {
           UUIDKuesioner: "kues-1",
-          TanggalMulai: "2026-06-01 00:00:00",
-          TanggalAkhir: "2026-06-30 23:59:59",
+          TanggalMulai: "2026-01-01 00:00:00",
+          TanggalAkhir: "2026-12-31 23:59:59",
         },
         userInfo: { RefFakultas: "FT", RefProdi: "TI", Level: "admin" } as any,
         dataQuestion: [
