@@ -23,6 +23,10 @@ export default function ReportTemplate() {
   const {
     loadData,
     loadDataDetail,
+    loadSummary,
+
+    summaryData,
+    loadingSummary,
 
     loadingDetail,
     loading,
@@ -141,6 +145,11 @@ export default function ReportTemplate() {
           }));
           resetDataDetail();
 
+          const selectedJudul = val.bankSoal[0]?.label || "";
+          if (selectedJudul) {
+            await loadSummary(selectedJudul);
+          }
+
           const payloads: Payload[] = val.bankSoal.map((item: any) => ({
             judul: item.label,
             semester: val?.semester?.label ?? "",
@@ -148,8 +157,6 @@ export default function ReportTemplate() {
           }));
 
           prevFilterRef.current = payloads;
-
-          await loadDataDetail(payloads);
         }}
       />
 
@@ -196,7 +203,7 @@ export default function ReportTemplate() {
         data={topQuestions}
         err={errdataDetail}
         onReload={handleReloadDetail}
-        loading={loadingDetail}
+        loading={loadingSummary || loadingDetail}
       />
 
       <hr className="my-6 border-slate-400" />
@@ -205,7 +212,7 @@ export default function ReportTemplate() {
         data={facultyStats}
         err={errdataDetail}
         onReload={handleReloadDetail}
-        loading={loadingDetail}
+        loading={loadingSummary || loadingDetail}
       />
 
       {/* =========================

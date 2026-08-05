@@ -101,18 +101,7 @@ export default function RatingChart({
 
                 if (value <= 0) return null;
 
-                // cari data berdasarkan posisi bar
-                const row = chartData.find(
-                  (_, i) =>
-                    Math.abs(
-                      x -
-                        (i *
-                          ((560 - 20) / chartData.length) +
-                          20)
-                    ) < 60
-                );
-
-                const percent = row?.percent ?? 0;
+                const percent = total > 0 ? (value / total) * 100 : 0;
 
                 return (
                   <text

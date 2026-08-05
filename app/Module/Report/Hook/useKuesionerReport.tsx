@@ -3,6 +3,8 @@
 import { useRef, useState, useMemo, useEffect } from "react";
 import { Payload } from "../Attribut/Payload";
 import { KuesionerResult } from "../Attribut/KuesionerResult";
+import { ReportSummaryData } from "../Attribut/ReportSummaryTypes";
+import { fetchAllReportSummaries } from "../Service/fetchReportSummary";
 import { handleCloudflareError } from "../../Common/Error/axiosErrorHandler";
 import { useToast } from "../../Common/Context/ToastContext";
 
@@ -45,6 +47,17 @@ export function useKuesionerReport() {
   const [loadingProdi, setLoadingProdi] = useState(false);
   const [loadingTemplate, setLoadingTemplate] = useState(false);
 
+  const [summaryData, setSummaryData] = useState<ReportSummaryData | null>(null);
+  const [loadingSummary, setLoadingSummary] = useState(false);
+
+  async function loadSummary(judul: string) {
+    setLoadingSummary(true);
+    const res = await fetchAllReportSummaries(judul);
+    setSummaryData(res);
+    setLoadingSummary(false);
+    return res;
+  }
+
   const [open, setOpen] = useState(false);
 
   const { pushToast } = useToast();
@@ -64,93 +77,44 @@ export function useKuesionerReport() {
   // FETCH MAIN DATA
   // =========================
   async function loadData() {
-    const payload = { judul: "", semester: "", is4year: "1" };
-
     setLoading(true);
     setErrData(null);
-    await new Promise((resolve) =>
-      setTimeout(
-        resolve,
-        process.env.NODE_ENV === "test" ? 0 : 1000,
-      ),
-    );
 
     const controller = new AbortController();
     controllerRef.current = controller;
 
     try {
-      // simulasi error
-      const random = Math.floor(Math.random() * 3);
-      if (ModeDemo && random % 2 === 0) {
-        throw new Error("Simulasi error random (genap)");
-      }
-
-      const formData = new FormData();
-      formData.append("judul", payload.judul);
-      formData.append("semester", payload.semester);
-      formData.append("is4year", payload.is4year);
-
-      const res = await fetch(`${BASE_URL}/kuesioners/report`, {
+      const res = await fetch(`${BASE_URL}/kuesioners/report_year`, {
         method: "POST",
         headers: {
-          Accept: "text/event-stream",
-          Authorization: `Bearer ${sessionStorage.getItem("access_token")}`,
+          Authorization: `Bearer ${sessionStorage.getItem("access_token") || ""}`,
         },
-        body: formData,
         signal: controller.signal,
       });
 
-      if (!res.ok || !res.body) throw new Error("Network error");
+      if (!res.ok) throw new Error("Server error");
 
-      const reader = res.body.getReader();
-      readerRef.current = reader;
+      const json = await res.json();
+      const list = json.data || json || [];
 
-      const decoder = new TextDecoder("utf-8");
-
-      let buffer = "";
-      let temp: KuesionerResult[] = [];
-
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const chunks = buffer.split("\n\n");
-        buffer = chunks.pop() || "";
-
-        for (const chunk of chunks) {
-          const line = chunk.trim();
-          if (!line.startsWith("data:")) continue;
-
-          const val = line.replace("data:", "").trim();
-
-          if (val === "start") {
-            temp = [];
-            continue;
-          }
-
-          if (val === "done") {
-            setData(temp);
-            setLoading(false);
-            return;
-          }
-
-          try {
-            temp.push(JSON.parse(val));
-          } catch {}
-        }
-
-        setData([...temp]);
-      }
+      setSummaryData((prev) => ({
+        overview: prev?.overview || {
+          id: 0,
+          judul: "",
+          semester: "",
+          total_responden: 0,
+          total_jawaban: 0,
+          rata_rata_rating: 0,
+        },
+        distribusi_fakultas: prev?.distribusi_fakultas || [],
+        top_questions: prev?.top_questions || [],
+        kategori_summary: prev?.kategori_summary || [],
+        report_year: list,
+      }));
     } catch (error: any) {
-      if (!error.response) return setErrData("Server error");
-
-      const { status, data } = error.response;
-
-      const cf = handleCloudflareError(status);
-      if (cf) return setErrData(cf);
-
-      setErrData(data?.message || "Error");
+      if (error.name !== "AbortError") {
+        setErrData("Server error");
+      }
     } finally {
       setLoading(false);
     }
@@ -518,6 +482,14 @@ export function useKuesionerReport() {
   }, [dataDetail, query]);
 
   const topQuestions = useMemo(() => {
+    if (summaryData?.top_questions?.length) {
+      return summaryData.top_questions.map((q: any) => ({
+        title: q.pertanyaan,
+        category: q.nama_kategori,
+        score: Number(((q.rata_rata_skor / 5) * 10).toFixed(1)),
+      }));
+    }
+
     const map: Record<string, any> = {};
 
     for (const item of filteredDetail) {
@@ -547,9 +519,18 @@ export function useKuesionerReport() {
         score: Number(((avg / 5) * 10).toFixed(1)),
       };
     });
-  }, [filteredDetail]);
+  }, [summaryData, filteredDetail]);
 
   const yearlyStats = useMemo(() => {
+    if (summaryData?.report_year?.length) {
+      return summaryData.report_year.map((ry: any) => ({
+        year: ry.tahun,
+        mahasiswa: ry.total_mahasiswa,
+        dosen: ry.total_dosen,
+        tendik: ry.total_tendik,
+      }));
+    }
+
     const map: Record<string, any> = {};
 
     for (const item of data) {
@@ -574,9 +555,36 @@ export function useKuesionerReport() {
       dosen: val.dosen.size,
       tendik: val.tendik.size,
     }));
-  }, [data]);
+  }, [summaryData, data]);
 
   const facultyStats = useMemo(() => {
+    if (summaryData?.distribusi_fakultas?.length) {
+      return summaryData.distribusi_fakultas.map((f: any) => {
+        let prodiArr: any[] = [];
+        try {
+          if (typeof f.prodi_distribution === "string") {
+            prodiArr = JSON.parse(f.prodi_distribution);
+          } else if (Array.isArray(f.prodi_distribution)) {
+            prodiArr = f.prodi_distribution;
+          }
+        } catch {}
+
+        if (!prodiArr.length) {
+          prodiArr = [
+            {
+              title: f.nama_fakultas,
+              total: f.total_responden,
+            },
+          ];
+        }
+
+        return {
+          title: f.nama_fakultas,
+          data: prodiArr,
+        };
+      });
+    }
+
     const map: Record<string, any> = {};
 
     for (const item of filteredDetail) {
@@ -597,9 +605,62 @@ export function useKuesionerReport() {
         total: users.size,
       })),
     }));
-  }, [filteredDetail]);
+  }, [summaryData, filteredDetail]);
 
   const groupedByFullPath = useMemo(() => {
+    if (summaryData?.kategori_summary?.length) {
+      return summaryData.kategori_summary.map((kat: any) => {
+        let qList: any[] = [];
+        try {
+          if (typeof kat.questions_json === "string") {
+            qList = JSON.parse(kat.questions_json);
+          } else if (Array.isArray(kat.questions_json)) {
+            qList = kat.questions_json;
+          }
+        } catch {}
+
+        let pertanyaan: any[] = [];
+
+        if (qList.length) {
+          pertanyaan = qList.map((q: any) => ({
+            title: q.title,
+            jenispilihan: q.jenispilihan || "rating",
+            jawaban: Object.entries(q.chart_distribution || {}).map(([label, total]) => ({
+              label,
+              total,
+            })),
+          }));
+        } else {
+          let chartMap: Record<string, number> = { "1": 0, "2": 0, "3": 0, "4": 0, "5": 0 };
+          try {
+            if (typeof kat.chart_distribution === "string") {
+              chartMap = JSON.parse(kat.chart_distribution);
+            } else if (kat.chart_distribution) {
+              chartMap = kat.chart_distribution as Record<string, number>;
+            }
+          } catch {}
+
+          const jawaban = Object.entries(chartMap).map(([label, total]) => ({
+            label,
+            total,
+          }));
+
+          pertanyaan = [
+            {
+              title: kat.nama_kategori,
+              jenispilihan: "rating",
+              jawaban,
+            },
+          ];
+        }
+
+        return {
+          fullPath: kat.full_text || kat.nama_kategori,
+          pertanyaan,
+        };
+      });
+    }
+
     if (!filteredDetail.length || !dataTemplate.length) return [];
 
     type AnswerAgg = {
@@ -609,9 +670,6 @@ export function useKuesionerReport() {
 
     const answerMap: Record<string, AnswerAgg> = {};
 
-    // =========================
-    // BUILD ANSWER MAP
-    // =========================
     for (const item of filteredDetail) {
       const key = `${item.FullPath}||${item.Pertanyaan}`;
 
@@ -626,10 +684,8 @@ export function useKuesionerReport() {
 
       if (!value) continue;
 
-      // count jawaban
       answerMap[key].count[value] = (answerMap[key].count[value] || 0) + 1;
 
-      // simpan raw data
       if (!answerMap[key].data[value]) {
         answerMap[key].data[value] = [];
       }
@@ -637,9 +693,6 @@ export function useKuesionerReport() {
       answerMap[key].data[value].push(item);
     }
 
-    // =========================
-    // GROUP BY FULLPATH
-    // =========================
     const map: Record<string, any> = {};
 
     for (const t of dataTemplate) {
@@ -647,7 +700,6 @@ export function useKuesionerReport() {
 
       const questionKey = `${fullPath}||${t.Pertanyaan}`;
 
-      // init category
       if (!map[fullPath]) {
         map[fullPath] = {
           fullPath,
@@ -655,14 +707,10 @@ export function useKuesionerReport() {
         };
       }
 
-      // =========================
-      // CEK DUPLIKAT PERTANYAAN
-      // =========================
       const existingQuestion = map[fullPath].pertanyaan.find(
         (x: any) => x.title === t.Pertanyaan,
       );
 
-      // skip kalau sudah ada
       if (existingQuestion) continue;
 
       const agg = answerMap[questionKey];
@@ -685,7 +733,7 @@ export function useKuesionerReport() {
     }
 
     return Object.values(map);
-  }, [filteredDetail, dataTemplate]);
+  }, [summaryData, filteredDetail, dataTemplate]);
 
   const resetFilters = () => {
     setQuery({
@@ -762,5 +810,9 @@ export function useKuesionerReport() {
     resetDataDetail,
 
     filteredDetail,
+
+    summaryData,
+    loadingSummary,
+    loadSummary,
   };
 }

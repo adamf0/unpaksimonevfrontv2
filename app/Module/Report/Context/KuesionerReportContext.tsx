@@ -45,7 +45,11 @@ export type KuesionerReportContextType = {
   resetFilters: () => void;
   resetDataDetail: () => void;
 
-  filteredDetail: any,
+  filteredDetail: any;
+
+  summaryData: any;
+  loadingSummary: boolean;
+  loadSummary: (judul: string) => Promise<any>;
 };
 
 // =========================

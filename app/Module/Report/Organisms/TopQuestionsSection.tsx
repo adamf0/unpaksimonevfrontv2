@@ -64,7 +64,7 @@ export default function TopQuestionsSection({
     );
   }
 
-  const sorted = [...data].sort((a, b) => b.score - a.score).slice(0, 10);
+  const listToDisplay = data.length > 0 ? data.slice(0, 10) : [];
 
   const rankingColor = [
     { color: "text-red-600" },
@@ -93,7 +93,7 @@ export default function TopQuestionsSection({
             <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
           </div>
         ) : (
-          sorted.map((item, index) => {
+          listToDisplay.map((item, index) => {
             const meta = rankingColor[index] || { color: "text-slate-600" };
 
             return (
