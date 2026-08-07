@@ -11,6 +11,7 @@ import {
 import { TemplatePertanyaanWithAnswareDefault } from "../Attribut/TemplatePertanyaanWithAnswareDefault";
 import { TemplateJawabanDefault } from "../Attribut/TemplateJawabanDefault";
 import { isEmpty } from "../../Common/Service/utility";
+import { isTemplateQuestionInUserScope } from "./useTemplate";
 
 /* =========================================================
    TYPES
@@ -72,32 +73,19 @@ export function TemplatePreviewProvider({
       es.onmessage = (event) => {
         const val = event.data;
 
-        /**
-         * START
-         */
         if (val === "start") {
           tempData = [];
-
           return;
         }
 
-        /**
-         * DONE
-         */
         if (val === "done") {
           es.close();
-
           resolve(tempData);
-
           return;
         }
 
-        /**
-         * PUSH DATA
-         */
         try {
           const parsed = JSON.parse(val);
-
           tempData.push(parsed);
         } catch (err) {
           console.error("PARSE ERROR", err);
@@ -106,9 +94,7 @@ export function TemplatePreviewProvider({
 
       es.onerror = (err) => {
         console.error("SSE ERROR", err);
-
         es.close();
-
         reject(err);
       };
     });
@@ -126,26 +112,44 @@ export function TemplatePreviewProvider({
 
       try {
         loadingRef.current = true;
-
         setLoading(true);
 
         if(isEmpty(uuidBankSoal)){
             setPreviewData([]);
             return [];
         }
+
+        const token = sessionStorage.getItem("access_token") || "";
+        let userProfile = null;
+        try {
+          const whoRes = await fetch(`${BASE_URL}/whoami`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (whoRes.ok) userProfile = await whoRes.json();
+        } catch {}
+
         /**
          * STEP 1
          * LOAD PERTANYAAN
          */
-        const pertanyaanList = await loadSSE<any>(
-          `${BASE_URL}/templatepertanyaans?mode=sse&ctxtoken=${sessionStorage.getItem(
-            "access_token",
-          )}&filters=uuidbanksoal:eq:${uuidBankSoal}`,
+        const pertanyaanListRaw = await loadSSE<any>(
+          `${BASE_URL}/templatepertanyaans?mode=sse&ctxtoken=${token}&filters=uuidbanksoal:eq:${uuidBankSoal}`,
         );
+
+        if (!pertanyaanListRaw.length) {
+          setPreviewData([]);
+          return [];
+        }
+
+        // Scope filter for preview
+        const pertanyaanList = userProfile
+          ? pertanyaanListRaw.filter((item: any) =>
+              isTemplateQuestionInUserScope(item, userProfile),
+            )
+          : pertanyaanListRaw;
 
         if (!pertanyaanList.length) {
           setPreviewData([]);
-
           return [];
         }
 
@@ -156,9 +160,7 @@ export function TemplatePreviewProvider({
         const jawabanResults = await Promise.all(
           pertanyaanList.map(async (pertanyaan: any) => {
             const jawabanList = await loadSSE<TemplateJawabanDefault>(
-              `${BASE_URL}/templatejawabans?mode=sse&ctxtoken=${sessionStorage.getItem(
-                "access_token",
-              )}&filters=uuidtemplate:eq:${pertanyaan.UUID}`,
+              `${BASE_URL}/templatejawabans?mode=sse&ctxtoken=${token}&filters=uuidtemplate:eq:${pertanyaan.UUID}`,
             );
 
             return {
@@ -188,20 +190,16 @@ export function TemplatePreviewProvider({
         const result: TemplatePertanyaanWithAnswareDefault[] =
           pertanyaanList.map((item: any) => ({
             ...item,
-
             ListJawaban: jawabanMap[item.UUID] || [],
           }));
 
         setPreviewData(result);
-
         return result;
       } catch (err) {
         console.error("LOAD ERROR", err);
-
         return [];
       } finally {
         loadingRef.current = false;
-
         setLoading(false);
       }
     },
@@ -213,9 +211,7 @@ export function TemplatePreviewProvider({
       value={{
         loading,
         previewData,
-
         setPreviewData,
-
         loadPreview,
       }}
     >

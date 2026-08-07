@@ -169,7 +169,7 @@ export default function AccountTemplate() {
         </div>
 
         <div className="md:col-span-4 space-y-6">
-          <StatsCard />
+          <StatsCard total={state.total} loading={state.loading} />
           <SecurityCard />
         </div>
       </section>

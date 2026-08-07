@@ -153,6 +153,24 @@ export default function AdminPanelTemplate({
       },
     },
     {
+      icon: "assignment_ind",
+      label: "Rekap Responden",
+      active: pathname == "/rekap-responden",
+      onClick: () => {
+        closeSidebar();
+        router.push("/rekap-responden");
+      },
+    },
+    {
+      icon: "science",
+      label: "Sandbox",
+      active: pathname == "/sandbox",
+      onClick: () => {
+        closeSidebar();
+        router.push("/sandbox");
+      },
+    },
+    {
       icon: "settings",
       label: "Setting",
       active: pathname == "/setting",
@@ -184,10 +202,10 @@ export default function AdminPanelTemplate({
     {
       icon: "help_outline",
       label: "Support",
-      active: pathname == "/help",
+      active: pathname == "/support" || pathname == "/help",
       onClick: () => {
         closeSidebar();
-        router.push("/help");
+        router.push("/support");
       },
     },
     {

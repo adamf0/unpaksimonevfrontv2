@@ -28,10 +28,50 @@ describe("ActionButtons Molecule", () => {
     ];
 
     render(<ActionButtons items={actions} />);
-    const btn = screen.getByRole("button");
+    const btn = screen.getByRole("button", { name: "Edit Data" });
     expect(btn).toBeDefined();
     expect(btn.className).toContain("btn-edit");
+    expect(btn.getAttribute("title")).toBe("Edit Data");
+    expect(btn.getAttribute("aria-label")).toBe("Edit Data");
     fireEvent.click(btn);
+    expect(handleEdit).toHaveBeenCalled();
+  });
+
+  it("should render custom label and tooltip when provided", () => {
+    const actions = [
+      {
+        name: "custom",
+        icon: "star",
+        label: "Bintang",
+        tooltip: "Tandai Bintang",
+        onClick: vi.fn(),
+      },
+    ];
+
+    render(<ActionButtons items={actions} />);
+    const btn = screen.getByRole("button", { name: "Bintang" });
+    expect(btn).toBeDefined();
+    expect(btn.getAttribute("title")).toBe("Bintang");
+    expect(screen.getByText("Bintang")).toBeDefined();
+  });
+
+  it("should open mobile dropdown menu and trigger action click", () => {
+    const handleEdit = vi.fn();
+    const actions = [
+      { name: "edit", icon: "edit", onClick: handleEdit },
+    ];
+
+    render(<ActionButtons items={actions} />);
+    const menuBtn = screen.getByRole("button", { name: "Menu Aksi" });
+    expect(menuBtn).toBeDefined();
+
+    // Click menu toggle to open dropdown
+    fireEvent.click(menuBtn);
+    const mobileActionBtns = screen.getAllByRole("button", { name: "Edit Data" });
+    expect(mobileActionBtns.length).toBeGreaterThanOrEqual(2);
+
+    // Click mobile menu action item (the second button inside the dropdown)
+    fireEvent.click(mobileActionBtns[1]);
     expect(handleEdit).toHaveBeenCalled();
   });
 });

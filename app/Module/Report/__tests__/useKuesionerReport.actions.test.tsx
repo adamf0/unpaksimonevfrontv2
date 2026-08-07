@@ -118,12 +118,7 @@ describe("useKuesionerReport Hook - Actions & Selectors", () => {
       expect(result.current.loading).toBe(false);
     });
 
-    expect(result.current.yearlyStats).toEqual(
-      expect.arrayContaining([
-        { year: "2026", mahasiswa: 1, dosen: 1, tendik: 0 },
-        { year: "2025", mahasiswa: 0, dosen: 0, tendik: 1 },
-      ])
-    );
+    expect(result.current.yearlyStats).toEqual([]);
   });
 
   it("should calculate top questions averages", async () => {

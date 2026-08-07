@@ -47,8 +47,112 @@ const initialQueryState: QueryState = {
   nama_prodi: "",
 };
 
+const facultyKeywords = [
+  { code: "01", key: "hukum" },
+  { code: "02", key: "fkip" },
+  { code: "02", key: "keguruan" },
+  { code: "03", key: "feb" },
+  { code: "03", key: "ekonomi" },
+  { code: "04", key: "isib" },
+  { code: "04", key: "sosial" },
+  { code: "04", key: "budaya" },
+  { code: "05", key: "ft" },
+  { code: "05", key: "teknik" },
+  { code: "06", key: "fmipa" },
+  { code: "06", key: "mipa" },
+  { code: "07", key: "pascasarjana" },
+  { code: "07", key: "pasca" },
+];
+
+export function isTemplateQuestionInUserScope(item: any, userProfile: any): boolean {
+  if (!userProfile) return true;
+
+  const level = String(userProfile.Level || "admin").toLowerCase().trim();
+  if (level === "admin") return true;
+
+  const cb = String(
+    item.CreatedBy ||
+      item.created_by ||
+      item.CreatedByRef ||
+      item.created_by_ref ||
+      item.createdBy ||
+      item.Kategori ||
+      "",
+  ).toLowerCase().trim();
+
+  const userFakName = String(
+    userProfile.Fakultas || userProfile.NamaFakultas || userProfile.RefFakultas || "",
+  ).toLowerCase().trim();
+
+  let userFakKey = "";
+  for (const fk of facultyKeywords) {
+    if (userFakName.includes(fk.key) || userFakName.includes(fk.code)) {
+      userFakKey = fk.key;
+      break;
+    }
+  }
+
+  const isFacultyQuestion = cb.includes("fakultas") || Boolean(item.Fakultas);
+  const isProdiQuestion = cb.includes("prodi") || Boolean(item.Prodi);
+
+  if (!isFacultyQuestion && !isProdiQuestion) {
+    return true;
+  }
+
+  let questionFakKey = "";
+  for (const fk of facultyKeywords) {
+    if (cb.includes(fk.key)) {
+      questionFakKey = fk.key;
+      break;
+    }
+  }
+
+  if (level === "fakultas" || level === "prodi") {
+    if (questionFakKey && userFakKey) {
+      const qCode = facultyKeywords.find((f) => f.key === questionFakKey)?.code;
+      const uCode = facultyKeywords.find((f) => f.key === userFakKey)?.code;
+
+      if (qCode && uCode && qCode !== uCode) {
+        return false;
+      }
+    } else if (questionFakKey && userFakName) {
+      if (!userFakName.includes(questionFakKey)) {
+        return false;
+      }
+    }
+  }
+
+  if (level === "prodi") {
+    const userProdiName = String(
+      userProfile.Prodi || userProfile.NamaProdi || userProfile.RefProdi || "",
+    ).toLowerCase().trim();
+
+    if (isProdiQuestion && userProdiName) {
+      const qProdi = String(item.Prodi || "").toLowerCase().trim();
+      if (qProdi && !cb.includes(userProdiName) && !userProdiName.includes(qProdi)) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
 export function useTemplate() {
   const { pushToast } = useToast();
+  const [userProfile, setUserProfile] = useState<any>(null);
+
+  useEffect(() => {
+    const token = sessionStorage.getItem("access_token") || "";
+    if (!token) return;
+
+    fetch(`${BASE_URL}/whoami`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => setUserProfile(data))
+      .catch(() => {});
+  }, []);
 
   const [questionState, setQuestionState] = useState<TemplateState>({
     data: [],
@@ -104,13 +208,15 @@ export function useTemplate() {
         },
       });
 
-      const rows = res?.data?.data ?? [];
-      const total = res?.data?.total ?? 0;
+      const rawRows = res?.data?.data ?? [];
+      const scopedRows = userProfile
+        ? rawRows.filter((item: any) => isTemplateQuestionInUserScope(item, userProfile))
+        : rawRows;
 
       setQuestionState((p) => ({
         ...p,
-        data: rows,
-        total: total,
+        data: scopedRows,
+        total: scopedRows.length,
       }));
     } catch (error: any) {
       pushToast(error?.response?.data?.message || "Error");
@@ -384,7 +490,7 @@ export function useTemplate() {
     }
 
     loadData();
-  }, [questionQuery.banksoal, questionState.flag]);
+  }, [questionQuery.banksoal, questionState.flag, userProfile]);
 
   useEffect(() => {
     const empty =
@@ -404,6 +510,7 @@ export function useTemplate() {
   }, [questionQuery]);
 
   return {
+    userProfile,
     isFilterOpen,
     setFilterOpen,
 

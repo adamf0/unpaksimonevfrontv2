@@ -366,43 +366,7 @@ export function BankSoalTimeForm() {
     startDate: string,
     endDate: string
   ) => {
-    return scheduleList.some(
-      (item) => {
-        const oldStart =
-          parseDate(
-            item.startDate
-          );
-
-        const oldEnd =
-          parseDate(
-            item.endDate
-          );
-
-        if (
-          !oldStart ||
-          !oldEnd
-        ) {
-          return false;
-        }
-
-        const start =
-          formatDateOnly(
-            oldStart
-          );
-
-        const end =
-          formatDateOnly(
-            oldEnd
-          );
-
-        return !(
-          endDate <
-            start ||
-          startDate >
-            end
-        );
-      }
-    );
+    return false;
   };
 
   /* =========================================================

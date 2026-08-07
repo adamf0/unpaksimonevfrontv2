@@ -152,10 +152,12 @@ describe("Report - Molecules Test Suite", () => {
       expect(screen.getByTestId("pie-chart")).toBeDefined();
     });
 
-    it("should render FourYearChart correctly", () => {
-      render(<FourYearChart data={[]} />);
+    it("should render FourYearChart empty state and chart correctly", () => {
+      render(<FourYearChart data={[]} loading={false} />);
+      expect(screen.getByText("4 Year Chart Belum Tersedia")).toBeInTheDocument();
+
+      render(<FourYearChart data={[{ year: "2026", "Kategori A": 4.5 }]} loading={false} />);
       expect(screen.getByTestId("responsive-container")).toBeDefined();
-      // FourYearChart uses BarChart in its render (composition)
       expect(screen.getByTestId("bar-chart")).toBeDefined();
     });
 

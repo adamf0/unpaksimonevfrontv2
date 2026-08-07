@@ -103,8 +103,24 @@ export default function FourYearChart({
         </div>
       )}
 
+      {!loading && !err && !data.length && (
+        <div className="flex flex-col items-center justify-center min-h-[240px] text-center p-6 bg-surface-container-low/40 rounded-2xl border border-dashed border-outline-variant/60">
+          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-3">
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+          <p className="font-bold text-on-surface text-base mb-1">
+            4 Year Chart Belum Tersedia
+          </p>
+          <p className="text-sm text-outline max-w-md">
+            Silakan pilih Bank Soal dan klik <strong>Terapkan Filter</strong> terlebih dahulu untuk menampilkan data grafik 4 tahun.
+          </p>
+        </div>
+      )}
+
       {/* LEGEND */}
-      {!loading && !err && (
+      {!loading && !err && data.length > 0 && (
         <div className="flex gap-4 text-xs font-bold mb-4 flex-wrap">
           {keys.map((key) => (
             <button
@@ -125,30 +141,30 @@ export default function FourYearChart({
       )}
 
       {/* CHART */}
-      {!loading && !err && (
+      {!loading && !err && data.length > 0 && (
         <div className="h-80 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={processedData}>
               <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
 
               <XAxis dataKey="year" />
-              <YAxis />
+              <YAxis domain={keys.includes("mahasiswa") ? [0, "auto"] : [0, 5]} />
               <Tooltip />
 
-              {/* TOTAL BAR (SOFT) */}
-              <Bar dataKey="total" fill="#c7d2fe" radius={[6, 6, 0, 0]} />
+              {/* TOTAL BAR (SOFT) ONLY FOR RESPONDENT COUNTS */}
+              {keys.includes("mahasiswa") && (
+                <Bar dataKey="total" fill="#c7d2fe" radius={[6, 6, 0, 0]} />
+              )}
 
-              {/* LINES */}
+              {/* BARS */}
               {keys.map(
                 (key) =>
                   visible[key] && (
-                    <Line
+                    <Bar
                       key={key}
-                      type="monotone"
                       dataKey={key}
-                      stroke={colors[key]}
-                      strokeWidth={2.5}
-                      dot={{ r: 3 }}
+                      fill={colors[key]}
+                      radius={[4, 4, 0, 0]}
                     />
                   ),
               )}

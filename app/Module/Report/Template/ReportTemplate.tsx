@@ -127,7 +127,13 @@ export default function ReportTemplate() {
         prodiOptions={[]}
         semesterOptions={[]}
         onApply={async (val) => {
-          if (hasDifferentJudul(val.bankSoal)) {
+          const bankSoalArr = Array.isArray(val.bankSoal)
+            ? val.bankSoal
+            : val.bankSoal
+              ? [val.bankSoal]
+              : [];
+
+          if (hasDifferentJudul(bankSoalArr)) {
             pushToast("bank soal tidak boleh beda sumber");
             resetDataDetail();
             setQuery((prev: any) => ({
@@ -137,15 +143,15 @@ export default function ReportTemplate() {
             return;
           }
 
-          if (!val?.bankSoal?.length) return;
-          
+          if (!bankSoalArr.length) return;
+
           setQuery((prev: any) => ({
             ...prev,
-            bankSoal: val.bankSoal,
+            bankSoal: bankSoalArr,
           }));
           resetDataDetail();
 
-          const selectedJudul = val.bankSoal[0]?.label || "";
+          const selectedJudul = bankSoalArr[0]?.label || "";
           if (selectedJudul) {
             await loadSummary(
               selectedJudul,
@@ -154,7 +160,7 @@ export default function ReportTemplate() {
             );
           }
 
-          const payloads: Payload[] = val.bankSoal.map((item: any) => ({
+          const payloads: Payload[] = bankSoalArr.map((item: any) => ({
             judul: item.label,
             semester: val?.semester?.label ?? "",
             is4year: "0",

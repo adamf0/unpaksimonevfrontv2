@@ -17,11 +17,13 @@ export function BankSoalFilterForm({ value, onChange }: Props) {
     /** =========================
      * SELECTED VALUE FROM QUERY
      * ========================= */
-    const selectedLevel = value.level
+    const currentRole = value.role || value.level || "";
+
+    const selectedLevel = currentRole
       ? {
           label:
-            value.level.charAt(0).toUpperCase() + value.level.slice(1),
-          value: value.level,
+            currentRole.charAt(0).toUpperCase() + currentRole.slice(1),
+          value: currentRole,
         }
       : null;
   
@@ -39,7 +41,7 @@ export function BankSoalFilterForm({ value, onChange }: Props) {
         }
       : null;
   
-    const isAdmin = value.level === "admin";
+    const isAdmin = currentRole === "admin";
   
     /** =========================
      * OPTIONS

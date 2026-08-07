@@ -119,7 +119,7 @@ export function CreateBankSoalForm() {
           <InputField
             id="semester"
             label="Semester"
-            placeholder="Contoh: 202601"
+            placeholder="Masukkan semester"
             register={register("semester", {
               required: "Semester wajib diisi",
             })}

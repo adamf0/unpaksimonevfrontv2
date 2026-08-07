@@ -14,28 +14,18 @@ import { TemplatePertanyaanWithAnswareDefault } from "../Attribut/TemplatePertan
    MAPPER
 ========================================================= */
 
+function getStepForQuestion(item: any): "admin" | "fakultas" | "prodi" {
+  const cb = String(item.CreatedBy || item.created_by || item.created_by_ref || "").toLowerCase().trim();
+  if (cb.includes("fakultas")) return "fakultas";
+  if (cb.includes("prodi")) return "prodi";
+  return "admin";
+}
+
 function mapQuestions(
   RAW_DATA: TemplatePertanyaanWithAnswareDefault[],
   step: "admin" | "fakultas" | "prodi",
 ): Question[] {
-  return RAW_DATA.filter((item: any) => {
-    // ADMIN
-    if (step === "admin") {
-      return (
-        item.CreatedBy == null ||
-        item.CreatedBy == "admin" ||
-        item.CreatedBy == "admin lpm"
-      );
-    }
-
-    // FAKULTAS
-    if (step === "fakultas") {
-      return item.CreatedBy === "fakultas";
-    }
-
-    // PRODI
-    return item.CreatedBy === "prodi";
-  }).map((item: any) => ({
+  return RAW_DATA.filter((item: any) => getStepForQuestion(item) === step).map((item: any) => ({
     id: item.UUID,
     uuid: item.UUID,
 
@@ -43,8 +33,7 @@ function mapQuestions(
 
     required: item.Required === 1,
 
-    created:
-      step === "admin" ? "admin" : step === "fakultas" ? "fakultas" : "prodi",
+    created: step,
 
     createdBy: "preview",
 
@@ -164,21 +153,7 @@ export default function TemplateQuestionPreview() {
   // SUBMIT STEP
   // ========================================================
   function hasQuestions(step: "admin" | "fakultas" | "prodi") {
-    return previewData.some((item: any) => {
-      if (step === "admin") {
-        return (
-          item.CreatedBy == null ||
-          item.CreatedBy == "admin" ||
-          item.CreatedBy == "admin lpm"
-        );
-      }
-
-      if (step === "fakultas") {
-        return item.CreatedBy === "fakultas";
-      }
-
-      return item.CreatedBy === "prodi";
-    });
+    return previewData.some((item: any) => getStepForQuestion(item) === step);
   }
 
   function handleNextStep() {
@@ -215,12 +190,15 @@ export default function TemplateQuestionPreview() {
   }, [previewData]);
 
   function getSubmitLabel() {
-    if (hasFakultasQuestions) {
-      return "Lanjut ke Fakultas";
+    if (activeStep === "admin") {
+      if (hasFakultasQuestions) return "Lanjut ke Fakultas";
+      if (hasProdiQuestions) return "Lanjut ke Prodi";
+      return "Selesai Preview";
     }
 
-    if (hasProdiQuestions) {
-      return "Lanjut ke Prodi";
+    if (activeStep === "fakultas") {
+      if (hasProdiQuestions) return "Lanjut ke Prodi";
+      return "Selesai Preview";
     }
 
     return "Selesai Preview";

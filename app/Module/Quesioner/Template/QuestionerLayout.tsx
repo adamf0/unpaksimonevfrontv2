@@ -24,7 +24,9 @@ export default function QuestionerLayout({
                   ? "Student Insights (LPM)"
                   : activeStep === "fakultas"
                     ? "Student Insights (Fakultas)"
-                    : "Student Insights (Prodi)"}
+                    : activeStep === "prodi"
+                      ? "Student Insights (Prodi)"
+                      : "Student Insights (Unit)"}
               </span>
             </div>
 

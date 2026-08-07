@@ -522,40 +522,29 @@ export function useKuesionerReport() {
   }, [summaryData, filteredDetail]);
 
   const yearlyStats = useMemo(() => {
-    if (summaryData?.report_year?.length) {
-      return summaryData.report_year.map((ry: any) => ({
-        year: ry.tahun,
-        mahasiswa: ry.total_mahasiswa,
-        dosen: ry.total_dosen,
-        tendik: ry.total_tendik,
-      }));
+    if (!query.bankSoal?.length) {
+      return [];
     }
 
-    const map: Record<string, any> = {};
-
-    for (const item of data) {
-      const year = String(item.Semester).slice(0, 4);
-
-      if (!map[year]) {
-        map[year] = {
-          mahasiswa: new Set(),
-          dosen: new Set(),
-          tendik: new Set(),
-        };
+    if (summaryData?.kategori_summary?.length) {
+      const map: Record<string, Record<string, number>> = {};
+      for (const item of summaryData.kategori_summary) {
+        const sem = item.semester || "Unknown";
+        if (!map[sem]) map[sem] = {};
+        if (item.nama_kategori) {
+          map[sem][item.nama_kategori] = Number(item.rata_rata_skor || 0);
+        }
       }
-
-      if (item.NPM) map[year].mahasiswa.add(item.NPM);
-      if (item.NIDN) map[year].dosen.add(item.NIDN);
-      if (item.NIP) map[year].tendik.add(item.NIP);
+      return Object.entries(map)
+        .sort(([semA], [semB]) => semA.localeCompare(semB))
+        .map(([sem, categories]) => ({
+          year: sem,
+          ...categories,
+        }));
     }
 
-    return Object.entries(map).map(([year, val]: any) => ({
-      year,
-      mahasiswa: val.mahasiswa.size,
-      dosen: val.dosen.size,
-      tendik: val.tendik.size,
-    }));
-  }, [summaryData, data]);
+    return [];
+  }, [summaryData, query.bankSoal]);
 
   const facultyStats = useMemo(() => {
     if (summaryData?.distribusi_fakultas?.length) {

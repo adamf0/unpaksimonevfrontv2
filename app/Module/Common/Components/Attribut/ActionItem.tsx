@@ -3,4 +3,6 @@ export type ActionItem = {
   icon: string;
   className?: string;
   onClick: () => void;
+  label?: string;
+  tooltip?: string;
 };
