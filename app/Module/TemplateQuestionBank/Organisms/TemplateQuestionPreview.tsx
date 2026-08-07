@@ -15,9 +15,14 @@ import { TemplatePertanyaanWithAnswareDefault } from "../Attribut/TemplatePertan
 ========================================================= */
 
 function getStepForQuestion(item: any): "admin" | "fakultas" | "prodi" {
-  const cb = String(item.CreatedBy || item.created_by || item.created_by_ref || "").toLowerCase().trim();
-  if (cb.includes("fakultas")) return "fakultas";
-  if (cb.includes("prodi")) return "prodi";
+  const cb = String(item.CreatedBy || item.created_by || "").toLowerCase().trim();
+  const cbRef = String(item.CreatedByRef || item.created_by_ref || "").toLowerCase().trim();
+  const fak = String(item.Fakultas || item.fakultas || "").trim();
+  const prodi = String(item.Prodi || item.prodi || "").trim();
+
+  if (prodi !== "" || cb.includes("prodi")) return "prodi";
+  if (fak !== "" || cb.includes("fakultas")) return "fakultas";
+
   return "admin";
 }
 

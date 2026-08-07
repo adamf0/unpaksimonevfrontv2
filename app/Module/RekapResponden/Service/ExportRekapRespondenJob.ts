@@ -48,23 +48,35 @@ function getNormalizedFaculty(
 }
 
 function getStepForQuestion(q: any): "admin" | "fakultas" | "prodi" | "unit" {
-  const cb = String(
-    q.CreatedBy ||
-      q.created_by ||
-      q.CreatedByRef ||
-      q.created_by_ref ||
-      q.Created ||
-      q.created ||
-      "",
+  const raw = q._raw || q;
+
+  const createdType = String(
+    raw.created || raw.Created || "",
   )
     .toLowerCase()
     .trim();
+  if (
+    createdType === "admin" ||
+    createdType === "fakultas" ||
+    createdType === "prodi" ||
+    createdType === "unit"
+  ) {
+    return createdType as any;
+  }
 
-  const unit = String(q.Unit || "").trim();
+  const prodi = String(raw.Prodi || raw.prodi || "").trim();
+  const fak = String(raw.Fakultas || raw.fakultas || "").trim();
+  const unit = String(raw.Unit || raw.unit || "").trim();
+  const cb = String(raw.CreatedBy || raw.created_by || "")
+    .toLowerCase()
+    .trim();
+  const cbRef = String(raw.CreatedByRef || raw.created_by_ref || "")
+    .toLowerCase()
+    .trim();
 
   if (unit !== "" || cb.includes("unit")) return "unit";
-  if (cb.includes("prodi") || (q.Prodi && String(q.Prodi).trim() !== "")) return "prodi";
-  if (cb.includes("fakultas") || (q.Fakultas && String(q.Fakultas).trim() !== "")) return "fakultas";
+  if (prodi !== "" || cb.includes("prodi")) return "prodi";
+  if (fak !== "" || cb.includes("fakultas")) return "fakultas";
   return "admin";
 }
 

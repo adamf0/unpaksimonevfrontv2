@@ -82,13 +82,10 @@ function getStepForQuestion(item: any): StepType {
   const prodi = String(raw.Prodi || raw.prodi || "").trim();
   const fak = String(raw.Fakultas || raw.fakultas || "").trim();
   const unit = String(raw.Unit || raw.unit || "").trim();
-  const cb = String(
-    raw.CreatedBy ||
-      raw.created_by ||
-      raw.CreatedByRef ||
-      raw.created_by_ref ||
-      "",
-  )
+  const cb = String(raw.CreatedBy || raw.created_by || "")
+    .toLowerCase()
+    .trim();
+  const cbRef = String(raw.CreatedByRef || raw.created_by_ref || "")
     .toLowerCase()
     .trim();
 
