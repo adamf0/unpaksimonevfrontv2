@@ -47,10 +47,16 @@ const initialQueryState: QueryState = {
   nama_prodi: "",
 };
 
-export function isTemplateQuestionInUserScope(item: any, userProfile: any, sourceFakultas: any[] = []): boolean {
+export function isTemplateQuestionInUserScope(
+  item: any,
+  userProfile: any,
+  sourceFakultas: any[] = [],
+): boolean {
   if (!userProfile) return true;
 
-  const level = String(userProfile.Level || "admin").toLowerCase().trim();
+  const level = String(userProfile.Level || "admin")
+    .toLowerCase()
+    .trim();
   if (level === "admin") return true;
 
   const cb = String(
@@ -61,11 +67,18 @@ export function isTemplateQuestionInUserScope(item: any, userProfile: any, sourc
       item.createdBy ||
       item.Kategori ||
       "",
-  ).toLowerCase().trim();
+  )
+    .toLowerCase()
+    .trim();
 
   const userFakName = String(
-    userProfile.Fakultas || userProfile.NamaFakultas || userProfile.RefFakultas || "",
-  ).toLowerCase().trim();
+    userProfile.Fakultas ||
+      userProfile.NamaFakultas ||
+      userProfile.RefFakultas ||
+      "",
+  )
+    .toLowerCase()
+    .trim();
 
   const userFakCode = String(userProfile.RefFakultas || "").trim();
 
@@ -80,8 +93,12 @@ export function isTemplateQuestionInUserScope(item: any, userProfile: any, sourc
   const dynamicMap: Record<string, string[]> = {};
   if (Array.isArray(sourceFakultas)) {
     for (const f of sourceFakultas) {
-      const code = String(f.KodeFakultas || f.kode_fakultas || f.Kode || f.ID || "").trim();
-      const name = String(f.NamaFakultas || f.nama_fakultas || f.Nama || "").toLowerCase().trim();
+      const code = String(
+        f.KodeFakultas || f.kode_fakultas || f.Kode || f.ID || "",
+      ).trim();
+      const name = String(f.NamaFakultas || f.nama_fakultas || f.Nama || "")
+        .toLowerCase()
+        .trim();
       if (code) {
         if (!dynamicMap[code]) dynamicMap[code] = [];
         if (name) dynamicMap[code].push(name);
@@ -91,8 +108,10 @@ export function isTemplateQuestionInUserScope(item: any, userProfile: any, sourc
 
   if (level === "fakultas" || level === "prodi") {
     for (const [code, names] of Object.entries(dynamicMap)) {
-      const isQuestionFromThisFaculty = cb.includes(code) || names.some((n) => cb.includes(n));
-      const isUserFromThisFaculty = userFakCode === code || names.some((n) => userFakName.includes(n));
+      const isQuestionFromThisFaculty =
+        cb.includes(code) || names.some((n) => cb.includes(n));
+      const isUserFromThisFaculty =
+        userFakCode === code || names.some((n) => userFakName.includes(n));
 
       if (isQuestionFromThisFaculty && !isUserFromThisFaculty) {
         return false;
@@ -103,11 +122,19 @@ export function isTemplateQuestionInUserScope(item: any, userProfile: any, sourc
   if (level === "prodi") {
     const userProdiName = String(
       userProfile.Prodi || userProfile.NamaProdi || userProfile.RefProdi || "",
-    ).toLowerCase().trim();
+    )
+      .toLowerCase()
+      .trim();
 
     if (isProdiQuestion && userProdiName) {
-      const qProdi = String(item.Prodi || "").toLowerCase().trim();
-      if (qProdi && !cb.includes(userProdiName) && !userProdiName.includes(qProdi)) {
+      const qProdi = String(item.Prodi || "")
+        .toLowerCase()
+        .trim();
+      if (
+        qProdi &&
+        !cb.includes(userProdiName) &&
+        !userProdiName.includes(qProdi)
+      ) {
         return false;
       }
     }
@@ -188,7 +215,13 @@ export function useTemplate() {
 
       const rawRows = res?.data?.data ?? [];
       const scopedRows = userProfile
-        ? rawRows.filter((item: any) => isTemplateQuestionInUserScope(item, userProfile, questionState.sourceFakultas))
+        ? rawRows.filter((item: any) =>
+            isTemplateQuestionInUserScope(
+              item,
+              userProfile,
+              questionState.sourceFakultas,
+            ),
+          )
         : rawRows;
 
       setQuestionState((p) => ({
@@ -235,7 +268,9 @@ export function useTemplate() {
     if (!token) return;
 
     const es = new EventSource(
-      `${BASE_URL}/banksoals?mode=sse`,
+      `${BASE_URL}/banksoals?mode=sse&ctxtoken=${sessionStorage.getItem(
+        "access_token",
+      )}`,
     );
 
     bankESRef.current = es;
@@ -270,8 +305,7 @@ export function useTemplate() {
     if (mode == "copy") {
       const res = await apiCall.post(`/templatepertanyaan/${uuid}/copy`);
       return res.data?.uuid;
-    }
-    else if (mode == "delete") {
+    } else if (mode == "delete") {
       const res = await apiCall.delete(`/templatepertanyaan/${uuid}`);
       return res.data?.uuid;
     } else if (mode == "force_delete") {

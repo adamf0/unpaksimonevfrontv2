@@ -93,7 +93,9 @@ export function getQuestionsForStep(
   const pProdi = String(persona.kodeProdi || persona.namaProdi || "")
     .toLowerCase()
     .trim();
-  const pUnit = String(persona.unit || "").toLowerCase().trim();
+  const pUnit = String(persona.unit || "")
+    .toLowerCase()
+    .trim();
 
   return questions.filter((q: any) => {
     const raw = q._raw || q;
@@ -103,7 +105,10 @@ export function getQuestionsForStep(
     if (step === "admin") return true;
 
     if (step === "fakultas") {
-      const qFak = getNormalizedFaculty(raw.Fakultas || raw.CreatedBy, fakultasList);
+      const qFak = getNormalizedFaculty(
+        raw.Fakultas || raw.CreatedBy,
+        fakultasList,
+      );
       if (qFak && pFak) {
         return pFak.includes(qFak) || qFak.includes(pFak);
       }
@@ -111,7 +116,9 @@ export function getQuestionsForStep(
     }
 
     if (step === "prodi") {
-      const qProdi = String(raw.Prodi || "").toLowerCase().trim();
+      const qProdi = String(raw.Prodi || "")
+        .toLowerCase()
+        .trim();
       if (qProdi && pProdi) {
         return pProdi.includes(qProdi) || qProdi.includes(pProdi);
       }
@@ -119,7 +126,9 @@ export function getQuestionsForStep(
     }
 
     if (step === "unit") {
-      const qUnit = String(raw.Unit || "").toLowerCase().trim();
+      const qUnit = String(raw.Unit || "")
+        .toLowerCase()
+        .trim();
       if (qUnit && pUnit) {
         return pUnit.includes(qUnit) || qUnit.includes(pUnit);
       }
@@ -150,14 +159,18 @@ export function isStepActiveOnDate(
   let endStr: string | null = null;
 
   if (step === "admin") {
-    startStr = bankSoalDetail.TanggalMulai || bankSoalDetail.tanggal_mulai || null;
-    endStr = bankSoalDetail.TanggalAkhir || bankSoalDetail.tanggal_akhir || null;
+    startStr =
+      bankSoalDetail.TanggalMulai || bankSoalDetail.tanggal_mulai || null;
+    endStr =
+      bankSoalDetail.TanggalAkhir || bankSoalDetail.tanggal_akhir || null;
   } else if (
     Array.isArray(bankSoalDetail.ListExt) &&
     bankSoalDetail.ListExt.length > 0
   ) {
     const ext = bankSoalDetail.ListExt.find((e: any) => {
-      const role = String(e.Role || e.CreatedBy || e.createdBy || "").toLowerCase();
+      const role = String(
+        e.Role || e.CreatedBy || e.createdBy || "",
+      ).toLowerCase();
       if (step === "fakultas") return role.includes("fakultas");
       if (step === "prodi") return role.includes("prodi");
       if (step === "unit") return role.includes("unit");
@@ -168,12 +181,16 @@ export function isStepActiveOnDate(
       startStr = ext.TanggalMulai || ext.tanggal_mulai || null;
       endStr = ext.TanggalAkhir || ext.tanggal_akhir || null;
     } else {
-      startStr = bankSoalDetail.TanggalMulai || bankSoalDetail.tanggal_mulai || null;
-      endStr = bankSoalDetail.TanggalAkhir || bankSoalDetail.tanggal_akhir || null;
+      startStr =
+        bankSoalDetail.TanggalMulai || bankSoalDetail.tanggal_mulai || null;
+      endStr =
+        bankSoalDetail.TanggalAkhir || bankSoalDetail.tanggal_akhir || null;
     }
   } else {
-    startStr = bankSoalDetail.TanggalMulai || bankSoalDetail.tanggal_mulai || null;
-    endStr = bankSoalDetail.TanggalAkhir || bankSoalDetail.tanggal_akhir || null;
+    startStr =
+      bankSoalDetail.TanggalMulai || bankSoalDetail.tanggal_mulai || null;
+    endStr =
+      bankSoalDetail.TanggalAkhir || bankSoalDetail.tanggal_akhir || null;
   }
 
   if (!startStr || !endStr) return false;
@@ -205,7 +222,9 @@ export function resolveUserFacultyCode(profile?: any): string {
   const ref = String(profile.RefFakultas || profile.KodeFakultas || "").trim();
   if (ref && FAKULTAS_OPTIONS.some((f) => f.value === ref)) return ref;
 
-  const name = String(profile.Fakultas || profile.NamaFakultas || "").toLowerCase();
+  const name = String(
+    profile.Fakultas || profile.NamaFakultas || "",
+  ).toLowerCase();
   if (name.includes("hukum")) return "01";
   if (name.includes("keguruan") || name.includes("fkip")) return "02";
   if (name.includes("ekonomi") || name.includes("feb")) return "03";
@@ -217,14 +236,21 @@ export function resolveUserFacultyCode(profile?: any): string {
   return "01";
 }
 
-export function resolveUserProdiCode(profile?: any, fakCode: string = "01"): string {
+export function resolveUserProdiCode(
+  profile?: any,
+  fakCode: string = "01",
+): string {
   if (!profile) return PRODI_OPTIONS[fakCode]?.[0]?.value || "";
   const ref = String(profile.RefProdi || profile.KodeProdi || "").trim();
   const available = PRODI_OPTIONS[fakCode] || [];
   if (ref && available.some((p) => p.value === ref)) return ref;
 
   const name = String(profile.Prodi || profile.NamaProdi || "").toLowerCase();
-  const match = available.find((p) => p.label.toLowerCase().includes(name) || name.includes(p.label.toLowerCase()));
+  const match = available.find(
+    (p) =>
+      p.label.toLowerCase().includes(name) ||
+      name.includes(p.label.toLowerCase()),
+  );
   if (match) return match.value;
 
   return available[0]?.value || "";
@@ -235,7 +261,9 @@ export function useSandbox() {
   const [fakultasList, setFakultasList] = useState<any[]>([]);
   const [bankSoalOptions, setBankSoalOptions] = useState<SelectOption[]>([]);
   const [rawBankSoals, setRawBankSoals] = useState<any[]>([]);
-  const [selectedBankSoal, setSelectedBankSoal] = useState<SelectOption | null>(null);
+  const [selectedBankSoal, setSelectedBankSoal] = useState<SelectOption | null>(
+    null,
+  );
   const [loadingBankSoal, setLoadingBankSoal] = useState(false);
 
   // Simulation Date (Default: Today YYYY-MM-DD)
@@ -299,21 +327,32 @@ export function useSandbox() {
 
         if (whoData) {
           setUserProfile(whoData);
-          const level = String(whoData.Level || "admin").toLowerCase().trim();
+          const level = String(whoData.Level || "admin")
+            .toLowerCase()
+            .trim();
 
           if (level === "fakultas" || level === "prodi") {
             const fakCode = resolveUserFacultyCode(whoData);
             const fakOpt = FAKULTAS_OPTIONS.find((f) => f.value === fakCode);
             const prodiCode = resolveUserProdiCode(whoData, fakCode);
             const prodiList = PRODI_OPTIONS[fakCode] || [];
-            const prodiOpt = prodiList.find((p) => p.value === prodiCode) || prodiList[0];
+            const prodiOpt =
+              prodiList.find((p) => p.value === prodiCode) || prodiList[0];
 
             setPersona((prev) => ({
               ...prev,
               kodeFakultas: fakCode,
               namaFakultas: fakOpt ? fakOpt.label : prev.namaFakultas,
-              kodeProdi: level === "prodi" ? prodiCode : prev.kodeProdi || (prodiOpt ? prodiOpt.value : ""),
-              namaProdi: level === "prodi" ? (prodiOpt ? prodiOpt.label : prev.namaProdi) : prev.namaProdi || (prodiOpt ? prodiOpt.label : ""),
+              kodeProdi:
+                level === "prodi"
+                  ? prodiCode
+                  : prev.kodeProdi || (prodiOpt ? prodiOpt.value : ""),
+              namaProdi:
+                level === "prodi"
+                  ? prodiOpt
+                    ? prodiOpt.label
+                    : prev.namaProdi
+                  : prev.namaProdi || (prodiOpt ? prodiOpt.label : ""),
             }));
           }
         }
@@ -321,16 +360,20 @@ export function useSandbox() {
       .catch(() => {});
   }, []);
 
-  const userLevel = String(userProfile?.Level || "admin").toLowerCase().trim();
+  const userLevel = String(userProfile?.Level || "admin")
+    .toLowerCase()
+    .trim();
   const isFacultyLocked = userLevel === "fakultas" || userLevel === "prodi";
   const isProdiLocked = userLevel === "prodi";
 
   // Selected Bank Soal Full Detail (including TanggalMulai, TanggalAkhir, ListExt)
   const selectedBankSoalDetail = useMemo(() => {
     if (!selectedBankSoal?.value) return null;
-    return rawBankSoals.find(
-      (b) => String(b.UUID || b.id) === String(selectedBankSoal.value),
-    ) || null;
+    return (
+      rawBankSoals.find(
+        (b) => String(b.UUID || b.id) === String(selectedBankSoal.value),
+      ) || null
+    );
   }, [rawBankSoals, selectedBankSoal]);
 
   /** =========================
@@ -351,7 +394,13 @@ export function useSandbox() {
       );
       return activeOnDate;
     });
-  }, [questions, persona, selectedBankSoalDetail, simulationDate, fakultasList]);
+  }, [
+    questions,
+    persona,
+    selectedBankSoalDetail,
+    simulationDate,
+    fakultasList,
+  ]);
 
   const currentStepIndex = availableSteps.indexOf(activeStep);
   const isLastStep =
@@ -370,7 +419,11 @@ export function useSandbox() {
       localStorage.getItem("access_token") ||
       sessionStorage.getItem("access_token") ||
       "";
-    const es = new EventSource(`${BASE_URL}/banksoals?mode=sse`);
+    const es = new EventSource(
+      `${BASE_URL}/banksoals?mode=sse&ctxtoken=${sessionStorage.getItem(
+        "access_token",
+      )}`,
+    );
     esRef.current = es;
 
     let temp: any[] = [];
@@ -528,7 +581,8 @@ export function useSandbox() {
       const firstValidStep =
         allSteps.find((s) => {
           const hasQ =
-            getQuestionsForStep(mappedQuestions, s, persona, fakultasList).length > 0;
+            getQuestionsForStep(mappedQuestions, s, persona, fakultasList)
+              .length > 0;
           const activeDate = isStepActiveOnDate(s, bDetail, simulationDate);
           return hasQ && activeDate;
         }) || "admin";
@@ -657,7 +711,12 @@ export function useSandbox() {
     availableSteps,
     currentStepIndex,
     isLastStep,
-    stepQuestions: getQuestionsForStep(questions, activeStep, persona, fakultasList),
+    stepQuestions: getQuestionsForStep(
+      questions,
+      activeStep,
+      persona,
+      fakultasList,
+    ),
 
     answers,
     setAnswers,
