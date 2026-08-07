@@ -16,20 +16,34 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export type StepType = "admin" | "fakultas" | "prodi" | "unit";
 
-const facultyCodeMap: Record<string, string> = {
-  "01": "hukum",
-  "02": "fkip",
-  "03": "feb",
-  "04": "isib",
-  "05": "ft",
-  "06": "fmipa",
-  "07": "pascasarjana",
-};
-
-function getNormalizedFaculty(val?: string | null): string {
+function getNormalizedFaculty(
+  val?: string | null,
+  fakultasList: any[] = [],
+): string {
   if (!val) return "";
   const s = String(val).toLowerCase().trim();
-  return facultyCodeMap[s] || s;
+
+  for (const f of fakultasList) {
+    const code = String(
+      f.KodeFakultas || f.kode_fakultas || f.Kode || f.ID || "",
+    )
+      .toLowerCase()
+      .trim();
+    const name = String(f.NamaFakultas || f.nama_fakultas || f.Nama || "")
+      .toLowerCase()
+      .trim();
+
+    if (
+      s === code ||
+      s === name ||
+      (name && name.includes(s)) ||
+      (name && s.includes(name))
+    ) {
+      return name || code;
+    }
+  }
+
+  return s;
 }
 
 export function getStepForQuestion(item: any): StepType {

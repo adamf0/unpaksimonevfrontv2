@@ -17,20 +17,34 @@ export interface ExportJobState {
   filename?: string;
 }
 
-const facultyCodeMap: Record<string, string> = {
-  "01": "hukum",
-  "02": "fkip",
-  "03": "feb",
-  "04": "isib",
-  "05": "ft",
-  "06": "fmipa",
-  "07": "pascasarjana",
-};
-
-function getNormalizedFaculty(val?: string | null): string {
+function getNormalizedFaculty(
+  val?: string | null,
+  fakultasList: any[] = [],
+): string {
   if (!val) return "";
   const s = String(val).toLowerCase().trim();
-  return facultyCodeMap[s] || s;
+
+  for (const f of fakultasList) {
+    const code = String(
+      f.KodeFakultas || f.kode_fakultas || f.Kode || f.ID || "",
+    )
+      .toLowerCase()
+      .trim();
+    const name = String(f.NamaFakultas || f.nama_fakultas || f.Nama || "")
+      .toLowerCase()
+      .trim();
+
+    if (
+      s === code ||
+      s === name ||
+      (name && name.includes(s)) ||
+      (name && s.includes(name))
+    ) {
+      return name || code;
+    }
+  }
+
+  return s;
 }
 
 function getStepForQuestion(q: any): "admin" | "fakultas" | "prodi" | "unit" {
@@ -152,11 +166,18 @@ export async function runExportRekapExcelJob({
     update(5, "Mengambil profil pengguna (whoami)...");
     const token = sessionStorage.getItem("access_token") || "";
 
-    // 1. Fetch Logged-in User Profile (whoami)
-    const whoRes = await fetch(`${BASE_URL}/whoami`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    // 1. Fetch Logged-in User Profile (whoami) and Dynamic Fakultas List
+    const [whoRes, fRes] = await Promise.all([
+      fetch(`${BASE_URL}/whoami`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+      fetch(`${BASE_URL}/fakultass?mode=all`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+    ]);
     const userProfile = whoRes.ok ? await whoRes.json() : { Level: "admin" };
+    const fData = fRes.ok ? await fRes.json() : [];
+    const fakultasList = fData.data?.data || fData.data || fData || [];
 
     update(20, "Memuat daftar pertanyaan template kuesioner...");
 

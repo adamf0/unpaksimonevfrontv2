@@ -29,43 +29,71 @@ interface Question {
   }[];
 }
 
-const facultyCodeMap: Record<string, string> = {
-  "01": "hukum",
-  "02": "fkip",
-  "03": "feb",
-  "04": "isib",
-  "05": "ft",
-  "06": "fmipa",
-  "07": "pascasarjana",
-};
-
-function getNormalizedFaculty(val?: string | null): string {
+function getNormalizedFaculty(
+  val?: string | null,
+  fakultasList: any[] = [],
+): string {
   if (!val) return "";
   const s = String(val).toLowerCase().trim();
-  return facultyCodeMap[s] || s;
+
+  for (const f of fakultasList) {
+    const code = String(
+      f.KodeFakultas || f.kode_fakultas || f.Kode || f.ID || "",
+    )
+      .toLowerCase()
+      .trim();
+    const name = String(f.NamaFakultas || f.nama_fakultas || f.Nama || "")
+      .toLowerCase()
+      .trim();
+
+    if (
+      s === code ||
+      s === name ||
+      (name && name.includes(s)) ||
+      (name && s.includes(name))
+    ) {
+      return name || code;
+    }
+  }
+
+  return s;
 }
 
 /** =========================
  * STEP CLASSIFIER
  * ========================= */
 function getStepForQuestion(item: any): StepType {
-  const cb = String(
-    item.CreatedBy ||
-      item.created_by ||
-      item.CreatedByRef ||
-      item.created_by_ref ||
-      item.Created ||
-      item.created ||
-      "",
+  const createdType = String(
+    item.created || item.Created || "",
+  )
+    .toLowerCase()
+    .trim();
+  if (
+    createdType === "admin" ||
+    createdType === "fakultas" ||
+    createdType === "prodi" ||
+    createdType === "unit"
+  ) {
+    return createdType as StepType;
+  }
+
+  const cb = (
+    String(item.CreatedBy || "") +
+    " " +
+    String(item.created_by || "") +
+    " " +
+    String(item.CreatedByRef || "")
   )
     .toLowerCase()
     .trim();
 
-  const unit = String(item.Unit || "").trim();
+  const prodi = String(item.Prodi || item.prodi || "").trim();
+  const fak = String(item.Fakultas || item.fakultas || "").trim();
+  const unit = String(item.Unit || item.unit || "").trim();
 
   if (unit !== "" || cb.includes("unit")) return "unit";
-  if (cb.includes("prodi") || (item.Prodi && String(item.Prodi).trim() !== "")) return "prodi";
-  if (cb.includes("fakultas") || (item.Fakultas && String(item.Fakultas).trim() !== "")) return "fakultas";
+  if (prodi !== "" || cb.includes("prodi")) return "prodi";
+  if (fak !== "" || cb.includes("fakultas")) return "fakultas";
   return "admin";
 }
 
@@ -75,6 +103,7 @@ function getStepForQuestion(item: any): StepType {
 function shouldShowQuestionForRespondent(
   q: any,
   respondent: RekapRespondenItem,
+  fakultasList: any[] = [],
 ): boolean {
   const step = getStepForQuestion(q);
 
@@ -83,6 +112,7 @@ function shouldShowQuestionForRespondent(
 
   const respFak = getNormalizedFaculty(
     respondent.Fakultas || respondent.KodeFakultas,
+    fakultasList,
   );
 
   const respProdi = String(
@@ -97,65 +127,22 @@ function shouldShowQuestionForRespondent(
 
   // FAKULTAS MATCHING
   if (step === "fakultas") {
-    const qFak = getNormalizedFaculty(q.Fakultas);
-    const qRef = String(
-      q.CreatedByRef || q.CreatedBy || q.FullPath || q.Kategori || "",
-    )
-      .toLowerCase()
-      .trim();
-
-    if (qFak) {
-      return respFak !== "" && (respFak.includes(qFak) || qFak.includes(respFak));
+    const qFak = getNormalizedFaculty(
+      q.Fakultas || q.CreatedBy,
+      fakultasList,
+    );
+    if (qFak && respFak) {
+      return respFak.includes(qFak) || qFak.includes(respFak);
     }
-
-    const knownFaculties = [
-      "hukum",
-      "isib",
-      "fkip",
-      "fmipa",
-      "feb",
-      "fe",
-      "ft",
-      "pascasarjana",
-    ];
-    for (const fac of knownFaculties) {
-      if (qRef.includes(fac)) {
-        return respFak !== "" && respFak.includes(fac);
-      }
-    }
-
     return true;
   }
 
   // PRODI MATCHING
   if (step === "prodi") {
     const qProdi = String(q.Prodi || "").toLowerCase().trim();
-    const qRef = String(
-      q.CreatedByRef || q.CreatedBy || q.FullPath || q.Kategori || "",
-    )
-      .toLowerCase()
-      .trim();
-
-    if (qProdi) {
-      return respProdi !== "" && (respProdi.includes(qProdi) || qProdi.includes(respProdi));
+    if (qProdi && respProdi) {
+      return respProdi.includes(qProdi) || qProdi.includes(respProdi);
     }
-
-    const knownProdis = [
-      "ilmu komunikasi",
-      "sastra inggris",
-      "hukum",
-      "ilmu hukum",
-      "manajemen",
-      "akuntansi",
-      "ilmu komputer",
-      "biologi",
-    ];
-    for (const p of knownProdis) {
-      if (qRef.includes(p)) {
-        return respProdi !== "" && respProdi.includes(p);
-      }
-    }
-
     return true;
   }
 
@@ -172,14 +159,15 @@ function shouldShowQuestionForRespondent(
 }
 
 export default function RespondentQuestionnaireModal({ item, onClose }: Props) {
-  const [activeStep, setActiveStep] = useState<StepType>("admin");
+  const [stepIndex, setStepIndex] = useState(0);
   const [questionsRaw, setQuestionsRaw] = useState<any[]>([]);
   const [userAnswers, setUserAnswers] = useState<any[]>([]);
+  const [fakultasRaw, setFakultasRaw] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   /** =========================
-   * FETCH QUESTIONS & ANSWERS
+   * FETCH QUESTIONS, ANSWERS & FAKULTAS LIST (DYNAMIC)
    * ========================= */
   const loadData = useCallback(async () => {
     if (!item?.UUID || !item?.UUIDBankSoal) return;
@@ -187,19 +175,33 @@ export default function RespondentQuestionnaireModal({ item, onClose }: Props) {
     setLoading(true);
     setErr(null);
 
-    const token = sessionStorage.getItem("access_token") || "";
+    const token =
+      localStorage.getItem("access_token") ||
+      sessionStorage.getItem("access_token") ||
+      "";
 
     try {
-      // 1. Fetch Template Questions for Bank Soal
-      const qRes = await fetch(
-        `${BASE_URL}/templatepertanyaan/${item.UUIDBankSoal}/banksoal`,
-        {
+      const [qRes, aRes, fRes] = await Promise.all([
+        fetch(
+          `${BASE_URL}/templatepertanyaan/${item.UUIDBankSoal}/banksoal`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: "text/event-stream",
+            },
+          },
+        ),
+        fetch(`${BASE_URL}/kuesioner/${item.UUID}/jawaban`, {
           headers: {
             Authorization: `Bearer ${token}`,
-            Accept: "text/event-stream",
           },
-        },
-      );
+        }),
+        fetch(`${BASE_URL}/fakultass?mode=all`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }),
+      ]);
 
       let questionsList: any[] = [];
 
@@ -229,20 +231,20 @@ export default function RespondentQuestionnaireModal({ item, onClose }: Props) {
         }
       }
 
-      // 2. Fetch Submitted Answers for this Respondent Questionnaire
-      const aRes = await fetch(`${BASE_URL}/kuesioner/${item.UUID}/jawaban`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
       let answersList: any[] = [];
       if (aRes.ok) {
         answersList = await aRes.json();
       }
 
+      let fakultasList: any[] = [];
+      if (fRes.ok) {
+        const fData = await fRes.json();
+        fakultasList = fData.data?.data || fData.data || fData || [];
+      }
+
       setQuestionsRaw(questionsList);
       setUserAnswers(answersList);
+      setFakultasRaw(fakultasList);
     } catch (error: any) {
       console.error("loadData error:", error);
       setErr("Gagal memuat detail kuesioner responden");
@@ -253,10 +255,34 @@ export default function RespondentQuestionnaireModal({ item, onClose }: Props) {
 
   useEffect(() => {
     if (item) {
-      setActiveStep("admin");
+      setStepIndex(0);
       loadData();
     }
   }, [item, loadData]);
+
+  /** =========================
+   * DYNAMIC AVAILABLE STEPS
+   * ========================= */
+  const availableSteps = useMemo<StepType[]>(() => {
+    const STEPS: StepType[] = ["admin", "fakultas", "prodi", "unit"];
+    if (!item) return ["admin"];
+
+    const activeRoles = STEPS.filter((step) =>
+      questionsRaw.some(
+        (q) =>
+          getStepForQuestion(q) === step &&
+          shouldShowQuestionForRespondent(q, item, fakultasRaw),
+      ),
+    );
+
+    return activeRoles.length > 0 ? activeRoles : ["admin"];
+  }, [questionsRaw, item, fakultasRaw]);
+
+  const activeStep =
+    availableSteps[Math.min(stepIndex, availableSteps.length - 1)] || "admin";
+  const isLastStep = stepIndex >= availableSteps.length - 1;
+  const hasNextStep =
+    availableSteps.length > 0 && stepIndex < availableSteps.length - 1;
 
   /** =========================
    * PRE-FILLED ANSWERS MAP
@@ -292,7 +318,7 @@ export default function RespondentQuestionnaireModal({ item, onClose }: Props) {
       .filter(
         (q: any) =>
           getStepForQuestion(q) === activeStep &&
-          shouldShowQuestionForRespondent(q, item),
+          shouldShowQuestionForRespondent(q, item, fakultasRaw),
       )
       .map((q: any) => ({
         id: q.UUID,
@@ -313,7 +339,7 @@ export default function RespondentQuestionnaireModal({ item, onClose }: Props) {
               }))
           : [],
       }));
-  }, [questionsRaw, activeStep, item]);
+  }, [questionsRaw, activeStep, item, fakultasRaw]);
 
   /** =========================
    * GROUPED QUESTIONS BY FULLPATH
@@ -331,23 +357,26 @@ export default function RespondentQuestionnaireModal({ item, onClose }: Props) {
    * STEP NAVIGATION
    * ========================= */
   const handleNextStep = () => {
-    if (activeStep === "admin") setActiveStep("fakultas");
-    else if (activeStep === "fakultas") setActiveStep("prodi");
-    else if (activeStep === "prodi") setActiveStep("unit");
-    else onClose();
+    if (hasNextStep) {
+      setStepIndex((prev) => prev + 1);
+    } else {
+      onClose();
+    }
   };
 
   const handlePrevStep = () => {
-    if (activeStep === "unit") setActiveStep("prodi");
-    else if (activeStep === "prodi") setActiveStep("fakultas");
-    else if (activeStep === "fakultas") setActiveStep("admin");
+    if (stepIndex > 0) {
+      setStepIndex((prev) => prev - 1);
+    }
   };
 
   const getSubmitButtonLabel = () => {
-    if (activeStep === "admin") return "Lanjut ke Fakultas";
-    if (activeStep === "fakultas") return "Lanjut ke Prodi";
-    if (activeStep === "prodi") return "Lanjut ke Unit";
-    return "Selesai Preview";
+    if (!hasNextStep) return "Selesai Preview";
+    const nextStepRole = availableSteps[stepIndex + 1];
+    if (nextStepRole === "fakultas") return "Lanjut ke Fakultas";
+    if (nextStepRole === "prodi") return "Lanjut ke Prodi";
+    if (nextStepRole === "unit") return "Lanjut ke Unit";
+    return "Lanjut";
   };
 
   if (!item) return null;
@@ -395,7 +424,7 @@ export default function RespondentQuestionnaireModal({ item, onClose }: Props) {
       <div className="flex-1 w-full flex flex-col md:flex-row">
         <QuestionerLayout activeStep={activeStep} onNextStep={handleNextStep}>
           <div className="max-w-3xl mx-auto space-y-8">
-            {/* NO TABS - DIRECT CONTINUOUS STEPTER FLOW (LPPM -> FAKULTAS -> PRODI -> UNIT) */}
+            {/* STEPPER FLOW (LPPM -> FAKULTAS -> PRODI -> UNIT) */}
 
             {loading ? (
               <div className="flex flex-col items-center justify-center py-20">
@@ -545,7 +574,7 @@ export default function RespondentQuestionnaireModal({ item, onClose }: Props) {
 
             {/* SUBMIT / NEXT STEP BUTTON AT BOTTOM */}
             <div className="pt-6 pb-12 flex items-center justify-between gap-4 border-t border-outline-variant/15 mt-8">
-              {activeStep !== "admin" ? (
+              {stepIndex > 0 ? (
                 <button
                   type="button"
                   onClick={handlePrevStep}
@@ -555,11 +584,13 @@ export default function RespondentQuestionnaireModal({ item, onClose }: Props) {
                     arrow_back
                   </span>
                   Kembali (
-                  {activeStep === "unit"
-                    ? "Prodi"
-                    : activeStep === "prodi"
-                      ? "Fakultas"
-                      : "LPPM"}
+                  {availableSteps[stepIndex - 1] === "unit"
+                    ? "Unit"
+                    : availableSteps[stepIndex - 1] === "prodi"
+                      ? "Prodi"
+                      : availableSteps[stepIndex - 1] === "fakultas"
+                        ? "Fakultas"
+                        : "LPPM"}
                   )
                 </button>
               ) : (
