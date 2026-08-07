@@ -74,16 +74,20 @@ describe("BankSoalTimeForm Component", () => {
     };
   });
 
-  it("should prevent adding schedule if overlaps occur", () => {
+  it("should allow adding schedule even if overlap occurs (overlap validation disabled per user request)", async () => {
     render(<BankSoalTimeForm />);
 
     const overlapBtn = screen.getByTestId("btn-select-overlap");
     fireEvent.click(overlapBtn);
 
     const addBtn = screen.getByRole("button", { name: /Tambahkan Jadwal/i });
+    mockApiCall.put.mockResolvedValueOnce({ data: { uuid: "bs-1" } });
+
     fireEvent.click(addBtn);
 
-    expect(screen.getByText("Jadwal bertabrakan")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(mockApiCall.put).toHaveBeenCalledWith("/banksoal/bs-uuid-1/schedule", expect.any(FormData));
+    });
   });
 
   it("should save clean schedule choice", async () => {

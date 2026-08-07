@@ -11,6 +11,11 @@ describe("useTemplatePreview Hook", () => {
     MockEventSource.clear();
     sessionStorage.clear();
     sessionStorage.setItem("access_token", "fake-token");
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ Level: "admin" }),
+    });
   });
 
   afterEach(() => {
@@ -60,6 +65,11 @@ describe("useTemplatePreview Hook", () => {
     let previewPromise: any;
     act(() => {
       previewPromise = result.current.loadPreview("bank-1");
+    });
+
+    // Wait microtask tick for async fetch(/whoami) to resolve before SSE stream initializes
+    await act(async () => {
+      await Promise.resolve();
     });
 
     // Verify first stream initiated (questions list)
