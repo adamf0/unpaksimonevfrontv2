@@ -47,23 +47,36 @@ function getNormalizedFaculty(
 }
 
 export function getStepForQuestion(item: any): StepType {
+  const raw = item._raw || item;
+
+  const created = String(raw.created || raw.Created || "")
+    .toLowerCase()
+    .trim();
+  if (
+    created === "admin" ||
+    created === "fakultas" ||
+    created === "prodi" ||
+    created === "unit"
+  ) {
+    return created as StepType;
+  }
+
+  const prodi = String(raw.Prodi || raw.prodi || "").trim();
+  const fak = String(raw.Fakultas || raw.fakultas || "").trim();
+  const unit = String(raw.Unit || raw.unit || "").trim();
   const cb = String(
-    item.CreatedBy ||
-      item.created_by ||
-      item.CreatedByRef ||
-      item.created_by_ref ||
-      item.Created ||
-      item.created ||
+    raw.CreatedBy ||
+      raw.created_by ||
+      raw.CreatedByRef ||
+      raw.created_by_ref ||
       "",
   )
     .toLowerCase()
     .trim();
 
-  const unit = String(item.Unit || "").trim();
-
   if (unit !== "" || cb.includes("unit")) return "unit";
-  if (cb.includes("prodi") || (item.Prodi && String(item.Prodi).trim() !== "")) return "prodi";
-  if (cb.includes("fakultas") || (item.Fakultas && String(item.Fakultas).trim() !== "")) return "fakultas";
+  if (prodi !== "" || cb.includes("prodi")) return "prodi";
+  if (fak !== "" || cb.includes("fakultas")) return "fakultas";
   return "admin";
 }
 
@@ -71,9 +84,15 @@ export function getQuestionsForStep(
   questions: Question[],
   targetStep: StepType,
   persona: SandboxPersona,
+  fakultasList: any[] = [],
 ): Question[] {
-  const pFak = getNormalizedFaculty(persona.kodeFakultas || persona.namaFakultas);
-  const pProdi = String(persona.kodeProdi || persona.namaProdi || "").toLowerCase().trim();
+  const pFak = getNormalizedFaculty(
+    persona.kodeFakultas || persona.namaFakultas,
+    fakultasList,
+  );
+  const pProdi = String(persona.kodeProdi || persona.namaProdi || "")
+    .toLowerCase()
+    .trim();
   const pUnit = String(persona.unit || "").toLowerCase().trim();
 
   return questions.filter((q: any) => {
@@ -84,24 +103,17 @@ export function getQuestionsForStep(
     if (step === "admin") return true;
 
     if (step === "fakultas") {
-      const qFak = getNormalizedFaculty(raw.Fakultas);
-      const qRef = String(raw.CreatedByRef || raw.CreatedBy || raw.Kategori || "").toLowerCase().trim();
-
-      if (qFak) {
-        return pFak !== "" && (pFak.includes(qFak) || qFak.includes(pFak));
-      }
-      for (const fac of ["hukum", "isib", "fkip", "fmipa", "feb", "fe", "ft"]) {
-        if (qRef.includes(fac)) {
-          return pFak !== "" && pFak.includes(fac);
-        }
+      const qFak = getNormalizedFaculty(raw.Fakultas || raw.CreatedBy, fakultasList);
+      if (qFak && pFak) {
+        return pFak.includes(qFak) || qFak.includes(pFak);
       }
       return true;
     }
 
     if (step === "prodi") {
       const qProdi = String(raw.Prodi || "").toLowerCase().trim();
-      if (qProdi) {
-        return pProdi !== "" && (pProdi.includes(qProdi) || qProdi.includes(pProdi));
+      if (qProdi && pProdi) {
+        return pProdi.includes(qProdi) || qProdi.includes(pProdi);
       }
       return true;
     }
@@ -220,6 +232,7 @@ export function resolveUserProdiCode(profile?: any, fakCode: string = "01"): str
 
 export function useSandbox() {
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [fakultasList, setFakultasList] = useState<any[]>([]);
   const [bankSoalOptions, setBankSoalOptions] = useState<SelectOption[]>([]);
   const [rawBankSoals, setRawBankSoals] = useState<any[]>([]);
   const [selectedBankSoal, setSelectedBankSoal] = useState<SelectOption | null>(null);
@@ -262,25 +275,36 @@ export function useSandbox() {
   const esRef = useRef<EventSource | null>(null);
 
   /** =========================
-   * FETCH USER PROFILE & LOCK STATUS
+   * FETCH USER PROFILE & FAKULTAS LIST
    * ========================= */
   useEffect(() => {
-    const token = sessionStorage.getItem("access_token") || "";
+    const token =
+      localStorage.getItem("access_token") ||
+      sessionStorage.getItem("access_token") ||
+      "";
     if (!token) return;
 
-    fetch(`${BASE_URL}/whoami`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data) {
-          setUserProfile(data);
-          const level = String(data.Level || "admin").toLowerCase().trim();
+    Promise.all([
+      fetch(`${BASE_URL}/whoami`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }).then((res) => (res.ok ? res.json() : null)),
+      fetch(`${BASE_URL}/fakultass?mode=all`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }).then((res) => (res.ok ? res.json() : null)),
+    ])
+      .then(([whoData, fakData]) => {
+        if (fakData) {
+          setFakultasList(fakData.data?.data || fakData.data || fakData || []);
+        }
+
+        if (whoData) {
+          setUserProfile(whoData);
+          const level = String(whoData.Level || "admin").toLowerCase().trim();
 
           if (level === "fakultas" || level === "prodi") {
-            const fakCode = resolveUserFacultyCode(data);
+            const fakCode = resolveUserFacultyCode(whoData);
             const fakOpt = FAKULTAS_OPTIONS.find((f) => f.value === fakCode);
-            const prodiCode = resolveUserProdiCode(data, fakCode);
+            const prodiCode = resolveUserProdiCode(whoData, fakCode);
             const prodiList = PRODI_OPTIONS[fakCode] || [];
             const prodiOpt = prodiList.find((p) => p.value === prodiCode) || prodiList[0];
 
@@ -316,7 +340,8 @@ export function useSandbox() {
   const availableSteps = useMemo(() => {
     const allSteps: StepType[] = ["admin", "fakultas", "prodi", "unit"];
     return allSteps.filter((s) => {
-      const hasQuestions = getQuestionsForStep(questions, s, persona).length > 0;
+      const hasQuestions =
+        getQuestionsForStep(questions, s, persona, fakultasList).length > 0;
       if (!hasQuestions) return false;
 
       const activeOnDate = isStepActiveOnDate(
@@ -326,7 +351,7 @@ export function useSandbox() {
       );
       return activeOnDate;
     });
-  }, [questions, persona, selectedBankSoalDetail, simulationDate]);
+  }, [questions, persona, selectedBankSoalDetail, simulationDate, fakultasList]);
 
   const currentStepIndex = availableSteps.indexOf(activeStep);
   const isLastStep =
@@ -341,7 +366,10 @@ export function useSandbox() {
     if (esRef.current) return;
     setLoadingBankSoal(true);
 
-    const token = sessionStorage.getItem("access_token") || "";
+    const token =
+      localStorage.getItem("access_token") ||
+      sessionStorage.getItem("access_token") ||
+      "";
     const es = new EventSource(`${BASE_URL}/banksoals?mode=sse&ctxtoken=${token}`);
     esRef.current = es;
 
@@ -403,7 +431,10 @@ export function useSandbox() {
     setErrors({});
 
     try {
-      const token = sessionStorage.getItem("access_token") || "";
+      const token =
+        localStorage.getItem("access_token") ||
+        sessionStorage.getItem("access_token") ||
+        "";
       const res = await fetch(
         `${BASE_URL}/templatepertanyaan/${selectedBankSoal.value}/banksoal`,
         {
@@ -471,12 +502,7 @@ export function useSandbox() {
           uuid: q.UUID || String(q.ID),
           pertanyaan: q.Pertanyaan || "",
           required: Boolean(q.Required),
-          created:
-            getStepForQuestion(q) === "admin"
-              ? "admin"
-              : getStepForQuestion(q) === "fakultas"
-                ? "fakultas"
-                : "prodi",
+          created: getStepForQuestion(q),
           createdBy: q.CreatedBy || q.createdBy,
           tipe,
           pilihan:
@@ -502,7 +528,7 @@ export function useSandbox() {
       const firstValidStep =
         allSteps.find((s) => {
           const hasQ =
-            getQuestionsForStep(mappedQuestions, s, persona).length > 0;
+            getQuestionsForStep(mappedQuestions, s, persona, fakultasList).length > 0;
           const activeDate = isStepActiveOnDate(s, bDetail, simulationDate);
           return hasQ && activeDate;
         }) || "admin";
@@ -631,7 +657,7 @@ export function useSandbox() {
     availableSteps,
     currentStepIndex,
     isLastStep,
-    stepQuestions: getQuestionsForStep(questions, activeStep, persona),
+    stepQuestions: getQuestionsForStep(questions, activeStep, persona, fakultasList),
 
     answers,
     setAnswers,

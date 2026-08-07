@@ -63,8 +63,10 @@ function getNormalizedFaculty(
  * STEP CLASSIFIER
  * ========================= */
 function getStepForQuestion(item: any): StepType {
+  const raw = item._raw || item;
+
   const createdType = String(
-    item.created || item.Created || "",
+    raw.created || raw.Created || "",
   )
     .toLowerCase()
     .trim();
@@ -77,19 +79,18 @@ function getStepForQuestion(item: any): StepType {
     return createdType as StepType;
   }
 
-  const cb = (
-    String(item.CreatedBy || "") +
-    " " +
-    String(item.created_by || "") +
-    " " +
-    String(item.CreatedByRef || "")
+  const prodi = String(raw.Prodi || raw.prodi || "").trim();
+  const fak = String(raw.Fakultas || raw.fakultas || "").trim();
+  const unit = String(raw.Unit || raw.unit || "").trim();
+  const cb = String(
+    raw.CreatedBy ||
+      raw.created_by ||
+      raw.CreatedByRef ||
+      raw.created_by_ref ||
+      "",
   )
     .toLowerCase()
     .trim();
-
-  const prodi = String(item.Prodi || item.prodi || "").trim();
-  const fak = String(item.Fakultas || item.fakultas || "").trim();
-  const unit = String(item.Unit || item.unit || "").trim();
 
   if (unit !== "" || cb.includes("unit")) return "unit";
   if (prodi !== "" || cb.includes("prodi")) return "prodi";
