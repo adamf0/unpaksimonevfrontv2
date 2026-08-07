@@ -370,7 +370,7 @@ export function useSandbox() {
       localStorage.getItem("access_token") ||
       sessionStorage.getItem("access_token") ||
       "";
-    const es = new EventSource(`${BASE_URL}/banksoals?mode=sse&ctxtoken=${token}`);
+    const es = new EventSource(`${BASE_URL}/banksoals?mode=sse`);
     esRef.current = es;
 
     let temp: any[] = [];

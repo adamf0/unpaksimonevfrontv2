@@ -235,7 +235,7 @@ export function useTemplate() {
     if (!token) return;
 
     const es = new EventSource(
-      `${BASE_URL}/banksoals?mode=sse&ctxtoken=${token}`,
+      `${BASE_URL}/banksoals?mode=sse`,
     );
 
     bankESRef.current = es;

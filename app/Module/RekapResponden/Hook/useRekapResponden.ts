@@ -50,7 +50,7 @@ export function useRekapResponden() {
     setLoadingBankSoal(true);
 
     const token = sessionStorage.getItem("access_token") || "";
-    const es = new EventSource(`${BASE_URL}/banksoals?mode=sse&ctxtoken=${token}`);
+    const es = new EventSource(`${BASE_URL}/banksoals?mode=sse`);
     esBankSoalRef.current = es;
 
     let temp: any[] = [];
