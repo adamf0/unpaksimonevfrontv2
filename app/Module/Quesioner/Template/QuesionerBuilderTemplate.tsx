@@ -6,7 +6,11 @@ import Problem from "../Organisms/Problem";
 import QuestionerLayout from "./QuestionerLayout";
 import QuestionForm from "../Organisms/QuestionForm";
 import InitialSection from "../Organisms/InitialSection";
-import { useQuestionerBuilder } from "../Hook/useQuestionerBuilder";
+import {
+  useQuestionerBuilder,
+  isFakultasCodeOrNameMatch,
+  isProdiCodeOrNameMatch,
+} from "../Hook/useQuestionerBuilder";
 import { useEffect, useState } from "react";
 import { toNumber } from "../../Common/Service/utility";
 
@@ -19,22 +23,15 @@ export default function QuesionerBuilderTemplate({ uuid }: Props) {
     // ================= STATE =================
     state,
     setState,
-    // data,
-    // answers,
     errors,
     toast,
     status,
     setStatus,
 
-    // stepIndex,
-    // setStepIndex,
-
-    // loading,
-    // initialized,
-
     activeStep,
     filteredData,
     availableSteps,
+    hasNextStep,
 
     // ================= ACTIONS =================
     handleSubmit,
@@ -43,15 +40,7 @@ export default function QuesionerBuilderTemplate({ uuid }: Props) {
 
     // ================= HELPERS =================
     isSelected,
-    // isOption,
-    // isFreetextValid,
-    // validateStep,
 
-    // ================= INTERNAL CONTROL (optional tapi berguna) =================
-    // setAnswers,
-    // setErrors,
-    // setToast,
-    // setData,
     loadData,
     dataQuestion,
   } = useQuestionerBuilder();
@@ -76,7 +65,7 @@ export default function QuesionerBuilderTemplate({ uuid }: Props) {
   }, [error]);
 
   useEffect(() => {
-    const token = sessionStorage.getItem("access_token");
+    const token = localStorage.getItem("access_token") || sessionStorage.getItem("access_token");
 
     if (!token) {
       setStatus("problem");
@@ -89,7 +78,7 @@ export default function QuesionerBuilderTemplate({ uuid }: Props) {
   }, [uuid]);
 
   useEffect(() => {
-    const token = sessionStorage.getItem("access_token");
+    const token = localStorage.getItem("access_token") || sessionStorage.getItem("access_token");
 
     if (!token) {
       setStatus("problem");
@@ -109,13 +98,6 @@ export default function QuesionerBuilderTemplate({ uuid }: Props) {
       dataAnsware: typeof cb === "function" ? cb(prev.dataAnsware) : cb,
     }));
   };
-
-  // console.log(
-  //   status === "initial",
-  //   status === "process",
-  //   isEmpty(errorContext?.type),
-  //   errorContext,
-  // );
 
   return (
     <>
@@ -139,12 +121,23 @@ export default function QuesionerBuilderTemplate({ uuid }: Props) {
               fakultas: dataQuestion.filter(
                 (x) =>
                   x.created === "fakultas" &&
-                  x.createdBy === String(state.userInfo?.RefFakultas ?? ""),
+                  isFakultasCodeOrNameMatch(
+                    x.createdBy,
+                    (x as any)._raw?.Fakultas || (x as any)._raw?.CreatedByRef,
+                    state.userInfo?.RefFakultas,
+                    state.userInfo?.Fakultas || state.userFakultas,
+                    state.fakultasList,
+                  ),
               ).length,
               prodi: dataQuestion.filter(
                 (x) =>
                   x.created === "prodi" &&
-                  x.createdBy === String(state.userInfo?.RefProdi ?? ""),
+                  isProdiCodeOrNameMatch(
+                    x.createdBy,
+                    (x as any)._raw?.Prodi,
+                    state.userInfo?.RefProdi,
+                    state.userInfo?.Prodi || state.userProdi,
+                  ),
               ).length,
             }}
             info={{
@@ -172,7 +165,8 @@ export default function QuesionerBuilderTemplate({ uuid }: Props) {
               answers={dataAnsware}
               errors={errors}
               toast={toast}
-              loading={loading == "form"} //ini tidak bekerja
+              loading={loading == "form"}
+              hasNextStep={hasNextStep}
               isBrokenQuestion={(q) =>
                 q.pilihan.filter((p) => p.freetext).length > 1
               }

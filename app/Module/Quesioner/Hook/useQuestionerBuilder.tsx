@@ -250,7 +250,7 @@ export function useQuestionerBuilder() {
         `templatepertanyaan/${uuidTemplatePertanyaan}/template`,
         {
           headers: {
-            Authorization: `Bearer ${sessionStorage.getItem("access_token")}`,
+            Authorization: `Bearer ${localStorage.getItem("access_token") || sessionStorage.getItem("access_token")}`,
           },
         },
       );
@@ -301,7 +301,7 @@ export function useQuestionerBuilder() {
         dataAnsware: {},
       }));
 
-      const token = sessionStorage.getItem("access_token");
+      const token = localStorage.getItem("access_token") || sessionStorage.getItem("access_token");
 
       const [res, resJawaban, resUser, resFakultas] = await Promise.allSettled([
         apiCall.get(`kuesioners/active/${uuidKuesioner}`, {
@@ -790,6 +790,9 @@ export function useQuestionerBuilder() {
     }
   };
 
+  const isLastStep = availableSteps.length === 0 || stepIndex.current >= availableSteps.length - 1;
+  const hasNextStep = availableSteps.length > 0 && stepIndex.current < availableSteps.length - 1;
+
   return {
     state,
     data,
@@ -802,6 +805,8 @@ export function useQuestionerBuilder() {
     activeStep,
     filteredData,
     availableSteps,
+    isLastStep,
+    hasNextStep,
 
     setState,
     setErrors,

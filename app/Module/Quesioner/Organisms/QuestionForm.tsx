@@ -13,6 +13,7 @@ type Props = {
   errors: Record<string, string>;
   toast: string | null;
   loading: boolean;
+  hasNextStep?: boolean;
 
   isBrokenQuestion: (q: Question) => boolean;
   isSelected: (
@@ -40,6 +41,7 @@ export default function QuestionForm(props: Props) {
     errors,
     toast,
     loading,
+    hasNextStep,
     isBrokenQuestion,
     isSelected,
     handleChange,
@@ -167,7 +169,7 @@ export default function QuestionForm(props: Props) {
           className="w-full bg-gradient-to-r from-primary to-primary-container text-on-primary font-bold py-4 rounded-xl hover:scale-[1.02] transition-transform indigo-shadow disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 disabled:from-gray-300 disabled:to-gray-400"
           icon=""
         >
-          {loading ? "Kirim Data..." : "Survei Selesai"}
+          {loading ? "Kirim Data..." : hasNextStep ? "Selanjutnya" : "Simpan"}
         </AnimatedButton>
       </form>
 
