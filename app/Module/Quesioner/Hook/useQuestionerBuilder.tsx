@@ -15,6 +15,7 @@ type BankSoalState = {
   dataAnsware: AnswerState;
   userInfo: AccountInfo | null;
   data: any;
+  fakultasList: any[];
 
   loading: LoadingState;
   error?: string | null;
@@ -23,14 +24,64 @@ type BankSoalState = {
   userProdi?: string | null;
 };
 
-export function useQuestionerBuilder() {
-  // const { pushToast } = useToast();
+export function isFakultasCodeOrNameMatch(
+  itemFakCode?: string | null,
+  itemFakName?: string | null,
+  userFakCode?: string | null,
+  userFakName?: string | null,
+  fakultasList: any[] = [],
+): boolean {
+  const c1 = String(itemFakCode || "").trim();
+  const c2 = String(userFakCode || "").trim();
+  if (c1 && c2 && c1 === c2) return true;
 
+  const n1 = String(itemFakName || "").toLowerCase().trim();
+  const n2 = String(userFakName || "").toLowerCase().trim();
+  if (n1 && n2 && (n1.includes(n2) || n2.includes(n1))) return true;
+
+  const dynamicMap: Record<string, string> = {};
+  for (const f of fakultasList) {
+    const code = String(f.KodeFakultas || f.kode_fakultas || f.Kode || f.ID || "").trim();
+    const name = String(f.NamaFakultas || f.nama_fakultas || f.Nama || "").toLowerCase().trim();
+    if (code && name) {
+      dynamicMap[code] = name;
+    }
+  }
+
+  const nameFromC1 = dynamicMap[c1] || n1;
+  const nameFromC2 = dynamicMap[c2] || n2;
+
+  if (nameFromC1 && nameFromC2 && (nameFromC1.includes(nameFromC2) || nameFromC2.includes(nameFromC1))) {
+    return true;
+  }
+
+  return false;
+}
+
+export function isProdiCodeOrNameMatch(
+  itemProdiCode?: string | null,
+  itemProdiName?: string | null,
+  userProdiCode?: string | null,
+  userProdiName?: string | null,
+): boolean {
+  const c1 = String(itemProdiCode || "").trim();
+  const c2 = String(userProdiCode || "").trim();
+  if (c1 && c2 && c1 === c2) return true;
+
+  const n1 = String(itemProdiName || "").toLowerCase().trim();
+  const n2 = String(userProdiName || "").toLowerCase().trim();
+  if (n1 && n2 && (n1.includes(n2) || n2.includes(n1))) return true;
+
+  return false;
+}
+
+export function useQuestionerBuilder() {
   const [state, setState] = useState<BankSoalState>({
     dataQuestion: [],
     dataAnsware: {},
     userInfo: null,
     data: null,
+    fakultasList: [],
 
     loading: null,
     error: null,
@@ -51,11 +102,6 @@ export function useQuestionerBuilder() {
   const [initialized, setInitialized] = useState(false);
 
   type AvailableRole = "admin" | "fakultas" | "prodi";
-  const STEPS: Array<"admin" | "fakultas" | "prodi"> = [
-    "admin",
-    "fakultas",
-    "prodi",
-  ];
 
   const { dataQuestion, dataAnsware, data, loading, userFakultas, userProdi } =
     state;
@@ -66,40 +112,55 @@ export function useQuestionerBuilder() {
     }
 
     const now = new Date();
+    const sDate = new Date(start);
+    const eDate = new Date(end);
 
-    return now >= new Date(start) && now <= new Date(end);
+    sDate.setHours(0, 0, 0, 0);
+    eDate.setHours(23, 59, 59, 999);
+
+    return now >= sDate && now <= eDate;
   }
 
   function getAvailableRoleByTime(
     kuesioner: any,
     userInfo: AccountInfo | null,
+    fakultasList: any[] = [],
   ): AvailableRole[] {
     const result: AvailableRole[] = [];
 
     // ---------- ADMIN ----------
-
     if (isDateActive(kuesioner.TanggalMulai, kuesioner.TanggalAkhir)) {
       result.push("admin");
     }
 
     // ---------- EXTENSION ----------
-
     for (const item of kuesioner.ListExt || []) {
-      // FAKULTAS
+      const fakMatch = isFakultasCodeOrNameMatch(
+        item.KodeFakultas,
+        item.NamaFakultas,
+        userInfo?.RefFakultas,
+        userInfo?.Fakultas,
+        fakultasList,
+      );
 
       if (
-        item.Role === "fakultas" &&
-        item.KodeFakultas === userInfo?.RefFakultas &&
+        (item.Role === "fakultas" || String(item.Role || "").toLowerCase().includes("fakultas")) &&
+        fakMatch &&
         isDateActive(item.TanggalMulai, item.TanggalAkhir)
       ) {
         result.push("fakultas");
       }
 
-      // PRODI
+      const prodiMatch = isProdiCodeOrNameMatch(
+        item.KodeProdi,
+        item.NamaProdi,
+        userInfo?.RefProdi,
+        userInfo?.Prodi,
+      );
 
       if (
-        item.Role === "prodi" &&
-        item.KodeProdi === userInfo?.RefProdi &&
+        (item.Role === "prodi" || String(item.Role || "").toLowerCase().includes("prodi")) &&
+        prodiMatch &&
         isDateActive(item.TanggalMulai, item.TanggalAkhir)
       ) {
         result.push("prodi");
@@ -113,29 +174,43 @@ export function useQuestionerBuilder() {
     dataQuestion: Question[],
     userFakultas?: string | null,
     userProdi?: string | null,
+    userInfo?: AccountInfo | null,
+    fakultasList: any[] = [],
   ): AvailableRole[] {
     const STEPS: AvailableRole[] = ["admin", "fakultas", "prodi"];
 
     return STEPS.filter((step) => {
       // ---------- ADMIN ----------
-
       if (step === "admin") {
         return dataQuestion.some((q) => q.created === "admin");
       }
 
       // ---------- FAKULTAS ----------
-
       if (step === "fakultas") {
         return dataQuestion.some(
-          (q) => q.created === "fakultas" && q.createdBy === userFakultas,
+          (q) =>
+            q.created === "fakultas" &&
+            isFakultasCodeOrNameMatch(
+              q.createdBy,
+              (q as any)._raw?.Fakultas || (q as any)._raw?.CreatedByRef,
+              userInfo?.RefFakultas,
+              userInfo?.Fakultas || userFakultas,
+              fakultasList,
+            ),
         );
       }
 
       // ---------- PRODI ----------
-
       if (step === "prodi") {
         return dataQuestion.some(
-          (q) => q.created === "prodi" && q.createdBy === userProdi,
+          (q) =>
+            q.created === "prodi" &&
+            isProdiCodeOrNameMatch(
+              q.createdBy,
+              (q as any)._raw?.Prodi,
+              userInfo?.RefProdi,
+              userInfo?.Prodi || userProdi,
+            ),
         );
       }
 
@@ -149,13 +224,16 @@ export function useQuestionerBuilder() {
     dataQuestion: Question[],
     userFakultas?: string | null,
     userProdi?: string | null,
+    fakultasList: any[] = [],
   ): AvailableRole[] {
-    const availableByTime = getAvailableRoleByTime(kuesioner, userInfo);
+    const availableByTime = getAvailableRoleByTime(kuesioner, userInfo, fakultasList);
 
     const availableByQuestion = getAvailableRoleByQuestion(
       dataQuestion,
       userFakultas,
       userProdi,
+      userInfo,
+      fakultasList,
     );
 
     return availableByTime.filter((role) => availableByQuestion.includes(role));
@@ -178,7 +256,6 @@ export function useQuestionerBuilder() {
       );
 
       const item = res.data?.data ?? res.data;
-
       if (!item) return null;
 
       const pilihan: Option[] = Array.isArray(item.ListJawaban)
@@ -191,22 +268,23 @@ export function useQuestionerBuilder() {
           )
         : [];
 
+      const cb = String(item.CreatedBy || item.CreatedByRef || "").toLowerCase();
+      const created = item.Prodi ? "prodi" : item.Fakultas || cb.includes("fakultas") ? "fakultas" : "admin";
+      const createdBy = item.Prodi || item.Fakultas || item.CreatedByRef || "admin";
+
       return {
         id: String(item.ID),
         uuid: String(item.UUID),
         pertanyaan: item.Pertanyaan,
         required: item.Required === 1,
-
-        created: item.Prodi ? "prodi" : item.Fakultas ? "fakultas" : "admin",
-
-        createdBy: item.Prodi || item.Fakultas || "admin",
-
+        created,
+        createdBy,
         tipe: item.JenisPilihan,
         fullpath: item?.FullPath ?? "General",
         pilihan,
-      };
+        _raw: item,
+      } as any;
     } catch (error) {
-      // console.error(error);
       return null;
     }
   }
@@ -225,7 +303,7 @@ export function useQuestionerBuilder() {
 
       const token = sessionStorage.getItem("access_token");
 
-      const [res, resJawaban, resUser] = await Promise.all([
+      const [res, resJawaban, resUser, resFakultas] = await Promise.allSettled([
         apiCall.get(`kuesioners/active/${uuidKuesioner}`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -243,16 +321,26 @@ export function useQuestionerBuilder() {
             Authorization: `Bearer ${token}`,
           },
         }),
+
+        apiCall.get(`fakultass?mode=all`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }),
       ]);
 
-      const kuesioner = res.data?.data ?? res.data;
-      const jawaban = resJawaban.data?.data ?? resJawaban.data;
-      const userInfo: AccountInfo | null = resUser?.data;
+      const kuesioner = res.status === "fulfilled" ? (res.value.data?.data ?? res.value.data) : null;
+      const jawaban = resJawaban.status === "fulfilled" ? (resJawaban.value.data?.data ?? resJawaban.value.data) : [];
+      const userInfo: AccountInfo | null = resUser.status === "fulfilled" ? resUser.value.data : null;
+      const fakultasList: any[] = resFakultas.status === "fulfilled" ? (resFakultas.value.data?.data ?? resFakultas.value.data ?? []) : [];
 
       setState((p) => ({
         ...p,
         data: kuesioner,
         userInfo: userInfo,
+        fakultasList: fakultasList,
+        userFakultas: userInfo?.Fakultas || userInfo?.RefFakultas || null,
+        userProdi: userInfo?.Prodi || userInfo?.RefProdi || null,
       }));
 
       const targets: string[] = Array.isArray(kuesioner?.TargetPertanyaan)
@@ -305,24 +393,17 @@ export function useQuestionerBuilder() {
           }
         }
 
-        // rating = single option
         if (q.tipe === "rating") {
           mappedAnswers[q.uuid] = {
             value: selectedOptions[0] ?? null,
             extra,
           };
-        }
-
-        // radio = single option
-        else if (q.tipe === "radio") {
+        } else if (q.tipe === "radio") {
           mappedAnswers[q.uuid] = {
             value: selectedOptions[0] ?? null,
             extra,
           };
-        }
-
-        // multiple
-        else {
+        } else {
           mappedAnswers[q.uuid] = {
             value: selectedOptions,
             extra,
@@ -338,7 +419,6 @@ export function useQuestionerBuilder() {
         error: null,
       }));
     } catch (error: any) {
-      // console.error(error);
       setState((p) => ({
         ...p,
         loading: null,
@@ -350,7 +430,6 @@ export function useQuestionerBuilder() {
           ...p,
           error: "Server error",
         }));
-        // pushToast("Server error");
       } else {
         const { status, data } = error.response;
         const cf = handleCloudflareError(status);
@@ -360,13 +439,11 @@ export function useQuestionerBuilder() {
             ...p,
             error: cf,
           }));
-          // pushToast(cf);
         } else {
           setState((p) => ({
             ...p,
             error: data?.message || "Error",
           }));
-          // pushToast(data?.message || "Error");
         }
       }
     }
@@ -397,27 +474,6 @@ export function useQuestionerBuilder() {
   /* =====================================================
      AVAILABLE STEP
   ===================================================== */
-  // const availableSteps = useMemo(() => {
-  //   return STEPS.filter((step) => {
-  //     if (step === "admin") {
-  //       return dataQuestion.some((q) => q.created === "admin");
-  //     }
-
-  //     if (step === "fakultas") {
-  //       return dataQuestion.some(
-  //         (q) => q.created === "fakultas" && q.createdBy === userFakultas,
-  //       );
-  //     }
-
-  //     if (step === "prodi") {
-  //       return dataQuestion.some(
-  //         (q) => q.created === "prodi" && q.createdBy === userProdi,
-  //       );
-  //     }
-
-  //     return false;
-  //   });
-  // }, [dataQuestion, userFakultas, userProdi]);
   const availableSteps = useMemo(() => {
     if (!state.data || !state.userInfo) {
       return [];
@@ -429,13 +485,14 @@ export function useQuestionerBuilder() {
       dataQuestion,
       userFakultas,
       userProdi,
+      state.fakultasList,
     );
-  }, [state.data, state.userInfo, dataQuestion, userFakultas, userProdi]);
+  }, [state.data, state.userInfo, dataQuestion, userFakultas, userProdi, state.fakultasList]);
 
   const activeStep =
     availableSteps.length > 0
       ? availableSteps[Math.min(stepIndex.current, availableSteps.length - 1)]
-      : null; //[note] untuk debug tinggal ganti static misal "fakultas"
+      : null;
 
   /* =====================================================
      FILTER DATA
@@ -447,18 +504,27 @@ export function useQuestionerBuilder() {
       if (q.created !== activeStep) return false;
 
       if (q.created === "admin") return true;
-      if (q.created === "fakultas") return q.createdBy === userFakultas;
-      if (q.created === "prodi") return q.createdBy === userProdi;
+      if (q.created === "fakultas") {
+        return isFakultasCodeOrNameMatch(
+          q.createdBy,
+          (q as any)._raw?.Fakultas || (q as any)._raw?.CreatedByRef,
+          state.userInfo?.RefFakultas,
+          state.userInfo?.Fakultas || userFakultas,
+          state.fakultasList,
+        );
+      }
+      if (q.created === "prodi") {
+        return isProdiCodeOrNameMatch(
+          q.createdBy,
+          (q as any)._raw?.Prodi,
+          state.userInfo?.RefProdi,
+          state.userInfo?.Prodi || userProdi,
+        );
+      }
 
       return false;
     });
-  }, [activeStep, dataQuestion, userFakultas, userProdi]);
-
-  console.log(
-    `activeStep: ${activeStep}`,
-    `availableSteps: ${JSON.stringify(availableSteps)}`,
-    dataQuestion,
-  );
+  }, [activeStep, dataQuestion, userFakultas, userProdi, state.userInfo, state.fakultasList]);
 
   /* =====================================================
      VALIDATION
@@ -501,20 +567,14 @@ export function useQuestionerBuilder() {
 
     while (nextIndex < availableSteps.length) {
       const step = availableSteps[nextIndex];
-
       const stepQuestions = dataQuestion.filter((q) => q.created === step);
-
       const required = stepQuestions.filter((q) => q.required);
 
       const allDone = required.every((q) => {
         const ans = dataAnsware[q.id!];
-
         if (!ans) return false;
-
         if (q.tipe === "rating") return typeof ans.value === "number";
-
         if (Array.isArray(ans.value)) return ans.value.length > 0;
-
         return !!ans.value;
       });
 
@@ -562,7 +622,6 @@ export function useQuestionerBuilder() {
       }
 
       const arr = Array.isArray(current) ? [...current] : [];
-
       const exists = arr.some((v) => isOption(v) && v.value === option.value);
 
       return {
@@ -682,8 +741,6 @@ export function useQuestionerBuilder() {
       })
       .filter((row) => row.jawaban.length > 0);
 
-    // console.log("dataAnsware", payload);
-
     try {
       setState((p) => ({
         ...p,
@@ -730,13 +787,9 @@ export function useQuestionerBuilder() {
       if (cf) return setToast(cf);
 
       setToast(data?.message || "Error");
-    } finally {
     }
   };
 
-  /* =====================================================
-     RETURN
-  ===================================================== */
   return {
     state,
     data,

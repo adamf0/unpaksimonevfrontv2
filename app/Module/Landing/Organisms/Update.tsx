@@ -7,7 +7,10 @@ const updates = [
     version: "2.0.1",
     title: "Future Patch",
     status: "future",
-    items: ["Apply Integrated SSO"],
+    items: [
+      "Apply Integrated SSO",
+      "Sandbox Quesioner"
+    ],
   },
   {
     version: "2.0.0",

@@ -47,24 +47,7 @@ const initialQueryState: QueryState = {
   nama_prodi: "",
 };
 
-const facultyKeywords = [
-  { code: "01", key: "hukum" },
-  { code: "02", key: "fkip" },
-  { code: "02", key: "keguruan" },
-  { code: "03", key: "feb" },
-  { code: "03", key: "ekonomi" },
-  { code: "04", key: "isib" },
-  { code: "04", key: "sosial" },
-  { code: "04", key: "budaya" },
-  { code: "05", key: "ft" },
-  { code: "05", key: "teknik" },
-  { code: "06", key: "fmipa" },
-  { code: "06", key: "mipa" },
-  { code: "07", key: "pascasarjana" },
-  { code: "07", key: "pasca" },
-];
-
-export function isTemplateQuestionInUserScope(item: any, userProfile: any): boolean {
+export function isTemplateQuestionInUserScope(item: any, userProfile: any, sourceFakultas: any[] = []): boolean {
   if (!userProfile) return true;
 
   const level = String(userProfile.Level || "admin").toLowerCase().trim();
@@ -84,13 +67,7 @@ export function isTemplateQuestionInUserScope(item: any, userProfile: any): bool
     userProfile.Fakultas || userProfile.NamaFakultas || userProfile.RefFakultas || "",
   ).toLowerCase().trim();
 
-  let userFakKey = "";
-  for (const fk of facultyKeywords) {
-    if (userFakName.includes(fk.key) || userFakName.includes(fk.code)) {
-      userFakKey = fk.key;
-      break;
-    }
-  }
+  const userFakCode = String(userProfile.RefFakultas || "").trim();
 
   const isFacultyQuestion = cb.includes("fakultas") || Boolean(item.Fakultas);
   const isProdiQuestion = cb.includes("prodi") || Boolean(item.Prodi);
@@ -99,24 +76,25 @@ export function isTemplateQuestionInUserScope(item: any, userProfile: any): bool
     return true;
   }
 
-  let questionFakKey = "";
-  for (const fk of facultyKeywords) {
-    if (cb.includes(fk.key)) {
-      questionFakKey = fk.key;
-      break;
+  // Dynamic faculty map from API
+  const dynamicMap: Record<string, string[]> = {};
+  if (Array.isArray(sourceFakultas)) {
+    for (const f of sourceFakultas) {
+      const code = String(f.KodeFakultas || f.kode_fakultas || f.Kode || f.ID || "").trim();
+      const name = String(f.NamaFakultas || f.nama_fakultas || f.Nama || "").toLowerCase().trim();
+      if (code) {
+        if (!dynamicMap[code]) dynamicMap[code] = [];
+        if (name) dynamicMap[code].push(name);
+      }
     }
   }
 
   if (level === "fakultas" || level === "prodi") {
-    if (questionFakKey && userFakKey) {
-      const qCode = facultyKeywords.find((f) => f.key === questionFakKey)?.code;
-      const uCode = facultyKeywords.find((f) => f.key === userFakKey)?.code;
+    for (const [code, names] of Object.entries(dynamicMap)) {
+      const isQuestionFromThisFaculty = cb.includes(code) || names.some((n) => cb.includes(n));
+      const isUserFromThisFaculty = userFakCode === code || names.some((n) => userFakName.includes(n));
 
-      if (qCode && uCode && qCode !== uCode) {
-        return false;
-      }
-    } else if (questionFakKey && userFakName) {
-      if (!userFakName.includes(questionFakKey)) {
+      if (isQuestionFromThisFaculty && !isUserFromThisFaculty) {
         return false;
       }
     }
@@ -210,7 +188,7 @@ export function useTemplate() {
 
       const rawRows = res?.data?.data ?? [];
       const scopedRows = userProfile
-        ? rawRows.filter((item: any) => isTemplateQuestionInUserScope(item, userProfile))
+        ? rawRows.filter((item: any) => isTemplateQuestionInUserScope(item, userProfile, questionState.sourceFakultas))
         : rawRows;
 
       setQuestionState((p) => ({
