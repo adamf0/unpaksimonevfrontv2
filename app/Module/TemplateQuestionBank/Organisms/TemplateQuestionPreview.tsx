@@ -30,7 +30,11 @@ function mapQuestions(
   RAW_DATA: TemplatePertanyaanWithAnswareDefault[],
   step: "admin" | "fakultas" | "prodi",
 ): Question[] {
-  return RAW_DATA.filter((item: any) => getStepForQuestion(item) === step).map((item: any) => ({
+  return RAW_DATA.filter(
+    (item: any) =>
+      (item.Status === "active" || !item.Status) &&
+      getStepForQuestion(item) === step,
+  ).map((item: any) => ({
     id: item.UUID,
     uuid: item.UUID,
 

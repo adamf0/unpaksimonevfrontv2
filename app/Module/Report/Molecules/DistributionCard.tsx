@@ -64,8 +64,16 @@ export default function DistributionCard({
             </h4>
 
             <p className="text-sm text-slate-500">
-              {data.data.length} Program Studi •{" "}
-              {totalRespondent.toLocaleString()} Responden
+              {data.data.length === 1 && (data.data[0].title === "Umum" || data.data[0].title === data.title) ? (
+                <>
+                  {totalRespondent.toLocaleString()} Responden
+                </>
+              ) : (
+                <>
+                  {data.data.length} Program Studi •{" "}
+                  {totalRespondent.toLocaleString()} Responden
+                </>
+              )}
 
               <span className="ml-2 text-xs bg-white text-indigo-600 px-2 py-1 rounded-full">
                 {percentOfAll}%

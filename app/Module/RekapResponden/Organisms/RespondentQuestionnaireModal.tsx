@@ -268,6 +268,7 @@ export default function RespondentQuestionnaireModal({ item, onClose }: Props) {
     const activeRoles = STEPS.filter((step) =>
       questionsRaw.some(
         (q) =>
+          (q.Status === "active" || !q.Status) &&
           getStepForQuestion(q) === step &&
           shouldShowQuestionForRespondent(q, item, fakultasRaw),
       ),
@@ -315,6 +316,7 @@ export default function RespondentQuestionnaireModal({ item, onClose }: Props) {
     return questionsRaw
       .filter(
         (q: any) =>
+          (q.Status === "active" || !q.Status) &&
           getStepForQuestion(q) === activeStep &&
           shouldShowQuestionForRespondent(q, item, fakultasRaw),
       )

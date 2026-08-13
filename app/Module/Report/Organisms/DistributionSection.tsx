@@ -24,6 +24,14 @@ export default function DistributionSection({
 
   const isEmpty = data.length == 0;
 
+  const isUnit = data.some(
+    (item) =>
+      item.data.length === 1 &&
+      (item.data[0].title === "Umum" || item.data[0].title === item.title)
+  );
+
+  const chartTitle = isUnit ? "Distribusi Unit" : "Distribusi Fakultas";
+
   return (
     <section className="mb-12">
       <div className="flex items-center justify-between mb-6">
@@ -72,7 +80,7 @@ export default function DistributionSection({
 
           {/* RIGHT: CHART */}
           <DistributionChart
-            title="Distribusi Fakultas"
+            title={chartTitle}
             subtitle="Akumulasi total responden"
             data={data}
             loading={loading}

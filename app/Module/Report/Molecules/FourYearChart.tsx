@@ -9,7 +9,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Line,
 } from "recharts";
 import { ChartItem } from "../Attribut/ChartItem";
 
@@ -26,12 +25,13 @@ export default function FourYearChart({
   onReload,
   loading = false,
 }: Props) {
+  const [mode, setMode] = useState<"flat" | "normalize">("flat");
+
   const keys = useMemo(() => {
     if (!data.length) return [];
     return Object.keys(data[0]).filter((k) => k !== "year");
   }, [data]);
 
-  // ✅ langsung init dari memo (tanpa flicker)
   const initialVisible = useMemo(() => {
     const obj: Record<string, boolean> = {};
     keys.forEach((k) => (obj[k] = true));
@@ -51,7 +51,6 @@ export default function FourYearChart({
     }));
   };
 
-  // 🎨 AUTO COLOR (NO LIMIT KEY)
   const palette = [
     "#6366f1",
     "#0ea5e9",
@@ -63,6 +62,8 @@ export default function FourYearChart({
     "#84cc16",
     "#f97316",
     "#3b82f6",
+    "#ec4899",
+    "#a855f7",
   ];
 
   const colors = useMemo(() => {
@@ -73,27 +74,107 @@ export default function FourYearChart({
     return map;
   }, [keys]);
 
+  // Mode transformation: Flat vs Normalize
   const processedData = useMemo(() => {
-    return data.map((d) => {
-      const total = keys.reduce((sum, k) => sum + Number(d[k] || 0), 0);
-      return { ...d, total };
+    if (!data.length) return [];
+
+    if (mode === "flat") {
+      return data.map((d) => {
+        const yearStr = String(d.year || "");
+        let label = yearStr;
+        if (yearStr.length === 6) {
+          const y = yearStr.substring(0, 4);
+          const s = yearStr.substring(4);
+          label = s === "01" ? `${y} Ganjil` : s === "02" ? `${y} Genap` : `${y} (${s})`;
+        }
+        return {
+          ...d,
+          displayYear: label,
+        };
+      });
+    }
+
+    // Normalize per 1 year (Average semester scores for each year)
+    const yearMap: Record<string, Record<string, { sum: number; count: number }>> = {};
+
+    data.forEach((d) => {
+      const yearStr = String(d.year || "");
+      const yearKey = yearStr.length >= 4 ? yearStr.substring(0, 4) : yearStr || "Unknown";
+      if (!yearMap[yearKey]) yearMap[yearKey] = {};
+
+      keys.forEach((k) => {
+        const val = Number(d[k]);
+        if (!isNaN(val) && val > 0) {
+          if (!yearMap[yearKey][k]) {
+            yearMap[yearKey][k] = { sum: 0, count: 0 };
+          }
+          yearMap[yearKey][k].sum += val;
+          yearMap[yearKey][k].count += 1;
+        }
+      });
     });
-  }, [data, keys]);
+
+    return Object.entries(yearMap)
+      .sort(([yA], [yB]) => yA.localeCompare(yB))
+      .map(([year, catMap]) => {
+        const obj: Record<string, any> = { year, displayYear: `Tahun ${year}` };
+        keys.forEach((k) => {
+          if (catMap[k] && catMap[k].count > 0) {
+            obj[k] = Number((catMap[k].sum / catMap[k].count).toFixed(2));
+          } else {
+            obj[k] = 0;
+          }
+        });
+        return obj;
+      });
+  }, [data, mode, keys]);
 
   return (
     <div className="bg-surface-container-lowest rounded-3xl p-8 shadow-sm">
-      <h3 className="font-extrabold text-2xl mb-6">4 Year Chart</h3>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+        <div>
+          <h3 className="font-extrabold text-2xl text-indigo-900">4 Year Chart</h3>
+          <p className="text-xs text-slate-500 mt-1">
+            {mode === "flat"
+              ? "Menampilkan tren skor rata-rata kategori per semester (Flat)"
+              : "Menampilkan akumulasi rata-rata skor kategori per tahun (Normalize)"}
+          </p>
+        </div>
+
+        {/* TABS: FLAT & NORMALIZE */}
+        <div className="flex items-center bg-slate-100 p-1 rounded-xl self-start sm:self-auto border border-slate-200">
+          <button
+            onClick={() => setMode("flat")}
+            className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${
+              mode === "flat"
+                ? "bg-indigo-600 text-white shadow-sm"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            Flat
+          </button>
+          <button
+            onClick={() => setMode("normalize")}
+            className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${
+              mode === "normalize"
+                ? "bg-indigo-600 text-white shadow-sm"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            Normalize
+          </button>
+        </div>
+      </div>
 
       {loading && (
         <div className="flex-grow flex items-center justify-center min-h-[300px]">
           <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
         </div>
       )}
-      
+
       {!loading && err && (
         <div className="mb-4 p-4 rounded-xl bg-red-50 text-red-600 flex items-center justify-between">
           <span>{err}</span>
-
           <button
             onClick={onReload}
             className="px-3 py-1 text-sm bg-red-600 text-white rounded-lg"
@@ -121,20 +202,24 @@ export default function FourYearChart({
 
       {/* LEGEND */}
       {!loading && !err && data.length > 0 && (
-        <div className="flex gap-4 text-xs font-bold mb-4 flex-wrap">
+        <div className="flex gap-4 text-xs font-bold mb-6 flex-wrap bg-slate-50 p-4 rounded-2xl border border-slate-100">
           {keys.map((key) => (
             <button
               key={key}
               onClick={() => toggle(key)}
-              className="flex items-center gap-2"
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${
+                visible[key]
+                  ? "bg-white border-slate-200 shadow-2xs text-slate-800"
+                  : "bg-slate-100 border-transparent text-slate-400 line-through"
+              }`}
             >
               <span
-                className="w-3 h-3 rounded-full"
+                className="w-3 h-3 rounded-full shrink-0"
                 style={{
                   backgroundColor: visible[key] ? colors[key] : "#d1d5db",
                 }}
               />
-              {key}
+              <span className="truncate max-w-[280px]">{key}</span>
             </button>
           ))}
         </div>
@@ -142,29 +227,31 @@ export default function FourYearChart({
 
       {/* CHART */}
       {!loading && !err && data.length > 0 && (
-        <div className="h-80 w-full">
+        <div className="h-96 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={processedData}>
+            <BarChart data={processedData} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
 
-              <XAxis dataKey="year" />
-              <YAxis domain={keys.includes("mahasiswa") ? [0, "auto"] : [0, 5]} />
-              <Tooltip />
+              <XAxis dataKey="displayYear" tick={{ fontSize: 13, fontWeight: 600 }} />
+              <YAxis domain={[0, 5]} tick={{ fontSize: 12 }} />
+              <Tooltip
+                contentStyle={{
+                  borderRadius: "16px",
+                  border: "none",
+                  boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)",
+                }}
+              />
 
-              {/* TOTAL BAR (SOFT) ONLY FOR RESPONDENT COUNTS */}
-              {keys.includes("mahasiswa") && (
-                <Bar dataKey="total" fill="#c7d2fe" radius={[6, 6, 0, 0]} />
-              )}
-
-              {/* BARS */}
+              {/* BARS FOR EACH CATEGORY */}
               {keys.map(
                 (key) =>
                   visible[key] && (
                     <Bar
                       key={key}
                       dataKey={key}
+                      name={key}
                       fill={colors[key]}
-                      radius={[4, 4, 0, 0]}
+                      radius={[6, 6, 0, 0]}
                     />
                   ),
               )}

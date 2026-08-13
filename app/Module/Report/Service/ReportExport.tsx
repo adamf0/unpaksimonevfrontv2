@@ -131,7 +131,7 @@ export async function exportRekapKuesioner({
       } catch {}
 
       if (!prodiArr.length) {
-        prodiArr = [{ title: f.nama_fakultas, total: f.total_responden }];
+        prodiArr = [{ title: f.unit || f.nama_fakultas || "Umum", total: f.total_responden }];
       }
 
       const facTotal = Number(f.total_responden) || 0;
@@ -145,8 +145,8 @@ export async function exportRekapKuesioner({
 
         mapped.push({
           No: counter++,
-          Fakultas: f.nama_fakultas,
-          "Prodi / Unit": p.title,
+          Fakultas: f.nama_fakultas || f.unit || "Umum",
+          "Prodi / Unit": (!p.title || p.title === "Umum") && f.unit ? f.unit : p.title,
           "Total Responden": pTotal,
           "Persentase (%)": `${pPct}%`,
         });

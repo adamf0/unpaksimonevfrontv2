@@ -157,6 +157,7 @@ export default function ReportTemplate() {
               selectedJudul,
               val.kode_fakultas || (val.fakultas ? String(val.fakultas.value) : null),
               val.kode_prodi || (val.prodi ? String(val.prodi.value) : null),
+              val.unit || (val.unitObj ? String(val.unitObj.value) : null),
             );
           }
 
@@ -246,9 +247,9 @@ export default function ReportTemplate() {
         <>
           <hr className="my-6 border-slate-400" />
 
-          {(groupedByFullPath ?? []).map((group) => (
+          {(groupedByFullPath ?? []).map((group, idx) => (
             <ChartQuestionSection
-              key={group.fullPath}
+              key={`${group.fullPath}-${idx}`}
               full_path={group.fullPath}
               data={group.pertanyaan}
             />

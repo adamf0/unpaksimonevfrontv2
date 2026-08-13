@@ -50,9 +50,19 @@ export function useKuesionerReport() {
   const [summaryData, setSummaryData] = useState<ReportSummaryData | null>(null);
   const [loadingSummary, setLoadingSummary] = useState(false);
 
-  async function loadSummary(judul: string, kodeFakultas?: string | null, kodeProdi?: string | null) {
+  async function loadSummary(
+    judul: string,
+    kodeFakultas?: string | null,
+    kodeProdi?: string | null,
+    unit?: string | null,
+  ) {
     setLoadingSummary(true);
-    const res = await fetchAllReportSummaries(judul, kodeFakultas, kodeProdi);
+    const res = await fetchAllReportSummaries(
+      judul,
+      kodeFakultas,
+      kodeProdi,
+      unit,
+    );
     setSummaryData(res);
     setLoadingSummary(false);
     return res;
@@ -558,17 +568,24 @@ export function useKuesionerReport() {
           }
         } catch {}
 
+        const itemTitle = (f.unit && f.unit.trim() !== "") ? f.unit : (f.nama_fakultas || "Umum");
+
         if (!prodiArr.length) {
           prodiArr = [
             {
-              title: f.nama_fakultas,
+              title: itemTitle,
               total: f.total_responden,
             },
           ];
+        } else {
+          prodiArr = prodiArr.map((p: any) => ({
+            ...p,
+            title: (!p.title || p.title === "Umum") && f.unit ? f.unit : p.title,
+          }));
         }
 
         return {
-          title: f.nama_fakultas,
+          title: itemTitle,
           data: prodiArr,
         };
       });
@@ -598,7 +615,12 @@ export function useKuesionerReport() {
 
   const groupedByFullPath = useMemo(() => {
     if (summaryData?.kategori_summary?.length) {
-      return summaryData.kategori_summary.map((kat: any) => {
+      const uniqueMap = new Map<string, any>();
+
+      for (const kat of summaryData.kategori_summary) {
+        const fullPath = kat.full_text || kat.nama_kategori;
+        if (uniqueMap.has(fullPath)) continue;
+
         let qList: any[] = [];
         try {
           if (typeof kat.questions_json === "string") {
@@ -643,11 +665,13 @@ export function useKuesionerReport() {
           ];
         }
 
-        return {
-          fullPath: kat.full_text || kat.nama_kategori,
+        uniqueMap.set(fullPath, {
+          fullPath,
           pertanyaan,
-        };
-      });
+        });
+      }
+
+      return Array.from(uniqueMap.values());
     }
 
     if (!filteredDetail.length || !dataTemplate.length) return [];
