@@ -53,6 +53,7 @@ export type KuesionerReportContextType = {
     judul: string,
     kodeFakultas?: string | null,
     kodeProdi?: string | null,
+    unit?: string | null,
   ) => Promise<any>;
 };
 

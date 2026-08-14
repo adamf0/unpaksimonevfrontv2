@@ -7,4 +7,6 @@ export type FilterValue = {
   semester: Option | null;
   kode_fakultas?: string | null;
   kode_prodi?: string | null;
+  unit?: string | null;
+  unitObj?: Option | null;
 };
