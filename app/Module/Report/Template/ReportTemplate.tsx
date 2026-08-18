@@ -204,7 +204,6 @@ export default function ReportTemplate() {
                     query.kode_prodi,
                     (query as any).unit || null,
                   );
-                  handleReloadDetail();
                 }
               }}
             >
@@ -218,7 +217,6 @@ export default function ReportTemplate() {
                 if (query.bankSoal?.length) {
                   const selectedJudul = query.bankSoal[0].label;
                   await loadSummary(selectedJudul, null, null, null);
-                  handleReloadDetail();
                 }
               }}
               className="w-full py-2 rounded-lg border border-red-300 text-red-600 font-bold hover:bg-red-50 transition"
