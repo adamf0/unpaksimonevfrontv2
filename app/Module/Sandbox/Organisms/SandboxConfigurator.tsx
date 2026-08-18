@@ -137,8 +137,8 @@ export default function SandboxConfigurator({
 
         {/* TANGGAL SIMULASI (HARI INI) */}
         <div className="md:col-span-4 space-y-1.5">
-          <label className="text-xs font-bold text-on-surface flex items-center gap-1">
-            <span className="material-symbols-outlined text-sm text-amber-600">calendar_today</span>
+          <label className="text-xs text-on-surface flex items-center gap-1">
+            {/* <span className="material-symbols-outlined text-sm text-amber-600">calendar_today</span> */}
             Tanggal Simulasi Pengisian
           </label>
           <input
@@ -147,9 +147,9 @@ export default function SandboxConfigurator({
             onChange={(e) => onSimulationDateChange(e.target.value)}
             className="w-full bg-surface-container-low px-4 py-3 rounded-xl text-sm font-semibold text-on-surface focus:outline-none focus:ring-2 focus:ring-amber-500/40 border border-amber-500/20"
           />
-          <p className="text-[10px] text-outline italic">
+          {/* <p className="text-[10px] text-outline italic">
             Default: Tanggal hari ini ({new Date().toISOString().split("T")[0]})
-          </p>
+          </p> */}
         </div>
 
         {/* ROLE SELECTION */}
