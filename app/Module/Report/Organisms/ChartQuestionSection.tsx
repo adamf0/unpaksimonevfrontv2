@@ -44,65 +44,10 @@ export default function ChartQuestionSection({
     [questions]
   );
 
-  const nonRatingQuestions = useMemo(
-    () => questions.filter((q) => q.jenispilihan !== "rating"),
-    [questions]
-  );
-
-  const isRating = ratingQuestions.length > 0;
+  const hasRating = ratingQuestions.length > 0;
 
   // =========================
-  // PIE DATA (1 LOOP OPTIMIZED)
-  // =========================
-  const { mainData, otherData } = useMemo(() => {
-    const mainMap: Record<string, number> = {};
-    const otherMap: Record<string, number> = {};
-
-    const flat = nonRatingQuestions.flatMap((q) =>
-      (q.jawaban || []).map((j) => ({
-        label: j.label,
-        total: j.total,
-        data: j.data || [],
-      }))
-    );
-
-    for (const item of flat) {
-      const key = normalize(item.label);
-
-      if (key === "lainnya") {
-        const texts = item.data.map((d: any) =>
-          normalize(d.FreeText)
-        );
-
-        texts.forEach((text) => {
-          otherMap[text] =
-            (otherMap[text] || 0) + 1;
-        });
-      } else {
-        mainMap[key] =
-          (mainMap[key] || 0) + item.total;
-      }
-    }
-
-    return {
-      mainData: Object.entries(mainMap).map(
-        ([label, value]) => ({
-          label,
-          value,
-        })
-      ),
-
-      otherData: Object.entries(otherMap).map(
-        ([label, value]) => ({
-          label,
-          value,
-        })
-      ),
-    };
-  }, [nonRatingQuestions]);
-
-  // =========================
-  // AVG GLOBAL (UNCHANGED)
+  // AVG GLOBAL (RATING)
   // =========================
   const avgRating = useMemo(() => {
     let total = 0;
@@ -136,8 +81,6 @@ export default function ChartQuestionSection({
     );
   }
 
-  // console.log("full_path", full_path, "ratingQuestions",ratingQuestions)
-
   return (
     <section className="mb-10">
       {/* HEADER */}
@@ -155,18 +98,8 @@ export default function ChartQuestionSection({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* NON RATING */}
-        {!isRating && (
-          <PieChartCard
-            title="Distribusi Jawaban"
-            mainData={mainData}
-            otherData={otherData}
-          />
-        )}
-
-        {/* RATING */}
-        {isRating &&
-          ratingQuestions.map((q, idx) => {
+        {questions.map((q, idx) => {
+          if (q.jenispilihan === "rating") {
             const ratingData = [1, 2, 3, 4, 5].map((n) => {
               const found = q.jawaban?.find(
                 (j) => Number(j.label) === n
@@ -185,10 +118,45 @@ export default function ChartQuestionSection({
                 data={ratingData}
               />
             );
-          })}
+          } else {
+            const mainMap: Record<string, number> = {};
+            const otherMap: Record<string, number> = {};
 
-        {/* RINGKASAN */}
-        {isRating && (
+            (q.jawaban || []).forEach((j) => {
+              const key = j.label || "-";
+              if (normalize(key) === "lainnya") {
+                (j.data || []).forEach((d: any) => {
+                  const text = (d.FreeText || d.label || "").trim();
+                  if (text) otherMap[text] = (otherMap[text] || 0) + 1;
+                });
+              } else {
+                mainMap[key] = (mainMap[key] || 0) + (Number(j.total) || 0);
+              }
+            });
+
+            const mainData = Object.entries(mainMap).map(([label, value]) => ({
+              label,
+              value,
+            }));
+
+            const otherData = Object.entries(otherMap).map(([label, value]) => ({
+              label,
+              value,
+            }));
+
+            return (
+              <PieChartCard
+                key={idx}
+                title={q.title}
+                mainData={mainData}
+                otherData={otherData}
+              />
+            );
+          }
+        })}
+
+        {/* RINGKASAN RATING */}
+        {hasRating && (
           <div className="bg-surface-container-lowest rounded-[2rem] shadow-sm p-6">
             <h4 className="font-bold text-lg mb-5">
               Ringkasan Rating
