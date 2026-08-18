@@ -32,15 +32,9 @@ async function postForm<T>(
     if (judul) {
       formData.append("judul", judul);
     }
-    if (kodeFakultas) {
-      formData.append("kode_fakultas", kodeFakultas);
-    }
-    if (kodeProdi) {
-      formData.append("kode_prodi", kodeProdi);
-    }
-    if (unit) {
-      formData.append("unit", unit);
-    }
+    formData.append("kode_fakultas", kodeFakultas || "");
+    formData.append("kode_prodi", kodeProdi || "");
+    formData.append("unit", unit || "");
 
     const res = await fetch(`${BASE_URL}${endpoint}`, {
       method: "POST",
@@ -134,11 +128,18 @@ export async function fetchAllReportSummaries(
   };
 }
 
-export async function fetchReportSummary(
-  judul: string,
-  kodeFakultas?: string | null,
-  kodeProdi?: string | null,
-  unit?: string | null
-): Promise<ReportSummaryData | null> {
-  return fetchAllReportSummaries(judul, kodeFakultas, kodeProdi, unit);
+export async function fetchReportUnits(): Promise<string[] | null> {
+  try {
+    const res = await fetch(`${BASE_URL}/units`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${sessionStorage.getItem("access_token") || ""}`,
+      },
+    });
+    if (!res || !res.ok || typeof res.json !== "function") return null;
+    const result = await res.json();
+    return (result.data || result) as string[];
+  } catch {
+    return null;
+  }
 }

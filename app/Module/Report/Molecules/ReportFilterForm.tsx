@@ -11,7 +11,7 @@ type Props = {
 };
 
 export function ReportFilterForm({ value, onChange }: Props) {
-  const { dataFakultas, dataProdi } = useKuesionerReportContext();
+  const { dataFakultas, dataProdi, summaryData, dataDetail, dataUnits } = useKuesionerReportContext();
 
   /** =========================
    * SELECTED VALUE FROM QUERY
@@ -27,6 +27,13 @@ export function ReportFilterForm({ value, onChange }: Props) {
     ? {
         label: value.nama_prodi,
         value: value.kode_prodi ?? value.nama_prodi,
+      }
+    : null;
+
+  const selectedUnit = value.unit
+    ? {
+        label: value.unit,
+        value: value.unit,
       }
     : null;
 
@@ -68,6 +75,41 @@ export function ReportFilterForm({ value, onChange }: Props) {
     });
   }, [dataProdi, value.kode_fakultas, isAdmin]);
 
+  const unitOptions = useMemo(() => {
+    const set = new Set<string>();
+
+    if (Array.isArray(dataUnits)) {
+      dataUnits.forEach((u: string) => {
+        if (u && u.trim()) {
+          set.add(u.trim());
+        }
+      });
+    }
+
+    if (summaryData?.distribusi_fakultas) {
+      summaryData.distribusi_fakultas.forEach((item: any) => {
+        if (item.unit && item.unit.trim()) {
+          set.add(item.unit.trim());
+        }
+      });
+    }
+
+    if (dataDetail?.length) {
+      dataDetail.forEach((item: any) => {
+        if (item.Unit && item.Unit.trim()) {
+          set.add(item.Unit.trim());
+        }
+      });
+    }
+
+    return Array.from(set)
+      .sort((a, b) => a.localeCompare(b))
+      .map((u) => ({
+        label: u,
+        value: u,
+      }));
+  }, [dataUnits, summaryData, dataDetail]);
+
   return (
     <div className="space-y-4">
       {/* FAKULTAS */}
@@ -102,6 +144,21 @@ export function ReportFilterForm({ value, onChange }: Props) {
         }
         placeholder="Select prodi"
         options={prodiOptions}
+      />
+
+      {/* UNIT */}
+      <SelectField
+        label="Unit"
+        mode="single"
+        value={selectedUnit}
+        onChange={(val: any) =>
+          onChange({
+            ...value,
+            unit: val?.value ?? null,
+          })
+        }
+        placeholder="Select unit"
+        options={unitOptions}
       />
     </div>
   );

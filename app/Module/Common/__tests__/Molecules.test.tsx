@@ -238,7 +238,7 @@ describe("SelectDropdownItem Molecule", () => {
 
     expect(screen.getByText("Option One")).toBeDefined();
     const container = screen.getByText("Option One").closest(".cursor-pointer");
-    expect(container?.querySelector(".bg-primary")).not.toBeNull();
+    expect(container?.querySelector(".text-primary")).not.toBeNull();
     fireEvent.click(container!);
     expect(handleClick).toHaveBeenCalled();
   });

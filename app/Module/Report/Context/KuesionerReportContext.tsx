@@ -11,6 +11,7 @@ export type KuesionerReportContextType = {
   dataBankSoal: any[];
   dataFakultas: any[];
   dataProdi: any[];
+  dataUnits?: any[];
   dataTemplate: any[];
 
   loading: boolean;

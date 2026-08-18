@@ -8,7 +8,10 @@ export default function FilterButton({
   openFilter,
   disabled = false,
 }: any) {
-  const count = (query?.kode_fakultas ? 1 : 0) + (query?.kode_prodi ? 1 : 0);
+  const count =
+    (query?.kode_fakultas || query?.nama_fakultas ? 1 : 0) +
+    (query?.kode_prodi || query?.nama_prodi ? 1 : 0) +
+    (query?.unit ? 1 : 0);
 
   return (
     <button
@@ -31,18 +34,20 @@ export default function FilterButton({
     >
       <Filter size={20} />
 
-      <span
-        className="
-          absolute -top-1 -right-1
-          min-w-5 h-5 px-1
-          rounded-full bg-red-500
-          text-white text-xs
-          flex items-center justify-center
-          leading-none
-        "
-      >
-        {count}
-      </span>
+      {count > 0 && (
+        <span
+          className="
+            absolute -top-1 -right-1
+            min-w-5 h-5 px-1
+            rounded-full bg-red-500
+            text-white text-xs font-bold
+            flex items-center justify-center
+            leading-none
+          "
+        >
+          {count}
+        </span>
+      )}
     </button>
   );
 }

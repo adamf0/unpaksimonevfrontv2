@@ -4,7 +4,7 @@ import { useRef, useState, useMemo, useEffect } from "react";
 import { Payload } from "../Attribut/Payload";
 import { KuesionerResult } from "../Attribut/KuesionerResult";
 import { ReportSummaryData } from "../Attribut/ReportSummaryTypes";
-import { fetchAllReportSummaries } from "../Service/fetchReportSummary";
+import { fetchAllReportSummaries, fetchReportUnits } from "../Service/fetchReportSummary";
 import { handleCloudflareError } from "../../Common/Error/axiosErrorHandler";
 import { useToast } from "../../Common/Context/ToastContext";
 
@@ -481,18 +481,24 @@ export function useKuesionerReport() {
     return dataDetail.filter((item) => {
       const matchFakultas =
         !query.kode_fakultas ||
-        String(item.KodeFakultas) === String(query.kode_fakultas);
+        String(item.KodeFakultas).trim() === String(query.kode_fakultas).trim() ||
+        (query.nama_fakultas &&
+          String(item.Fakultas || "").trim().toLowerCase() ===
+            String(query.nama_fakultas).trim().toLowerCase());
 
       const matchProdi =
         !query.kode_prodi ||
-        String(item.KodeProdi) === String(query.kode_prodi);
+        String(item.KodeProdi).trim() === String(query.kode_prodi).trim() ||
+        (query.nama_prodi &&
+          String(item.Prodi || "").trim().toLowerCase() ===
+            String(query.nama_prodi).trim().toLowerCase());
 
       return matchFakultas && matchProdi;
     });
   }, [dataDetail, query]);
 
   const topQuestions = useMemo(() => {
-    if (summaryData?.top_questions?.length) {
+    if (summaryData?.top_questions) {
       return summaryData.top_questions.map((q: any) => ({
         title: q.pertanyaan,
         category: q.nama_kategori,
@@ -536,7 +542,7 @@ export function useKuesionerReport() {
       return [];
     }
 
-    if (summaryData?.kategori_summary?.length) {
+    if (summaryData?.kategori_summary) {
       const map: Record<string, Record<string, number>> = {};
       for (const item of summaryData.kategori_summary) {
         const sem = item.semester || "Unknown";
@@ -557,7 +563,7 @@ export function useKuesionerReport() {
   }, [summaryData, query.bankSoal]);
 
   const facultyStats = useMemo(() => {
-    if (summaryData?.distribusi_fakultas?.length) {
+    if (summaryData?.distribusi_fakultas) {
       return summaryData.distribusi_fakultas.map((f: any) => {
         let prodiArr: any[] = [];
         try {
@@ -614,7 +620,7 @@ export function useKuesionerReport() {
   }, [summaryData, filteredDetail]);
 
   const groupedByFullPath = useMemo(() => {
-    if (summaryData?.kategori_summary?.length) {
+    if (summaryData?.kategori_summary) {
       const uniqueMap = new Map<string, any>();
 
       for (const kat of summaryData.kategori_summary) {
@@ -758,11 +764,21 @@ export function useKuesionerReport() {
     });
   };
 
+  const [dataUnits, setDataUnits] = useState<string[]>([]);
+
+  async function loadUnits() {
+    const res = await fetchReportUnits();
+    if (res?.length) {
+      setDataUnits(res);
+    }
+  }
+
   useEffect(() => {
     loadDataFakultas();
     loadDataProdi();
     loadData();
     loadBankSoal();
+    loadUnits();
 
     return () => {
       esFakultasRef.current?.close();
@@ -789,6 +805,7 @@ export function useKuesionerReport() {
     dataBankSoal,
     dataFakultas,
     dataProdi,
+    dataUnits,
     dataTemplate,
 
     loading,

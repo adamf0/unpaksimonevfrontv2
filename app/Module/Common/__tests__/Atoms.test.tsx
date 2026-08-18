@@ -160,15 +160,14 @@ describe("ModalIcon Atom Component", () => {
 });
 
 describe("SelectOptionIndicator Atom Component", () => {
-  it("should render inner dot element when selected is true", () => {
+  it("should render check mark element when selected is true", () => {
     const { container } = render(<SelectOptionIndicator selected={true} />);
-    // container has outer div, which contains an inner dot div when selected
     const outerDiv = container.firstChild as HTMLElement;
     expect(outerDiv.firstChild).not.toBeNull();
-    expect((outerDiv.firstChild as HTMLElement).className).toContain("bg-primary");
+    expect((outerDiv.firstChild as HTMLElement).className).toContain("text-primary");
   });
 
-  it("should render empty border circle when selected is false", () => {
+  it("should render empty element when selected is false", () => {
     const { container } = render(<SelectOptionIndicator selected={false} />);
     const outerDiv = container.firstChild as HTMLElement;
     expect(outerDiv.firstChild).toBeNull();

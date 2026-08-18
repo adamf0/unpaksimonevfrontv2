@@ -4,8 +4,12 @@ export function SelectOptionIndicator({
   selected: boolean;
 }) {
   return (
-    <div className="w-4 h-4 rounded-full border flex items-center justify-center">
-      {selected && <div className="w-2 h-2 bg-primary rounded-full" />}
+    <div className="flex items-center justify-center">
+      {selected && (
+        <span className="material-symbols-outlined text-primary text-lg font-bold">
+          check
+        </span>
+      )}
     </div>
   );
 }

@@ -194,11 +194,17 @@ export default function ReportTemplate() {
           <div className="flex flex-col gap-2">
             <button
               className="w-full bg-primary text-white py-2 rounded-lg font-bold"
-              onClick={() => {
+              onClick={async () => {
                 closeFilter();
                 if (query.bankSoal?.length) {
                   const selectedJudul = query.bankSoal[0].label;
-                  loadSummary(selectedJudul, query.kode_fakultas, query.kode_prodi);
+                  await loadSummary(
+                    selectedJudul,
+                    query.kode_fakultas,
+                    query.kode_prodi,
+                    (query as any).unit || null,
+                  );
+                  handleReloadDetail();
                 }
               }}
             >
@@ -206,12 +212,13 @@ export default function ReportTemplate() {
             </button>
             <button
               type="button"
-              onClick={() => {
+              onClick={async () => {
                 resetFilters();
                 closeFilter();
                 if (query.bankSoal?.length) {
                   const selectedJudul = query.bankSoal[0].label;
-                  loadSummary(selectedJudul, null, null);
+                  await loadSummary(selectedJudul, null, null, null);
+                  handleReloadDetail();
                 }
               }}
               className="w-full py-2 rounded-lg border border-red-300 text-red-600 font-bold hover:bg-red-50 transition"
