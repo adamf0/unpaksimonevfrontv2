@@ -227,7 +227,7 @@ export function useTemplate() {
       setQuestionState((p) => ({
         ...p,
         data: scopedRows,
-        total: scopedRows.length,
+        total: res?.data?.total ?? scopedRows.length,
       }));
     } catch (error: any) {
       pushToast(error?.response?.data?.message || "Error");

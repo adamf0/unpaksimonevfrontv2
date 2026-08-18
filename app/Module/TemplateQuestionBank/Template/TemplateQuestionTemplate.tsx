@@ -200,7 +200,7 @@ export default function TemplateQuestionTemplate() {
           <Pagination
             currentPage={questionQuery.page}
             totalPages={
-              questionState.total < 0
+              questionState.total <= 0
                 ? 1
                 : Math.ceil(questionState.total / questionQuery.limit)
             }
