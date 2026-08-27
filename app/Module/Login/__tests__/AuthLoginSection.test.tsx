@@ -135,6 +135,12 @@ vi.mock("../../Common/Error/axiosErrorHandler", () => ({
   }),
 }));
 
+const mockStartSSOLogin = vi.fn();
+vi.mock("../../Common/Service/keycloak", () => ({
+  default: () => ({}),
+  startSSOLogin: (...args: any[]) => mockStartSSOLogin(...args),
+}));
+
 describe("AuthLoginSection Component", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -143,6 +149,17 @@ describe("AuthLoginSection Component", () => {
     if (typeof document !== "undefined") {
       document.cookie = "";
     }
+  });
+
+  it("should trigger keycloak login when clicking SSO Unpak button", async () => {
+    render(<AuthLoginSection />);
+
+    const ssoBtn = await screen.findByTestId("social-btn-sso-unpak");
+    fireEvent.click(ssoBtn);
+
+    expect(mockStartSSOLogin).toHaveBeenCalledWith(
+      expect.stringContaining("/callback_sso")
+    );
   });
 
   it("should render credentials input fields and submit button", async () => {

@@ -68,12 +68,58 @@ export default function AdminPanelTemplate({
     return pathname.startsWith("/template");
   }, [pathname]);
 
-  // reset otomatis saat pindah halaman
+  // reset otomatis saat pindah halaman & guard/sync token
   useEffect(() => {
     if (!isTemplatePage) {
       setMode("builder");
     }
-  }, [isTemplatePage]);
+
+    if (typeof window === "undefined") return;
+
+    let accessToken = sessionStorage.getItem("access_token");
+    let refreshToken = sessionStorage.getItem("refresh_token");
+
+    const getCookie = (name: string): string | null => {
+      const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+      return match && match[1] && match[1].trim() !== "" ? decodeURIComponent(match[1].trim()) : null;
+    };
+
+    const cookieAccess = getCookie("access_token");
+    const cookieRefresh = getCookie("refresh_token");
+    const cookieExp = getCookie("access_token_exp");
+
+    // Sinkronkan access_token dari Cookie ke sessionStorage jika belum ada
+    if (!accessToken) {
+      if (cookieAccess) {
+        accessToken = cookieAccess;
+        sessionStorage.setItem("access_token", cookieAccess);
+        const exp = cookieExp || getTokenExpiry(cookieAccess)?.toString();
+        if (exp) {
+          sessionStorage.setItem("access_token_exp", exp);
+        }
+      } else if (cookieRefresh) {
+        accessToken = cookieRefresh;
+        sessionStorage.setItem("access_token", cookieRefresh);
+        document.cookie = `access_token=${cookieRefresh}; path=/`;
+      }
+    }
+
+    // Sinkronkan refresh_token dari Cookie ke sessionStorage jika belum ada
+    if (!refreshToken && cookieRefresh) {
+      sessionStorage.setItem("refresh_token", cookieRefresh);
+    }
+
+    // ⛔ Jika tidak ada access_token maupun refresh_token di mana pun, tendang ke logout
+    const hasAnyToken = Boolean(accessToken || cookieAccess || cookieRefresh);
+    if (!hasAnyToken) {
+      console.warn("⛔ NO VALID ACCESS OR REFRESH TOKEN -> REDIRECT LOGOUT");
+      sessionStorage.clear();
+      document.cookie = "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      document.cookie = "refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      document.cookie = "access_token_exp=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      window.location.href = "/action/logout?r=Ex";
+    }
+  }, [isTemplatePage, pathname, router]);
 
   // =========================================
   // SIDEBAR
@@ -184,16 +230,20 @@ export default function AdminPanelTemplate({
   const hiddenMenus = ["Account", "Kategori"];
 
   const MENU_ITEMS: MenuItem[] = BASE_MENU_ITEMS.filter((item) => {
-    if (userProfile?.Level === "admin") return true;
-
+    const userLevel = (userProfile?.Level || "").toLowerCase();
     if (
-      userProfile?.Level === "fakultas" ||
-      userProfile?.Level === "prodi"
+      userLevel === "admin" ||
+      userLevel === "putik" ||
+      userLevel === "adm_simonev"
     ) {
+      return true;
+    }
+
+    if (userLevel === "fakultas" || userLevel === "prodi") {
       return !hiddenMenus.includes(item.label);
     }
 
-    return false;
+    return true;
   }).map((item) => ({
     ...item,
   }));

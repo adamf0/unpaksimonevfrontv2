@@ -83,14 +83,14 @@ describe("useTokenWatcher Hook", () => {
     vi.clearAllMocks();
   });
 
-  it("should do nothing if tokens are missing in sessionStorage", () => {
+  it("should redirect to logout if tokens are missing in sessionStorage", () => {
     render(<TokenWatcherTester />);
 
     act(() => {
       vi.advanceTimersByTime(1000);
     });
 
-    expect(mockLocation.href).toBe("");
+    expect(mockLocation.href).toBe("/action/logout?r=Ex");
   });
 
   it("should do nothing if token is not close to expiry", () => {
