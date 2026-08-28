@@ -17,6 +17,7 @@ type FormValues = {
   username: string;
   name: string;
   email: string;
+  password?: string;
   level: Option | null;
   fakultas: Option | null;
   prodi: Option | null;
@@ -33,6 +34,7 @@ export function CreateUserForm() {
     "username",
     "name",
     "email",
+    "password",
     "level",
     "fakultas",
     "prodi",
@@ -43,6 +45,7 @@ export function CreateUserForm() {
     username: "",
     name: "",
     email: "",
+    password: "",
     level: null,
     fakultas: null,
     prodi: null,
@@ -185,6 +188,7 @@ export function CreateUserForm() {
       username: currentUsername,
       name: state.selected.Name ?? "",
       email: state.selected.Email ?? "",
+      password: "",
 
       level: state.selected.Level
         ? {
@@ -237,7 +241,7 @@ export function CreateUserForm() {
       employee_id: finalEmpId,
       name: finalName,
       fullname: finalName,
-      password: "", // Not required for SSO mapping
+      password: data.password || "",
       email: data.email,
       level: data.level,
       fakultas: data.fakultas,
@@ -350,6 +354,16 @@ export function CreateUserForm() {
           },
         })}
         error={errors.email?.message}
+      />
+
+      {/* 5. Password */}
+      <InputField
+        id="password"
+        label="Password"
+        type="password"
+        placeholder="Masukkan password (opsional untuk SSO)"
+        register={register("password")}
+        error={errors.password?.message}
       />
 
       {/* 5. Level Akses Simonev */}
