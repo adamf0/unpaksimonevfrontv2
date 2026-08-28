@@ -287,6 +287,9 @@ export function useAccount() {
     const formData = new FormData();
 
     formData.append("username", data?.username ?? "");
+    if (data?.employee_id) {
+      formData.append("employee_id", data.employee_id);
+    }
     formData.append("password", data?.password ?? "");
     formData.append("level", data?.level?.value ?? "");
     formData.append("name", data?.name ?? "");

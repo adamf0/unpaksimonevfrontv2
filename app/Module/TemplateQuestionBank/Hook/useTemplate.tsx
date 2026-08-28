@@ -371,7 +371,7 @@ export function useTemplate() {
             data.Status == "delete" || !isEmpty(data?.DeletedAt)
               ? "deleted"
               : data.Status,
-          createdBy: data?.CreatedBy ?? "(LPM)",
+          createdBy: data?.CreatedBy ?? "",
           deletedtime: data?.DeletedAt,
         }
       : null;

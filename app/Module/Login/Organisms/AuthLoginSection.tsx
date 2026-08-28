@@ -303,7 +303,7 @@ export default function AuthLoginSection() {
               label="SSO Unpak"
               icon="account_balance"
               className="py-4 px-4 bg-surface-container-highest/50 border border-outline-variant/20 rounded-2xl hover:bg-surface-container-highest"
-              onClick={()=>{}} //handleSSOLogin
+              onClick={handleSSOLogin}
             />
           </div>
 

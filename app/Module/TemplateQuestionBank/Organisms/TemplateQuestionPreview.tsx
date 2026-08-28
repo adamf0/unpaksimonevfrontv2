@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 import QuestionerLayout from "../../Quesioner/Template/QuestionerLayout";
+import RatingScale from "../../Quesioner/Molecules/RatingScale";
 
 import { Question } from "../../Quesioner/Attribut/Question";
 import { AnswerState } from "../../Quesioner/Attribut/AnswerState";
@@ -228,7 +229,7 @@ export default function TemplateQuestionPreview() {
             <section key={group} className="space-y-10">
               {/* GROUP HEADER */}
               <header className="mb-4">
-                <h2 className="text-3xl md:text-4xl font-headline font-extrabold text-on-surface tracking-tight">
+                <h2 className="text-[clamp(1.25rem,3.5vw,2rem)] font-headline font-extrabold text-on-surface tracking-tight break-words">
                   {group}
                 </h2>
               </header>
@@ -242,7 +243,7 @@ export default function TemplateQuestionPreview() {
                       bg-surface
                       border border-outline-variant/20
                       rounded-3xl
-                      p-6 md:p-8
+                      p-[clamp(1rem,3vw,2rem)]
                       shadow-sm
                       transition-all
                     "
@@ -252,9 +253,9 @@ export default function TemplateQuestionPreview() {
                       <div className="flex items-start gap-4">
                         <div
                           className="
-                            min-w-10
-                            w-10
-                            h-10
+                            min-w-9
+                            w-9
+                            h-9
                             rounded-2xl
                             bg-primary
                             text-white
@@ -263,18 +264,20 @@ export default function TemplateQuestionPreview() {
                             justify-center
                             font-bold
                             shadow-lg
+                            shrink-0
                           "
                         >
                           {index + 1}
                         </div>
 
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           <h3
                             className="
-                              text-lg md:text-xl
+                              text-[clamp(0.875rem,2vw,1.125rem)]
                               font-bold
                               text-on-surface
-                              leading-relaxed
+                              leading-snug
+                              break-words
                             "
                           >
                             {q.pertanyaan}
@@ -291,47 +294,15 @@ export default function TemplateQuestionPreview() {
 
                     {/* RATING */}
                     {q.tipe === "rating" && (
-                      <div className="grid grid-cols-5 gap-3">
-                        {q.pilihan.map((opt) => {
-                          const active = isSelected(q.uuid, opt, "rating");
-
-                          return (
-                            <button
-                              type="button"
-                              key={opt.value}
-                              onClick={() => handleRadio(q.uuid, opt)}
-                              className={`
-                                h-16
-                                rounded-2xl
-                                border
-                                font-bold
-                                text-lg
-                                transition-all
-                                duration-200
-                                ${
-                                  active
-                                    ? `
-                                      bg-primary
-                                      text-white
-                                      border-primary
-                                      shadow-xl
-                                      scale-[1.03]
-                                    `
-                                    : `
-                                      bg-surface-container-low
-                                      border-outline-variant/30
-                                      hover:border-primary
-                                      hover:bg-primary/5
-                                      hover:scale-[1.02]
-                                    `
-                                }
-                              `}
-                            >
-                              {opt.label}
-                            </button>
-                          );
-                        })}
-                      </div>
+                      <RatingScale
+                        options={q.pilihan}
+                        value={
+                          q.pilihan.find((opt) => isSelected(q.uuid, opt, "rating"))?.value
+                        }
+                        onChange={(_, opt) => {
+                          if (opt) handleRadio(q.uuid, opt as Option);
+                        }}
+                      />
                     )}
 
                     {/* RADIO */}
@@ -484,14 +455,15 @@ export default function TemplateQuestionPreview() {
             type="submit"
             className="
               w-full
-              py-5
+              py-[clamp(0.75rem,1.5vw,1rem)]
+              px-[clamp(1rem,2vw,1.5rem)]
               rounded-2xl
               bg-gradient-to-r
               from-primary
               to-primary-container
               text-on-primary
               font-bold
-              text-lg
+              text-[clamp(0.85rem,1.8vw,1rem)]
               shadow-2xl
               hover:scale-[1.01]
               active:scale-[0.99]

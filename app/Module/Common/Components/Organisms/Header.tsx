@@ -17,35 +17,46 @@ export default function Header({
   user,
 }: HeaderProps) {
   return (
-    <header className="sticky top-0 z-30 flex flex-wrap items-center w-full px-4 sm:px-6 lg:px-8 py-3 sm:py-4 bg-[#f9f5ff]/80 backdrop-blur-xl shadow-[0_12px_32px_-4px_rgba(44,42,81,0.06)] gap-y-2">
-      
-      {/* LEFT */}
-      <div className="flex items-center min-w-0 flex-1">
+    <header className="sticky top-0 z-30 flex items-center justify-between w-full px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3.5 bg-[#f9f5ff]/85 backdrop-blur-xl border-b border-outline-variant/10 shadow-[0_8px_24px_-4px_rgba(44,42,81,0.05)] gap-4">
+      {/* LEFT: HAMBURGER TOGGLE BUTTON & TITLE */}
+      <div className="flex items-center gap-3 min-w-0">
         <button
+          type="button"
           onClick={onToggleSidebar}
-          className="md:hidden p-2 rounded-lg hover:bg-slate-100 flex-shrink-0"
+          aria-label="Buka Menu Navigasi"
+          className="md:hidden flex items-center justify-center min-w-[44px] min-h-[44px] p-2.5 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 active:scale-95 border border-primary/20 shadow-sm transition-all shrink-0 cursor-pointer"
         >
-          <Icon name="menu" className="pointer-events-none" />
+          <Icon name="menu" className="text-xl pointer-events-none" />
         </button>
 
-        <h1 className="editorial-headline text-lg sm:text-xl lg:text-2xl font-extrabold text-on-surface truncate">
-          {title}
-        </h1>
+        {title ? (
+          <h1 className="editorial-headline text-base sm:text-xl font-extrabold text-on-surface truncate">
+            {title}
+          </h1>
+        ) : (
+          <div className="hidden sm:flex items-center gap-2">
+            <span className="text-xs sm:text-sm font-bold text-outline">Simonev Admin Portal</span>
+          </div>
+        )}
       </div>
 
-      {/* RIGHT */}
-      <div className="flex items-center gap-3 flex-shrink-0 ml-auto w-full sm:w-auto pl-10 sm:pl-0">
-        <div className="hidden sm:block h-8 w-px bg-outline-variant/30"></div>
+      {/* RIGHT: USER PROFILE & MOBILE TOGGLE */}
+      <button
+        type="button"
+        onClick={onToggleSidebar}
+        className="flex items-center gap-3 p-1.5 sm:p-0 rounded-2xl hover:bg-black/5 md:hover:bg-transparent transition-all text-left sm:text-right shrink-0 cursor-pointer md:cursor-default"
+      >
+        <div className="hidden sm:block h-7 w-px bg-outline-variant/30"></div>
 
-        <div className="text-left sm:text-right leading-tight w-full">
-          <p className="text-xs sm:text-sm font-bold text-on-surface">
-            {user?.name ?? "NA"}
+        <div className="leading-tight">
+          <p className="text-xs sm:text-sm font-extrabold text-on-surface truncate max-w-[160px] sm:max-w-[240px]">
+            {user?.name ?? "N/A"}
           </p>
-          <p className="text-[9px] sm:text-[10px] uppercase tracking-wider text-outline">
+          <span className="inline-block text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-md mt-0.5">
             {user?.role ?? "-"}
-          </p>
+          </span>
         </div>
-      </div>
+      </button>
     </header>
   );
 }

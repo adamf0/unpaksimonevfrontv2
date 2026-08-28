@@ -1,6 +1,7 @@
 export type FormValues = {
   username: string;
-  password: string|null;
+  employee_id?: string | null;
+  password: string | null;
   level: any;
   name: string;
   email: string | null;

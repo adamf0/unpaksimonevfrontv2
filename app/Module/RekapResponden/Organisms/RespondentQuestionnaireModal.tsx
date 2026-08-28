@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { RekapRespondenItem } from "../Attribut/RekapRespondenTypes";
 import QuestionerLayout from "../../Quesioner/Template/QuestionerLayout";
+import RatingScale from "../../Quesioner/Molecules/RatingScale";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -490,27 +491,16 @@ export default function RespondentQuestionnaireModal({ item, onClose }: Props) {
                               </div>
                             </div>
 
-                            {/* RATING SCALE CHOICE (5, 4, 3, 2, 1) */}
+                            {/* RATING SCALE CHOICE */}
                             {q.tipe === "rating" ? (
-                              <div className="flex flex-wrap items-center gap-3 pt-2">
-                                {q.pilihan.map((opt) => {
-                                  const isSelected = selectedOpts.has(opt.value);
-                                  const displayVal = opt.nilai ?? opt.label;
-
-                                  return (
-                                    <div
-                                      key={opt.value}
-                                      title={opt.label}
-                                      className={`flex-1 min-w-[50px] max-w-[80px] h-14 rounded-2xl flex flex-col items-center justify-center text-base font-extrabold border transition-all ${
-                                        isSelected
-                                          ? "bg-primary text-white border-primary shadow-md scale-105"
-                                          : "bg-surface-container-low border-outline-variant/20 text-on-surface-variant opacity-60"
-                                      }`}
-                                    >
-                                      <span>{displayVal}</span>
-                                    </div>
-                                  );
-                                })}
+                              <div className="pt-2">
+                                <RatingScale
+                                  options={q.pilihan}
+                                  value={
+                                    q.pilihan.find((opt) => selectedOpts.has(opt.value))?.value
+                                  }
+                                  readOnly
+                                />
                               </div>
                             ) : q.pilihan.length > 0 ? (
                               /* RADIO / MULTIPLE CHOICES LIST */

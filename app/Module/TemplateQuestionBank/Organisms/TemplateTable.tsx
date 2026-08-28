@@ -47,7 +47,7 @@ export function TemplateTable({
         item.Status == "delete" || !isEmpty(item?.DeletedAt)
           ? "deleted"
           : item.Status,
-      createdBy: item?.CreatedBy ?? "(LPM)",
+      createdBy: item?.CreatedBy ?? "",
       deletedtime: item?.DeletedAt,
     };
   });

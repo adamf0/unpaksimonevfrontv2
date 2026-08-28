@@ -1,7 +1,7 @@
 "use client";
 
 import { useForm, Controller } from "react-hook-form";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AnimatedButton from "../../Common/Components/Molecules/AnimatedButton";
 import { InputField } from "../../Common/Components/Molecules/InputField";
 import { SelectField } from "../../Common/Components/Organisms/SelectField";
@@ -10,12 +10,12 @@ import { useAccountContext } from "../Context/AccountProvider";
 import { useToast } from "../../Common/Context/ToastContext";
 import { handleCloudflareError } from "../../Common/Error/axiosErrorHandler";
 import { adaptSelectOptions } from "../Adapter/adaptSelectOptions";
+import apiCall from "../../Common/External/APICall";
 
 type FormValues = {
-  name: string;
+  selectedLdap: Option | null;
   username: string;
-  password: string;
-  fullname: string;
+  name: string;
   email: string;
   level: Option | null;
   fakultas: Option | null;
@@ -25,11 +25,13 @@ type FormValues = {
 export function CreateUserForm() {
   const { state, actionAccount, setState, loadData } = useAccountContext();
   const { pushToast } = useToast();
+
+  const [ldapOptions, setLdapOptions] = useState<Option[]>([]);
+  const [loadingLdap, setLoadingLdap] = useState(false);
+
   const allowedFields = [
-    "name",
     "username",
-    "password",
-    "fullname",
+    "name",
     "email",
     "level",
     "fakultas",
@@ -37,10 +39,9 @@ export function CreateUserForm() {
   ];
 
   const defaultFormValues: FormValues = {
-    name: "",
+    selectedLdap: null,
     username: "",
-    password: "",
-    fullname: "",
+    name: "",
     email: "",
     level: null,
     fakultas: null,
@@ -52,6 +53,7 @@ export function CreateUserForm() {
     control,
     handleSubmit,
     watch,
+    setValue,
     resetField,
     reset,
     setError,
@@ -59,6 +61,43 @@ export function CreateUserForm() {
   } = useForm<FormValues>({
     defaultValues: defaultFormValues,
   });
+
+  // Load LDAP Accounts for Selection
+  useEffect(() => {
+    let isMounted = true;
+    setLoadingLdap(true);
+
+    apiCall
+      .get("/accounts/ldap", {
+        headers: {
+          Authorization: `Bearer ${sessionStorage.getItem("access_token")}`,
+        },
+      })
+      .then((res) => {
+        if (!isMounted) return;
+        const list = res.data?.data || [];
+        const opts: Option[] = list.map((item: any) => {
+          const idLabel = item.employee_id || item.username;
+          const groupInfo = item.matched_group ? ` [${item.matched_group}]` : "";
+          return {
+            label: `${item.name || item.username} (${idLabel})${groupInfo}`,
+            value: item.username || item.employee_id,
+            raw: item,
+          };
+        });
+        setLdapOptions(opts);
+      })
+      .catch((err) => {
+        console.warn("Failed to load LDAP accounts", err);
+      })
+      .finally(() => {
+        if (isMounted) setLoadingLdap(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const selectedLevel = watch("level");
   const selectedFakultas = watch("fakultas");
@@ -87,13 +126,8 @@ export function CreateUserForm() {
 
   const prodiOptions = useMemo(() => {
     const raw = state.sourceProdi ?? [];
-
-    // ambil kode fakultas terpilih
     const kodeFakultas = selectedFakultas?.value;
 
-    // kalau belum pilih fakultas:
-    // - admin tampilkan semua
-    // - fakultas/prodi kosongkan dulu
     if (!kodeFakultas) {
       if (isAdmin) {
         return adaptSelectOptions(raw, {
@@ -101,14 +135,12 @@ export function CreateUserForm() {
           labelKey: "NamaProdi",
         });
       }
-
       return [];
     }
 
-    // filter sesuai fakultas terpilih
     const filtered = raw.filter(
       (item: any) =>
-        String(item.KodeFakultas).trim() === String(kodeFakultas).trim(),
+        String(item.KodeFakultas).trim() === String(kodeFakultas).trim()
     );
 
     return adaptSelectOptions(filtered, {
@@ -117,14 +149,41 @@ export function CreateUserForm() {
     });
   }, [state.sourceProdi, selectedFakultas, isAdmin]);
 
+  // Handle Edit Mode Populate
   useEffect(() => {
     if (!state.selected) return;
 
+    const currentEmpId =
+      state.selected.EmployeeID ??
+      state.selected.employee_id ??
+      state.selected.Username ??
+      "";
+    const currentUsername = state.selected.Username ?? "";
+
+    // Cari opsi LDAP yang cocok berdasarkan employee_id terlebih dahulu
+    const matchedLdapOpt = ldapOptions.find((o) => {
+      const raw = (o as any).raw || {};
+      return (
+        (currentEmpId && (raw.employee_id === currentEmpId || o.value === currentEmpId)) ||
+        (currentUsername && (raw.username === currentUsername || o.value === currentUsername))
+      );
+    });
+
+    const initialLdapOpt =
+      matchedLdapOpt ||
+      (currentEmpId
+        ? {
+            label: state.selected.Name
+              ? `${state.selected.Name} (${currentEmpId})`
+              : currentEmpId,
+            value: currentEmpId,
+          }
+        : null);
+
     reset({
+      selectedLdap: initialLdapOpt,
+      username: currentUsername,
       name: state.selected.Name ?? "",
-      username: state.selected.Username ?? "",
-      password: "",
-      fullname: state.selected.Name ?? "",
       email: state.selected.Email ?? "",
 
       level: state.selected.Level
@@ -138,7 +197,7 @@ export function CreateUserForm() {
 
       fakultas: state.selected.RefFakultas
         ? {
-            label: state.selected.Fakultas ?? "",
+            label: state.selected.Fakultas ?? state.selected.RefFakultas,
             value: state.selected.RefFakultas,
           }
         : null,
@@ -150,22 +209,51 @@ export function CreateUserForm() {
           }
         : null,
     });
-  }, [state.selected, reset]);
+  }, [state.selected, ldapOptions, reset]);
+
+  const handleLdapSelect = (opt: Option | null) => {
+    setValue("selectedLdap", opt);
+    if (opt) {
+      const raw = (opt as any).raw || {};
+      const uname = raw.username || raw.employee_id || opt.value;
+      const fullname = raw.name || opt.label.split(" (")[0] || uname;
+      const mail = raw.email || "";
+
+      setValue("username", uname);
+      setValue("name", fullname);
+      setValue("email", mail);
+    }
+  };
 
   const onSubmit = async (data: FormValues) => {
-    console.log("FORM DATA:", data);
+    const finalUsername = data.username || data.selectedLdap?.value || "";
+    const rawLdap = (data.selectedLdap as any)?.raw || {};
+    const finalEmpId =
+      rawLdap.employee_id || data.selectedLdap?.value || rawLdap.username || "";
+    const finalName = data.name || data.selectedLdap?.label || finalUsername;
+
+    const payload: any = {
+      username: finalUsername,
+      employee_id: finalEmpId,
+      name: finalName,
+      fullname: finalName,
+      password: "", // Not required for SSO mapping
+      email: data.email,
+      level: data.level,
+      fakultas: data.fakultas,
+      prodi: data.prodi,
+    };
 
     try {
-      const uuid = await actionAccount(
+      await actionAccount(
         state?.selected?.UUID,
-        data,
-        state?.selected ? "update" : "create",
+        payload,
+        state?.selected ? "update" : "create"
       );
-      pushToast("Berhasil simpan");
+      pushToast("Berhasil menyimpan pemetaan akun SSO");
 
       reset(defaultFormValues);
 
-      // hapus selected mode edit -> kembali create
       if (state?.selected) {
         setState((prev: any) => ({
           ...prev,
@@ -175,10 +263,10 @@ export function CreateUserForm() {
     } catch (error: any) {
       if (!error.response) return pushToast("Server error");
 
-      const { status, data } = error.response;
+      const { status, data: errData } = error.response;
 
-      if (data?.code?.endsWith(".Validation")) {
-        const messages = data.message;
+      if (errData?.code?.endsWith(".Validation")) {
+        const messages = errData.message;
 
         Object.keys(messages).forEach((field) => {
           if (!allowedFields.includes(field)) return;
@@ -195,7 +283,7 @@ export function CreateUserForm() {
       const cf = handleCloudflareError(status);
       if (cf) return pushToast(cf);
 
-      pushToast(data?.message || "Error");
+      pushToast(errData?.message || "Error");
     }
 
     await loadData();
@@ -204,62 +292,57 @@ export function CreateUserForm() {
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="grid grid-cols-1 md:grid-cols-2 gap-6"
+      className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-surface-container-lowest p-6"
     >
-      {/* Name */}
-      <InputField
-        id="name"
-        label="name"
-        placeholder="Enter name"
-        register={register("name", {
-          required: "Name wajib diisi",
-        })}
-        error={errors.username?.message}
+      {/* 1. Akun SSO LDAP Selector (Opsional) */}
+      <Controller
+        control={control}
+        name="selectedLdap"
+        render={({ field }) => (
+          <div className="col-span-1 md:col-span-2">
+            <SelectField
+              label="Akun SSO LDAP"
+              mode="single"
+              value={field.value}
+              onChange={(val) => {
+                field.onChange(val);
+                handleLdapSelect(val as Option | null);
+              }}
+              placeholder={loadingLdap ? "Loading LDAP accounts..." : "Cari/Pilih Akun SSO LDAP (Opsional)..."}
+              options={ldapOptions}
+            />
+          </div>
+        )}
       />
 
-      {/* Username */}
+      {/* 2. Username */}
       <InputField
         id="username"
         label="Username"
-        placeholder="Enter username"
+        placeholder="Enter username (auto-filled from LDAP)"
         register={register("username", {
           required: "Username wajib diisi",
         })}
         error={errors.username?.message}
       />
 
-      {/* Password */}
+      {/* 3. Full Name */}
       <InputField
-        id="password"
-        label="Password"
-        type="password"
-        register={register(
-          "password",
-          !state.selected
-            ? {
-                required: "Password wajib diisi",
-              }
-            : {},
-        )}
-        error={errors.password?.message}
-      />
-
-      {/* Full Name */}
-      <InputField
-        id="fullname"
+        id="name"
         label="Full Name"
-        placeholder="e.g. Kevin"
-        register={register("fullname", {
+        placeholder="Nama lengkap dari LDAP"
+        register={register("name", {
           required: "Nama wajib diisi",
         })}
-        error={errors.fullname?.message}
+        error={errors.name?.message}
       />
 
-      {/* Email */}
+      {/* 4. Email Address */}
       <InputField
         id="email"
         label="Email Address"
         type="email"
+        placeholder="Email dari LDAP"
         register={register("email", {
           pattern: {
             value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
@@ -269,7 +352,7 @@ export function CreateUserForm() {
         error={errors.email?.message}
       />
 
-      {/* Level */}
+      {/* 5. Level Akses Simonev */}
       <Controller
         control={control}
         name="level"
@@ -277,11 +360,11 @@ export function CreateUserForm() {
         render={({ field }) => (
           <div>
             <SelectField
-              label="Level"
+              label="Level Akses Simonev"
               mode="single"
               value={field.value}
               onChange={field.onChange}
-              placeholder="Select level"
+              placeholder="Pilih Level (Admin / Fakultas / Prodi)"
               options={[
                 { label: "Admin", value: "admin" },
                 { label: "Fakultas", value: "fakultas" },
@@ -298,24 +381,24 @@ export function CreateUserForm() {
         )}
       />
 
-      {/* Fakultas */}
+      {/* 6. Fakultas (Skop Akses) */}
       <Controller
         control={control}
         name="fakultas"
         rules={{
           validate: (val) => {
-            if (!isAdmin && !val) return "Fakultas wajib dipilih";
+            if ((isFakultas || isProdi) && !val) return "Fakultas wajib dipilih";
             return true;
           },
         }}
         render={({ field }) => (
           <div>
             <SelectField
-              label="Fakultas"
+              label="Fakultas (Skop Akses)"
               mode="single"
               value={field.value}
               onChange={field.onChange}
-              placeholder="Select fakultas"
+              placeholder="Pilih Fakultas"
               options={fakultasOptions}
             />
 
@@ -328,7 +411,7 @@ export function CreateUserForm() {
         )}
       />
 
-      {/* Prodi */}
+      {/* 7. Program Studi (Skop Akses) */}
       <Controller
         control={control}
         name="prodi"
@@ -341,11 +424,11 @@ export function CreateUserForm() {
         render={({ field }) => (
           <div>
             <SelectField
-              label="Prodi"
+              label="Program Studi (Skop Akses)"
               mode="single"
               value={field.value}
               onChange={field.onChange}
-              placeholder="Select prodi"
+              placeholder="Pilih Prodi"
               options={prodiOptions}
             />
 
@@ -379,7 +462,7 @@ export function CreateUserForm() {
           className="w-full bg-gradient-to-r from-primary to-primary-container text-on-primary font-bold py-4 rounded-xl hover:scale-[1.02] transition-transform"
           icon=""
         >
-          {state.selected ? "Update Account" : "Register New Account"}
+          {state.selected ? "Update Account" : "Map SSO Account"}
         </AnimatedButton>
       </div>
     </form>

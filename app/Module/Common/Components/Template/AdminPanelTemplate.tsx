@@ -315,7 +315,7 @@ export default function AdminPanelTemplate({
             }}
           />
 
-          <div className={mode=="preview"? "max-w-7xl":"py-8 max-w-7xl mx-12 space-y-10"}>
+          <div className={mode=="preview"? "max-w-7xl":"py-8 max-w-7xl sm:mx-12 space-y-10"}>
             {children}
           </div>
         </main>

@@ -52,19 +52,19 @@ export default function SandboxTemplate() {
   } = useSandbox();
 
   return (
-    <div className="min-h-screen p-4 sm:p-6 lg:p-8 space-y-6 max-w-[1400px] mx-auto">
+    <div className="min-h-screen p-[clamp(0.75rem,3vw,2rem)] space-y-[clamp(1rem,2.5vw,1.5rem)] max-w-[1400px] mx-auto">
       {/* PAGE TITLE */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-[clamp(0.5rem,1.5vw,1rem)]">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-black text-on-surface tracking-tight">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-[clamp(1.25rem,4vw,1.875rem)] font-black text-on-surface tracking-tight leading-tight">
               Sandbox Simulasi Kuesioner
             </h1>
-            <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase bg-amber-500 text-white shadow-sm">
+            <span className="px-2.5 py-1 rounded-full text-[clamp(0.6rem,1vw,0.65rem)] font-black uppercase bg-amber-500 text-white shadow-sm shrink-0">
               DRY RUN MODE
             </span>
           </div>
-          <p className="text-sm text-outline font-medium mt-1">
+          <p className="text-[clamp(0.75rem,1.5vw,0.875rem)] text-outline font-medium mt-1 leading-relaxed">
             Lakukan simulasi pengisian instrumen kuesioner terhadap mahasiswa, dosen, atau tendik tanpa menyimpan ke database
           </p>
         </div>

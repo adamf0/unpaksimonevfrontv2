@@ -25,6 +25,28 @@ vi.mock("../../Common/Context/ToastContext", () => ({
   }),
 }));
 
+vi.mock("../../Common/External/APICall", () => ({
+  default: {
+    get: vi.fn().mockResolvedValue({
+      data: {
+        data: [
+          {
+            dn: "CN=Jane,OU=Accounts",
+            username: "janedoe",
+            name: "Jane Doe",
+            email: "jane@unpak.ac.id",
+            employee_id: "4102309999",
+            matched_group: "adm_pusat",
+          },
+        ],
+      },
+    }),
+    post: vi.fn(),
+    put: vi.fn(),
+    delete: vi.fn(),
+  },
+}));
+
 vi.mock("../../Common/Components/Molecules/InputField", () => ({
   InputField: ({ id, label, value, onChange, register, error, type }: any) => (
     <div>
@@ -44,10 +66,10 @@ vi.mock("../../Common/Components/Molecules/InputField", () => ({
 
 vi.mock("../../Common/Components/Organisms/SelectField", () => ({
   SelectField: ({ label, value, onChange, options, placeholder }: any) => (
-    <div data-testid={`select-${label.toLowerCase().replace(/\s+/g, "-")}`}>
+    <div data-testid={`select-${label.toLowerCase().replace(/[^a-z0-9]/g, "-")}`}>
       <label>{label}</label>
       <select
-        data-testid={`select-el-${label.toLowerCase().replace(/\s+/g, "-")}`}
+        data-testid={`select-el-${label.toLowerCase().replace(/[^a-z0-9]/g, "-")}`}
         value={value?.value ?? ""}
         onChange={(e) => {
           const selected = options.find((opt: any) => opt.value === e.target.value);
@@ -75,27 +97,22 @@ describe("CreateUserForm Component", () => {
     mockContextValue.state.selected = null;
   });
 
-  it("should validate and submit user details successfully", async () => {
+  it("should validate and submit user SSO mapping details successfully", async () => {
     const user = userEvent.setup();
     mockContextValue.actionAccount.mockResolvedValueOnce("new-user-uuid");
 
     render(<CreateUserForm />);
 
-    const nameInput = screen.getByTestId("input-name");
-    const usernameInput = screen.getByTestId("input-username");
-    const passwordInput = screen.getByTestId("input-password");
-    const fullnameInput = screen.getByTestId("input-fullname");
-    const levelSelect = screen.getByTestId("select-el-level");
+    const ldapSelect = await screen.findByTestId("select-el-akun-sso-ldap");
+    const levelSelect = screen.getByTestId("select-el-level-akses-simonev");
 
-    await user.type(nameInput, "Jane Doe");
-    await user.type(usernameInput, "janedoe");
-    await user.type(passwordInput, "secure123");
-    await user.type(fullnameInput, "Jane Doe M.Si");
+    // Select LDAP account
+    fireEvent.change(ldapSelect, { target: { value: "janedoe" } });
 
-    // Select admin role
+    // Select admin level
     fireEvent.change(levelSelect, { target: { value: "admin" } });
 
-    const submitBtn = screen.getByRole("button", { name: /Register New Account/i });
+    const submitBtn = screen.getByRole("button", { name: /Map SSO Account/i });
     await user.click(submitBtn);
 
     await waitFor(() => {
@@ -103,17 +120,16 @@ describe("CreateUserForm Component", () => {
         undefined,
         expect.objectContaining({
           username: "janedoe",
-          password: "secure123",
         }),
         "create"
       );
     });
   });
 
-  it("should show validations if passwords and levels are missing", async () => {
+  it("should show validations if level is missing", async () => {
     render(<CreateUserForm />);
 
-    const submitBtn = screen.getByRole("button", { name: /Register New/i });
+    const submitBtn = screen.getByRole("button", { name: /Map SSO Account/i });
     fireEvent.click(submitBtn);
 
     expect(await screen.findByText("Level wajib dipilih")).toBeInTheDocument();

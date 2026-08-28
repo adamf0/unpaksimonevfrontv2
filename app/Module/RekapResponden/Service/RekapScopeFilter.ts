@@ -46,52 +46,68 @@ export function isRespondentInUserScope(
 
   const level = String(userProfile.Level || "admin").toLowerCase().trim();
 
-  // Admin sees all respondents
-  if (level === "admin") return true;
+  // Admin level sees all respondents
+  const isAdmin =
+    level === "admin" ||
+    level === "superadmin" ||
+    level === "adm_pusat" ||
+    level === "adm_simonev" ||
+    level === "putik" ||
+    level === "rektorat";
 
-  const userFak = getNormalizedFaculty(
-    userProfile.RefFakultas || userProfile.Fakultas,
-    fakultasList,
-  );
+  if (isAdmin) return true;
 
-  const respFak = getNormalizedFaculty(
-    respondent.Fakultas || respondent.KodeFakultas,
-    fakultasList,
-  );
+  // Extract all codes & names for user (support comma-separated multiple codes)
+  const extractTokens = (strVal?: string | null) => {
+    if (!strVal) return [];
+    return String(strVal)
+      .split(",")
+      .map((s) => s.toLowerCase().trim())
+      .filter(Boolean);
+  };
 
-  const userProdi = String(
-    userProfile.RefProdi || userProfile.Prodi || "",
-  )
-    .toLowerCase()
-    .trim();
+  const userFakTokens = [
+    ...extractTokens(userProfile.RefFakultas),
+    ...extractTokens(userProfile.Fakultas),
+  ];
 
-  const respProdi = String(
-    respondent.Prodi || respondent.KodeProdi || "",
-  )
-    .toLowerCase()
-    .trim();
+  const respFakTokens = [
+    ...extractTokens(respondent.KodeFakultas),
+    ...extractTokens(respondent.Fakultas),
+  ];
 
-  // FAKULTAS ROLE: Only respondents matching logged-in user's faculty
-  if (level === "fakultas") {
-    if (!userFak) return true;
-    return respFak !== "" && (respFak.includes(userFak) || userFak.includes(respFak));
+  const userProdiTokens = [
+    ...extractTokens(userProfile.RefProdi),
+    ...extractTokens(userProfile.Prodi),
+  ];
+
+  const respProdiTokens = [
+    ...extractTokens(respondent.KodeProdi),
+    ...extractTokens(respondent.Prodi),
+  ];
+
+  const matchesAny = (userTokens: string[], respTokens: string[]) => {
+    if (userTokens.length === 0 || respTokens.length === 0) return true;
+    for (const u of userTokens) {
+      for (const r of respTokens) {
+        if (u === r || u.includes(r) || r.includes(u)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  const isFakLevel = level === "fakultas" || level === "adm_simonev_fakultas";
+  if (isFakLevel) {
+    return matchesAny(userFakTokens, respFakTokens);
   }
 
-  // PRODI ROLE: Only respondents matching logged-in user's prodi (and faculty)
-  if (level === "prodi") {
-    let fakMatch = true;
-    if (userFak) {
-      fakMatch = respFak !== "" && (respFak.includes(userFak) || userFak.includes(respFak));
-    }
-
-    let prodiMatch = true;
-    if (userProdi) {
-      prodiMatch =
-        respProdi !== "" &&
-        (respProdi.includes(userProdi) || userProdi.includes(respProdi));
-    }
-
-    return fakMatch && prodiMatch;
+  const isProdiLevel = level === "prodi" || level === "adm_simonev_prodi";
+  if (isProdiLevel) {
+    const fakOk = matchesAny(userFakTokens, respFakTokens);
+    const prodiOk = matchesAny(userProdiTokens, respProdiTokens);
+    return fakOk && prodiOk;
   }
 
   return true;

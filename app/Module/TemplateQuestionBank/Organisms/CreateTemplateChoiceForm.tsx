@@ -283,11 +283,11 @@ export default function CreateTemplateChoiceForm({
       </div>
 
       {/* ACTIONS */}
-      <div className="mt-8 flex gap-2 justify-end">
+      <div className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 justify-end">
         <AnimatedButton
           type="submit"
           disabled={formState.isSubmitting}
-          className="bg-gradient-to-br from-primary to-primary-container text-on-primary px-8 py-3 rounded-xl font-bold shadow-lg hover:scale-[1.02]"
+          className="w-full sm:w-auto px-[clamp(1rem,2vw,1.5rem)] py-[clamp(0.75rem,1.5vw,1rem)] rounded-xl font-bold shadow-lg bg-gradient-to-br from-primary to-primary-container text-on-primary hover:scale-[1.02] text-[clamp(0.75rem,1.4vw,0.875rem)]"
         >
           {formState.isSubmitting
             ? "Menyimpan..."
@@ -300,7 +300,7 @@ export default function CreateTemplateChoiceForm({
           type="button"
           onClick={onReset}
           disabled={formState.isSubmitting}
-          className="w-full sm:w-auto px-6 py-4 rounded-xl border border-outline bg-surface text-on-surface font-bold hover:bg-surface-container transition-colors"
+          className="w-full sm:w-auto px-[clamp(1rem,2vw,1.5rem)] py-[clamp(0.75rem,1.5vw,1rem)] rounded-xl border border-outline bg-surface text-on-surface font-bold hover:bg-surface-container transition-colors text-[clamp(0.75rem,1.4vw,0.875rem)]"
         >
           {formState.isSubmitting ? "Menyimpan..." : "Pertanyaan Baru"}
         </AnimatedButton>

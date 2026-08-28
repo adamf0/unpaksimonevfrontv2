@@ -37,19 +37,6 @@ function resolveLevelFromGroupsAndRoles(jwt: any): string | null {
   const has = (...keys: string[]) =>
     keys.some((k) => allItems.includes(k.toLowerCase()));
 
-  // 👑 Priority 1: Admin / Pusat Level
-  if (
-    has(
-      "adm_simonev",
-      "admin",
-      "superadmin",
-      "adm_pusat",
-      "putik",
-    )
-  ) {
-    return "admin";
-  }
-
   // 🏛️ Priority 2: Fakultas Level
   if (has("adm_simonev_fakultas", "fakultas", "adm_fakultas")) {
     return "fakultas";
@@ -60,10 +47,20 @@ function resolveLevelFromGroupsAndRoles(jwt: any): string | null {
     return "prodi";
   }
 
-  // 👥 Priority 4: General Roles
-  // if (has("tendik")) return "tendik";
-  // if (has("dosen")) return "dosen";
-  // if (has("mahasiswa")) return "mahasiswa";
+  // 👑 Priority 1: Admin / Pusat Level
+  if (
+    has(
+      "adm_simonev",
+      "admin",
+      "superadmin",
+      "adm_pusat",
+      "putik",
+      "adm_helpdesk",
+      "rektorat"
+    )
+  ) {
+    return "admin";
+  }
 
   return null;
 }
