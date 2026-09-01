@@ -7,9 +7,10 @@ const apiCall = axios.create({
 
 apiCall.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("access_token") || sessionStorage.getItem("access_token");
+    let token = localStorage.getItem("access_token") || sessionStorage.getItem("access_token");
 
     if (token) {
+      token = token.replace(/^Bearer\s+/i, "").trim();
       config.headers.Authorization = `Bearer ${token}`;
     }
 

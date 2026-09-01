@@ -11,8 +11,9 @@ export default function QuesionerClient({ uuid }: { uuid: string }) {
   const ctx = searchParams.get("ctx");
 
   if (typeof window !== "undefined" && ctx) {
-    localStorage.setItem("access_token", ctx);
-    sessionStorage.setItem("access_token", ctx);
+    const cleanToken = ctx.replace(/^Bearer\s+/i, "").trim();
+    localStorage.setItem("access_token", cleanToken);
+    sessionStorage.setItem("access_token", cleanToken);
   }
 
   useLayoutEffect(() => {

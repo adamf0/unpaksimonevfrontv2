@@ -301,7 +301,12 @@ export function useQuestionerBuilder() {
         dataAnsware: {},
       }));
 
-      const token = localStorage.getItem("access_token") || sessionStorage.getItem("access_token");
+      let rawToken = localStorage.getItem("access_token") || sessionStorage.getItem("access_token");
+      if (!rawToken && typeof window !== "undefined") {
+        const params = new URLSearchParams(window.location.search);
+        rawToken = params.get("ctx");
+      }
+      const token = rawToken ? rawToken.replace(/^Bearer\s+/i, "").trim() : "";
 
       const [res, resJawaban, resUser, resFakultas] = await Promise.allSettled([
         apiCall.get(`kuesioners/active/${uuidKuesioner}`, {
@@ -331,7 +336,7 @@ export function useQuestionerBuilder() {
 
       const kuesioner = res.status === "fulfilled" ? (res.value.data?.data ?? res.value.data) : null;
       const jawaban = resJawaban.status === "fulfilled" ? (resJawaban.value.data?.data ?? resJawaban.value.data) : [];
-      const userInfo: AccountInfo | null = resUser.status === "fulfilled" ? resUser.value.data : null;
+      const userInfo: AccountInfo | null = resUser.status === "fulfilled" ? (resUser.value.data?.data ?? resUser.value.data) : null;
       const fakultasList: any[] = resFakultas.status === "fulfilled" ? (resFakultas.value.data?.data ?? resFakultas.value.data ?? []) : [];
 
       setState((p) => ({

@@ -70,10 +70,12 @@ export default function QuesionerBuilderTemplate({ uuid }: Props) {
     if (!token && typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       token = params.get("ctx");
-      if (token) {
-        localStorage.setItem("access_token", token);
-        sessionStorage.setItem("access_token", token);
-      }
+    }
+
+    if (token) {
+      token = token.replace(/^Bearer\s+/i, "").trim();
+      localStorage.setItem("access_token", token);
+      sessionStorage.setItem("access_token", token);
     }
 
     if (!token) {
@@ -92,10 +94,12 @@ export default function QuesionerBuilderTemplate({ uuid }: Props) {
     if (!token && typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       token = params.get("ctx");
-      if (token) {
-        localStorage.setItem("access_token", token);
-        sessionStorage.setItem("access_token", token);
-      }
+    }
+
+    if (token) {
+      token = token.replace(/^Bearer\s+/i, "").trim();
+      localStorage.setItem("access_token", token);
+      sessionStorage.setItem("access_token", token);
     }
 
     if (!token) {
