@@ -31,11 +31,14 @@ export function mapBankSoal(api: any): BankSoalItem {
   const mulai = new DateTimeVO(api?.TanggalMulai ?? "");
   const akhir = new DateTimeVO(api?.TanggalAkhir ?? "");
 
+  const rawPeruntukan = api?.peruntukan ?? api?.Peruntukan;
+
   return {
     id: api.Id,
     uuid: api.UUID,
     judul: api.Judul,
     semester: api.Semester,
+    peruntukan: typeof rawPeruntukan === "string" ? rawPeruntukan : "",
     status: api.Status || !isEmpty(api.DeletedAt ?? ""),
     tanggalmulai: mulai,
     tanggalakhir: akhir,
@@ -291,6 +294,14 @@ export function BankSoalTable({
                     <Badge className="truncate text-[clamp(0.5rem,0.5rem+0.2vmax,0.9rem)]">
                       {bank.createdby}
                     </Badge>
+                    {bank.peruntukan && (
+                      <Badge
+                        className="truncate text-[clamp(0.5rem,0.5rem+0.2vmax,0.9rem)] capitalize"
+                        variant="secondary"
+                      >
+                        {bank.peruntukan}
+                      </Badge>
+                    )}
                     <Badge
                       className="truncate text-[clamp(0.5rem,0.5rem+0.2vmax,0.9rem)]"
                       variant={getRangeVariant(rangeStatus)}

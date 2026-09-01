@@ -65,7 +65,16 @@ export default function QuesionerBuilderTemplate({ uuid }: Props) {
   }, [error]);
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token") || sessionStorage.getItem("access_token");
+    let token = localStorage.getItem("access_token") || sessionStorage.getItem("access_token");
+
+    if (!token && typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      token = params.get("ctx");
+      if (token) {
+        localStorage.setItem("access_token", token);
+        sessionStorage.setItem("access_token", token);
+      }
+    }
 
     if (!token) {
       setStatus("problem");
@@ -78,7 +87,16 @@ export default function QuesionerBuilderTemplate({ uuid }: Props) {
   }, [uuid]);
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token") || sessionStorage.getItem("access_token");
+    let token = localStorage.getItem("access_token") || sessionStorage.getItem("access_token");
+
+    if (!token && typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      token = params.get("ctx");
+      if (token) {
+        localStorage.setItem("access_token", token);
+        sessionStorage.setItem("access_token", token);
+      }
+    }
 
     if (!token) {
       setStatus("problem");

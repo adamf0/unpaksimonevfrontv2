@@ -41,6 +41,28 @@ describe("useBankSoal Hook - Actions & Errors", () => {
     expect(newUuid).toBe("bs-copy");
   });
 
+  it("should trigger create action with peruntukan in formData", async () => {
+    const { result } = renderHook(() => useBankSoal());
+    mockApiCall.post.mockResolvedValueOnce({ data: { uuid: "bs-created" } });
+
+    const newUuid = await result.current.actionBankSoal(
+      undefined,
+      {
+        judul: "Soal UTS",
+        semester: "202401",
+        peruntukan: "dosen",
+        konten: "Konten",
+        deskripsi: "Deskripsi",
+      },
+      "create",
+    );
+
+    expect(mockApiCall.post).toHaveBeenCalledWith("/banksoal", expect.any(FormData));
+    const formDataSent = mockApiCall.post.mock.calls[0][1] as FormData;
+    expect(formDataSent.get("peruntukan")).toBe("dosen");
+    expect(newUuid).toBe("bs-created");
+  });
+
   it("should trigger delete action", async () => {
     const { result } = renderHook(() => useBankSoal());
     mockApiCall.delete.mockResolvedValueOnce({ data: { uuid: "bs-deleted" } });

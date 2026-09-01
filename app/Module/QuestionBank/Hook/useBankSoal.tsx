@@ -265,9 +265,15 @@ export function useBankSoal() {
       const res = await apiCall.put(`/banksoal/${uuid}/status`, formData);
       return res.data?.uuid;
     } else {
+      const peruntukanVal =
+        typeof data?.peruntukan === "object"
+          ? (data?.peruntukan as any)?.value ?? ""
+          : (data?.peruntukan ?? "");
+
       const formData = new FormData();
       formData.append("judul", data?.judul ?? "");
       formData.append("semester", data?.semester ?? "");
+      formData.append("peruntukan", peruntukanVal);
       formData.append("content", data?.konten ?? "");
       formData.append("deskripsi", data?.deskripsi ?? "");
 

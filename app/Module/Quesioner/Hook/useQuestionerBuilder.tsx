@@ -128,9 +128,9 @@ export function useQuestionerBuilder() {
   ): AvailableRole[] {
     const result: AvailableRole[] = [];
 
-    // ---------- ADMIN ----------
+    // ---------- ADMIN / FAKULTAS / PRODI (MAIN SCHEDULE) ----------
     if (isDateActive(kuesioner.TanggalMulai, kuesioner.TanggalAkhir)) {
-      result.push("admin");
+      result.push("admin", "fakultas", "prodi");
     }
 
     // ---------- EXTENSION ----------

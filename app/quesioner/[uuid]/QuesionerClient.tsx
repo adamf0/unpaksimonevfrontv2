@@ -10,10 +10,13 @@ export default function QuesionerClient({ uuid }: { uuid: string }) {
 
   const ctx = searchParams.get("ctx");
 
+  if (typeof window !== "undefined" && ctx) {
+    localStorage.setItem("access_token", ctx);
+    sessionStorage.setItem("access_token", ctx);
+  }
+
   useLayoutEffect(() => {
     if (ctx) {
-      localStorage.setItem("access_token", ctx);
-      sessionStorage.setItem("access_token", ctx);
       router.replace(`/quesioner/${uuid}`);
     }
   }, [ctx, uuid, router]);

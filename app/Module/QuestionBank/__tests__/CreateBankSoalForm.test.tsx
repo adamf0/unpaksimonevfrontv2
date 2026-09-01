@@ -49,6 +49,30 @@ vi.mock("../../Common/Components/Molecules/CKEditorField", () => ({
   ),
 }));
 
+vi.mock("../../Common/Components/Organisms/SelectField", () => ({
+  SelectField: ({ label, value, onChange, options, error }: any) => (
+    <div>
+      <label>{label}</label>
+      <select
+        data-testid="select-peruntukan"
+        value={typeof value === "object" ? value?.value || "" : value || ""}
+        onChange={(e) => {
+          const opt = options?.find((o: any) => o.value === e.target.value);
+          onChange(opt?.value ?? e.target.value);
+        }}
+      >
+        <option value="">Pilih Peruntukan</option>
+        {options?.map((o: any) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      {error && <span>{error}</span>}
+    </div>
+  ),
+}));
+
 vi.mock("../../Common/Components/Molecules/AnimatedButton", () => ({
   default: ({ children, ...props }: any) => <button {...props}>{children}</button>,
 }));
@@ -67,9 +91,11 @@ describe("CreateBankSoalForm Component", () => {
 
     const titleInput = screen.getByTestId("input-judul");
     const semesterInput = screen.getByTestId("input-semester");
+    const peruntukanSelect = screen.getByTestId("select-peruntukan");
 
     await user.type(titleInput, "Ujian Pemrograman Web");
     await user.type(semesterInput, "202601");
+    await user.selectOptions(peruntukanSelect, "mahasiswa");
 
     const submitButton = screen.getByRole("button", { name: /Register New/i });
     await user.click(submitButton);
@@ -80,6 +106,7 @@ describe("CreateBankSoalForm Component", () => {
         expect.objectContaining({
           judul: "Ujian Pemrograman Web",
           semester: "202601",
+          peruntukan: "mahasiswa",
         }),
         "create"
       );
@@ -94,6 +121,7 @@ describe("CreateBankSoalForm Component", () => {
 
     expect(await screen.findByText("Judul wajib diisi")).toBeInTheDocument();
     expect(await screen.findByText("Semester wajib diisi")).toBeInTheDocument();
+    expect(await screen.findByText("Peruntukan wajib dipilih")).toBeInTheDocument();
   });
 
   it("should handle cancel button click", async () => {
@@ -110,6 +138,7 @@ describe("CreateBankSoalForm Component", () => {
       uuid: "uuid-123",
       judul: "Judul Edit",
       semester: "202602",
+      peruntukan: "dosen",
       konten: "Konten Edit",
       deskripsi: "Deskripsi Edit",
     };
@@ -129,6 +158,7 @@ describe("CreateBankSoalForm Component", () => {
         expect.objectContaining({
           judul: "Judul Edit",
           semester: "202602",
+          peruntukan: "dosen",
           konten: "Konten Edit",
           deskripsi: "Deskripsi Edit",
         }),
@@ -143,6 +173,7 @@ describe("CreateBankSoalForm Component", () => {
       uuid: "uuid-123",
       judul: "Judul Time",
       semester: "202602",
+      peruntukan: "dosen",
       konten: "Konten Time",
       deskripsi: "Deskripsi Time",
     };
@@ -159,6 +190,7 @@ describe("CreateBankSoalForm Component", () => {
       uuid: "uuid-123",
       judul: undefined,
       semester: undefined,
+      peruntukan: undefined,
       konten: undefined,
       deskripsi: undefined,
     };
@@ -182,8 +214,10 @@ describe("CreateBankSoalForm Component", () => {
     // Fill required fields
     const titleInput = screen.getByTestId("input-judul");
     const semesterInput = screen.getByTestId("input-semester");
+    const peruntukanSelect = screen.getByTestId("select-peruntukan");
     await user.type(titleInput, "Ujian Pemrograman Web");
     await user.type(semesterInput, "202601");
+    await user.selectOptions(peruntukanSelect, "mahasiswa");
     
     const submitButton = screen.getByRole("button", { name: /Register New/i });
     await user.click(submitButton);

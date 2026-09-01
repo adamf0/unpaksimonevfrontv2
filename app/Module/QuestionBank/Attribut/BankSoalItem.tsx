@@ -6,6 +6,7 @@ export interface BankSoalItem {
   uuid: string;
   judul: string;
   semester: string;
+  peruntukan?: string;
   status: string;
   konten?: string;
   deskripsi?: string;

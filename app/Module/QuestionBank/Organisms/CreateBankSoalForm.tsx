@@ -9,17 +9,25 @@ import { useToast } from "../../Common/Context/ToastContext";
 import { handleCloudflareError } from "../../Common/Error/axiosErrorHandler";
 import { FormValues } from "../Attribut/FormValues";
 import { CKEditorField } from "../../Common/Components/Molecules/CKEditorField";
+import { SelectField } from "../../Common/Components/Organisms/SelectField";
 
 export function CreateBankSoalForm() {
   const { state, actionBankSoal, setState, loadData } =
     useQuestionBankContext();
   const { pushToast } = useToast();
 
-  const allowedFields = ["judul", "semester", "konten", "deskripsi"];
+  const allowedFields = ["judul", "semester", "peruntukan", "konten", "deskripsi"];
+
+  const peruntukanOptions = [
+    { label: "Mahasiswa", value: "mahasiswa" },
+    { label: "Dosen", value: "dosen" },
+    { label: "Tendik", value: "tendik" },
+  ];
 
   const defaultFormValues: FormValues = {
     judul: "",
     semester: "",
+    peruntukan: "",
     konten: "",
     deskripsi: "",
   };
@@ -43,6 +51,7 @@ export function CreateBankSoalForm() {
     reset({
       judul: state.selected.judul ?? "",
       semester: state.selected.semester ?? "",
+      peruntukan: state.selected.peruntukan ?? "",
       konten: state.selected.konten ?? "",
       deskripsi: state.selected.deskripsi ?? "",
     });
@@ -114,7 +123,6 @@ export function CreateBankSoalForm() {
         </div>
 
         {/* Semester */}
-
         <div className="col-span-2 md:col-span-1">
           <InputField
             id="semester"
@@ -124,6 +132,39 @@ export function CreateBankSoalForm() {
               required: "Semester wajib diisi",
             })}
             error={errors.semester?.message}
+          />
+        </div>
+
+        {/* Peruntukan */}
+        <div className="col-span-2 md:col-span-1">
+          <Controller
+            control={control}
+            name="peruntukan"
+            rules={{ required: "Peruntukan wajib dipilih" }}
+            render={({ field, fieldState }) => {
+              const currentValue =
+                typeof field.value === "object"
+                  ? (field.value as any)?.value
+                  : field.value;
+
+              const selectedOption =
+                peruntukanOptions.find((opt) => opt.value === currentValue) ||
+                null;
+
+              return (
+                <SelectField
+                  label="Peruntukan"
+                  placeholder="Pilih Peruntukan"
+                  options={peruntukanOptions}
+                  value={selectedOption}
+                  onChange={(opt: any) => {
+                    field.onChange(opt?.value ?? opt);
+                  }}
+                  mode="single"
+                  error={fieldState.error?.message}
+                />
+              );
+            }}
           />
         </div>
 
