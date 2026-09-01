@@ -9,6 +9,7 @@ export default function QuesionerClient({ uuid }: { uuid: string }) {
   const router = useRouter();
 
   const ctx = searchParams.get("ctx");
+  console.log("QuesionerClient.ctx: ",ctx)
 
   if (typeof window !== "undefined" && ctx) {
     const cleanToken = ctx.replace(/^Bearer\s+/i, "").trim();

@@ -5,6 +5,7 @@ const PUBLIC_ROUTES = [
   "/callback",
   "/callback_sso",
   "/action/logout",
+  "/quesioner",
   "/api",
   "/_next",
   "/favicon.ico",
@@ -92,8 +93,9 @@ export function middleware(req: NextRequest) {
   );
 
   if (!isPublicRoute) {
+    const hasCtxParam = url.searchParams.has("ctx");
     const token = req.cookies.get("access_token")?.value;
-    if (!token || token.trim() === "") {
+    if (!token && !hasCtxParam) {
       const loginUrl = new URL("/login", req.url);
       loginUrl.searchParams.set("r", "Ex");
       return NextResponse.redirect(loginUrl);
