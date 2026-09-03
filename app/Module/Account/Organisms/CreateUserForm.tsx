@@ -65,6 +65,23 @@ export function CreateUserForm() {
     defaultValues: defaultFormValues,
   });
 
+  const mapGroupToLabel = (groupName: string): string => {
+    if (!groupName) return "";
+    const trimmed = groupName.trim().toLowerCase();
+    switch (trimmed) {
+      case "adm_simonev_prodi":
+        return "prodi";
+      case "adm_simonev_fakultas":
+        return "fakultas";
+      case "adm_simonev":
+        return "admin";
+      case "adm_pusat":
+        return "super admin";
+      default:
+        return groupName;
+    }
+  };
+
   // Load LDAP Accounts for Selection
   useEffect(() => {
     let isMounted = true;
@@ -80,10 +97,11 @@ export function CreateUserForm() {
         if (!isMounted) return;
         const list = res.data?.data || [];
         const opts: Option[] = list.map((item: any) => {
-          const idLabel = item.employee_id || item.username;
-          const groupInfo = item.matched_group ? ` [${item.matched_group}]` : "";
+          // const idLabel = item.employee_id || item.username;
+          const mappedGroup = mapGroupToLabel(item.matched_group);
+          const groupInfo = mappedGroup ? ` (${mappedGroup})` : "";
           return {
-            label: `${item.name || item.username} (${idLabel})${groupInfo}`,
+            label: `${item.name || item.username} ${groupInfo}`,
             value: item.username || item.employee_id,
             raw: item,
           };
@@ -226,6 +244,17 @@ export function CreateUserForm() {
       setValue("username", uname);
       setValue("name", fullname);
       setValue("email", mail);
+
+      if (raw.matched_group) {
+        const mappedGroup = mapGroupToLabel(raw.matched_group);
+        if (mappedGroup === "prodi") {
+          setValue("level", { label: "Prodi", value: "prodi" });
+        } else if (mappedGroup === "fakultas") {
+          setValue("level", { label: "Fakultas", value: "fakultas" });
+        } else if (mappedGroup === "admin" || mappedGroup === "super admin") {
+          setValue("level", { label: "Admin", value: "admin" });
+        }
+      }
     }
   };
 
