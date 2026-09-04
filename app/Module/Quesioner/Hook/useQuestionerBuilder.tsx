@@ -760,6 +760,16 @@ export function useQuestionerBuilder() {
 
           formData.append("pertanyaan", row.pertanyaan);
           formData.append("jawaban", JSON.stringify(row.jawaban));
+          const sid = state.userInfo?.ID || (state.userInfo as any)?.EmployeeID || "";
+          if (sid) {
+            formData.append("sid", sid);
+          }
+          if (state.userInfo?.Resource) {
+            formData.append("resource", state.userInfo.Resource);
+          }
+          if (state.userInfo?.CodeCtx) {
+            formData.append("codectx", state.userInfo.CodeCtx);
+          }
 
           return apiCall.post(
             `/kuesioner/${state?.data?.UUIDKuesioner}/jawaban`,

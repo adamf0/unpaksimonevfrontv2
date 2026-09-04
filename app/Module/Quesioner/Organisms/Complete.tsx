@@ -1,10 +1,8 @@
 "use client";
 
 import Icon from "../../Common/Components/Atoms/Icon";
-import { useRouter } from 'next/navigation';
 
 export default function Complete() {
-  const router = useRouter();
   
   return (
     <section className="animate-fade-in-up" id="success">
@@ -32,9 +30,16 @@ export default function Complete() {
               All systems are green and your academic progress has been secured.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <button onClick={() => router.push("/")} className="px-10 py-4 bg-primary text-white rounded-2xl font-bold text-lg shadow-xl shadow-primary/20 hover:bg-indigo-700 transition-all active:scale-95 flex items-center justify-center gap-3">
-                <Icon name="home"/>
-                Return to Home
+              <button
+                onClick={() => {
+                  if (typeof window !== "undefined") {
+                    window.close();
+                  }
+                }}
+                className="px-10 py-4 bg-primary text-white rounded-2xl font-bold text-lg shadow-xl shadow-primary/20 hover:bg-indigo-700 transition-all active:scale-95 flex items-center justify-center gap-3"
+              >
+                <Icon name="close" />
+                Tutup Halaman
               </button>
             </div>
           </div>
