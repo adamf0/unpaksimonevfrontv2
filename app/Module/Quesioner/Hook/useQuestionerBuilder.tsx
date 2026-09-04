@@ -754,6 +754,7 @@ export function useQuestionerBuilder() {
 
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
+      console.log("userInfo",state.userInfo)
       await Promise.allSettled(
         payload.map((row) => {
           const formData = new FormData();
