@@ -9,31 +9,24 @@ export const mockGet = vi.fn().mockReturnValue(null);
 export const mockPathname = vi.fn().mockReturnValue("/");
 export const mockRedirect = vi.fn();
 
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({
-    push: mockPush,
-    replace: mockPush,
-  }),
-  useSearchParams: () => ({
-    get: mockGet,
-  }),
-  usePathname: () => mockPathname(),
-  redirect: (url: string) => mockRedirect(url),
-}));
+vi.mock("react-router-dom", async () => {
+  const actual = await vi.importActual("react-router-dom");
+  return {
+    ...actual,
+    useNavigate: () => mockPush,
+    useLocation: () => ({ pathname: mockPathname(), search: "", hash: "", state: null, key: "default" }),
+    useSearchParams: () => [
+      {
+        get: mockGet,
+      },
+      vi.fn(),
+    ],
+    useParams: () => ({ uuid: "default" }),
+    Link: ({ to, children, className }: any) => <a href={to} className={className}>{children}</a>,
+  };
+});
 
-export const mockGetCookie = vi.fn();
-vi.mock("next/headers", () => ({
-  cookies: () => ({
-    get: mockGetCookie,
-  }),
-}));
 
-vi.mock("next/image", () => ({
-  default: (props: any) => {
-    const { fill, ...rest } = props;
-    return <img {...rest} />;
-  },
-}));
 
 // ========================================================
 // WINDOW.LOCATION REDIRECT MOCK

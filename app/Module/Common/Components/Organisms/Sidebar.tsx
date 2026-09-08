@@ -18,23 +18,23 @@ export default function Sidebar({
     <aside
       id="sidebar"
       className={`
-        fixed left-0 top-0 h-screen w-64 bg-[#f3eeff] tonal-shift-no-border z-50 
+        fixed left-0 top-0 h-screen h-[100dvh] w-64 bg-[#f3eeff] tonal-shift-no-border z-50 
         transform transition-transform duration-300 
         flex flex-col p-4
-        overflow-y-auto overscroll-y-contain
+        overflow-y-auto overscroll-y-contain touch-pan-y
 
         ${isOpen ? "translate-x-0" : "-translate-x-full"}
         md:translate-x-0
       `}
     >
-      <div className="mb-8 px-4">
+      <div className="mb-6 px-4 flex-shrink-0">
         <span className="text-xl font-black text-indigo-700">
           Unpak Simonev
         </span>
         <span className="text-xs text-slate-500 block">Admin Portal</span>
       </div>
 
-      <nav className="flex-1 space-y-2">
+      <nav className="flex-1 overflow-y-auto min-h-0 space-y-2 pr-1 overscroll-contain">
         {MENU_ITEMS.map((item, index) => (
           <NavItem
             key={index}
@@ -47,7 +47,7 @@ export default function Sidebar({
         ))}
       </nav>
 
-      <div className="mt-12 border-t border-black/20 pt-4 space-y-1 md:mt-auto">
+      <div className="mt-4 border-t border-black/20 pt-4 space-y-1 flex-shrink-0">
         {BOTTOM_ITEMS.map((item, index) => (
           <NavItem
             key={index}

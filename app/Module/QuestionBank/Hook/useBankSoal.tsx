@@ -187,10 +187,10 @@ export function useBankSoal() {
    * LOADERS
    * ========================= */
   function loadDataFakultas() {
+    const token = sessionStorage.getItem("access_token");
+    if (!token) return;
     loadSSE(
-      `${BASE_URL}/fakultass?mode=sse&ctxtoken=${sessionStorage.getItem(
-        "access_token",
-      )}`,
+      `${BASE_URL}/fakultass?mode=sse&ctxtoken=${token}`,
       esFakultasRef,
       "sourceFakultas",
       "loadingFakultas",
@@ -198,10 +198,10 @@ export function useBankSoal() {
   }
 
   function loadDataProdi() {
+    const token = sessionStorage.getItem("access_token");
+    if (!token) return;
     loadSSE(
-      `${BASE_URL}/prodis?mode=sse&ctxtoken=${sessionStorage.getItem(
-        "access_token",
-      )}`,
+      `${BASE_URL}/prodis?mode=sse&ctxtoken=${token}`,
       esProdiRef,
       "sourceProdi",
       "loadingProdi",

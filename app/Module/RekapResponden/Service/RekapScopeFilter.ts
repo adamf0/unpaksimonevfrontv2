@@ -49,11 +49,7 @@ export function isRespondentInUserScope(
   // Admin level sees all respondents
   const isAdmin =
     level === "admin" ||
-    level === "superadmin" ||
-    level === "adm_pusat" ||
-    level === "adm_simonev" ||
-    level === "putik" ||
-    level === "rektorat";
+    level === "adm_simonev";
 
   if (isAdmin) return true;
 

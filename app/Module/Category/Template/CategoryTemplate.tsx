@@ -1,83 +1,17 @@
-"use client";
-
 import Icon from "../../Common/Components/Atoms/Icon";
 import { Tabs } from "../Molecules/Tabs";
-import dynamic from "next/dynamic";
 import { Suspense, useState } from "react";
 import { useCategoryContext } from "../Context/CategoryProvider";
 import Modal from "../../Common/Components/Organisms/Modal";
 import { useToast } from "../../Common/Context/ToastContext";
 import { handleCloudflareError } from "../../Common/Error/axiosErrorHandler";
-
-const KategoriTreeSection = dynamic(
-  () =>
-    import("../Molecules/KategoriTreeSection").then(
-      (mod) => mod.KategoriTreeSection,
-    ),
-  { ssr: false, loading: () => <div>Loading Tree...</div> },
-);
-
-const KategoriTableSection = dynamic(
-  () =>
-    import("../Molecules/KategoriTableSection").then(
-      (mod) => mod.KategoriTableSection,
-    ),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="bg-surface-container-lowest rounded-xl indigo-shadow overflow-hidden p-6">
-        Loading Table...
-      </div>
-    ),
-  },
-);
-
-const CategoryCard = dynamic(
-  () => import("../Molecules/CategoryCard").then((mod) => mod.CategoryCard),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10">
-        Loading Info...
-      </div>
-    ),
-  },
-);
-
-const SubCategoryCard = dynamic(
-  () =>
-    import("../Molecules/SubCategoryCard").then((mod) => mod.SubCategoryCard),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="bg-surface-container-lowest rounded-xl p-6 indigo-shadow space-y-4">
-        Loading Info...
-      </div>
-    ),
-  },
-);
-
-const CreateCategoryForm = dynamic(
-  () =>
-    import("../Organisms/CreateCategoryForm").then(
-      (mod) => mod.CreateCategoryForm,
-    ),
-  { ssr: false, loading: () => <div>Loading Form...</div> },
-);
-
-const FilterSidebar = dynamic(
-  () =>
-    import("../../Common/Components/Template/FilterSidebar").then(
-      (m) => m.FilterSidebar,
-    ),
-  { ssr: false, loading: () => <div>Loading Filter...</div> },
-);
-
-const CategoryFilterForm = dynamic(
-  () =>
-    import("../Molecules/CategoryFilterForm").then((m) => m.CategoryFilterForm),
-  { ssr: false, loading: () => <div>Loading Filter Form...</div> },
-);
+import { KategoriTreeSection } from "../Molecules/KategoriTreeSection";
+import { KategoriTableSection } from "../Molecules/KategoriTableSection";
+import { CategoryCard } from "../Molecules/CategoryCard";
+import { SubCategoryCard } from "../Molecules/SubCategoryCard";
+import { CreateCategoryForm } from "../Organisms/CreateCategoryForm";
+import { FilterSidebar } from "../../Common/Components/Template/FilterSidebar";
+import { CategoryFilterForm } from "../Molecules/CategoryFilterForm";
 
 export default function CategoryTemplate() {
   const {

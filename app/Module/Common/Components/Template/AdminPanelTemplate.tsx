@@ -12,10 +12,15 @@ import Sidebar from "../Organisms/Sidebar";
 import Header from "../Organisms/Header";
 
 import { MenuItem } from "../../Attribut/MenuItem";
-import { usePathname, useRouter } from "next/navigation";
+import { useLocation, useNavigate } from "react-router-dom";
 import { AccountInfo } from "../../Attribut/AccountInfo";
 import { useTokenWatcher } from "../../Hook/tokenWatcher";
-import getTokenExpiry from "../../Service/tokenExpiry";
+import getTokenExpiry, { getRolesFromToken } from "../../Service/tokenExpiry";
+import {
+  ADMIN_GROUP_ALIASES,
+  FAKULTAS_GROUP_ALIASES,
+  PRODI_GROUP_ALIASES,
+} from "../../Const/authRoles";
 
 /* ===============================
    CONTEXT USER PROFILE
@@ -53,10 +58,14 @@ export default function AdminPanelTemplate({
 }) {
   useTokenWatcher();
 
-  const router = useRouter();
-  const pathname = usePathname();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const pathname = location.pathname;
 
   const [isOpen, setIsOpen] = useState(false);
+
+  const token = typeof window !== "undefined" ? (sessionStorage.getItem("access_token") || localStorage.getItem("access_token")) : null;
+  const tokenRoles = useMemo(() => getRolesFromToken(token), [token]);
 
   // =========================================
   // MODE
@@ -120,7 +129,7 @@ export default function AdminPanelTemplate({
       document.cookie = "access_token_exp=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
       window.location.href = "/action/logout?r=Ex";
     }
-  }, [isTemplatePage, pathname, router]);
+  }, [isTemplatePage, pathname, navigate]);
 
   // =========================================
   // SIDEBAR
@@ -151,7 +160,7 @@ export default function AdminPanelTemplate({
       active: pathname == "/dashboard",
       onClick: () => {
         closeSidebar();
-        router.push("/dashboard");
+        navigate("/dashboard");
       },
     },
     {
@@ -160,7 +169,7 @@ export default function AdminPanelTemplate({
       active: pathname == "/account",
       onClick: () => {
         closeSidebar();
-        router.push("/account");
+        navigate("/account");
       },
     },
     {
@@ -169,7 +178,7 @@ export default function AdminPanelTemplate({
       active: pathname == "/banksoal",
       onClick: () => {
         closeSidebar();
-        router.push("/banksoal");
+        navigate("/banksoal");
       },
     },
     {
@@ -178,7 +187,7 @@ export default function AdminPanelTemplate({
       active: pathname == "/kategori",
       onClick: () => {
         closeSidebar();
-        router.push("/kategori");
+        navigate("/kategori");
       },
     },
     {
@@ -187,7 +196,7 @@ export default function AdminPanelTemplate({
       active: pathname.startsWith("/template"),
       onClick: () => {
         closeSidebar();
-        router.push("/template");
+        navigate("/template");
       },
     },
     {
@@ -196,7 +205,7 @@ export default function AdminPanelTemplate({
       active: pathname == "/laporan",
       onClick: () => {
         closeSidebar();
-        router.push("/laporan");
+        navigate("/laporan");
       },
     },
     {
@@ -205,7 +214,7 @@ export default function AdminPanelTemplate({
       active: pathname == "/rekap-responden",
       onClick: () => {
         closeSidebar();
-        router.push("/rekap-responden");
+        navigate("/rekap-responden");
       },
     },
     {
@@ -214,7 +223,7 @@ export default function AdminPanelTemplate({
       active: pathname == "/sandbox",
       onClick: () => {
         closeSidebar();
-        router.push("/sandbox");
+        navigate("/sandbox");
       },
     },
     {
@@ -223,7 +232,7 @@ export default function AdminPanelTemplate({
       active: pathname == "/setting",
       onClick: () => {
         closeSidebar();
-        router.push("/setting");
+        navigate("/setting");
       },
     },
   ];
@@ -232,15 +241,20 @@ export default function AdminPanelTemplate({
 
   const MENU_ITEMS: MenuItem[] = BASE_MENU_ITEMS.filter((item) => {
     const userLevel = (userProfile?.Level || "").toLowerCase();
-    if (
-      userLevel === "admin" ||
-      userLevel === "putik" ||
-      userLevel === "adm_simonev"
-    ) {
+    const isAdminUser =
+      ADMIN_GROUP_ALIASES.includes(userLevel) ||
+      tokenRoles.some((r) => ADMIN_GROUP_ALIASES.includes(r));
+
+    if (isAdminUser) {
       return true;
     }
 
-    if (userLevel === "fakultas" || userLevel === "prodi") {
+    const isFakultasOrProdi =
+      userLevel === "fakultas" ||
+      userLevel === "prodi" ||
+      tokenRoles.some((r) => [...FAKULTAS_GROUP_ALIASES, ...PRODI_GROUP_ALIASES].includes(r));
+
+    if (isFakultasOrProdi) {
       return !hiddenMenus.includes(item.label);
     }
 
@@ -256,7 +270,7 @@ export default function AdminPanelTemplate({
       active: pathname == "/support" || pathname == "/help",
       onClick: () => {
         closeSidebar();
-        router.push("/support");
+        navigate("/support");
       },
     },
     {
@@ -270,7 +284,7 @@ export default function AdminPanelTemplate({
         sessionStorage.removeItem("refresh_token");
         sessionStorage.removeItem("access_token_exp");
 
-        router.push("/action/logout");
+        navigate("/action/logout");
       },
     },
   ];

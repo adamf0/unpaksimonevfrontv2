@@ -1,6 +1,4 @@
-'use client';
-
-import Link from "next/link";
+import { Link } from "react-router-dom";
 
 export default function NavItem({
   href,
@@ -13,7 +11,7 @@ export default function NavItem({
 }) {
   return (
     <Link
-      href={href}
+      to={href}
       className={[
         "font-label px-3 py-2 rounded-lg transition-colors",
         active

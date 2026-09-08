@@ -1,11 +1,9 @@
-"use client";
-
 import Icon from "@/app/Module/Common/Components/Atoms/Icon";
 import AnimatedButton from "../../Common/Components/Molecules/AnimatedButton";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 
 export default function Hero() {
-  const router = useRouter();
+  const navigate = useNavigate();
 
   return (
     <section className="px-6 py-16 md:py-24 max-w-7xl mx-auto" id="home">
@@ -28,7 +26,7 @@ export default function Hero() {
           </p>
 
           <AnimatedButton
-            onClick={()=>router.push("/login")}
+            onClick={() => navigate("/login")}
             className="px-8 py-4 bg-gradient-to-br from-primary to-primary-container text-white rounded-xl"
             icon="arrow_forward"
           >

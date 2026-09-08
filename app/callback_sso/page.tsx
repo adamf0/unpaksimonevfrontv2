@@ -1,12 +1,10 @@
-"use client";
-
 import { useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 import getKeycloak from "../Module/Common/Service/keycloak";
 import getTokenExpiry from "../Module/Common/Service/tokenExpiry";
 
 export default function CallbackSSOPage() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const isProcessed = useRef(false);
 
   useEffect(() => {
@@ -15,7 +13,7 @@ export default function CallbackSSOPage() {
 
     const keycloak = getKeycloak();
     if (!keycloak) {
-      router.replace("/login?r=E0");
+      navigate("/login?r=E0", { replace: true });
       return;
     }
 
@@ -42,7 +40,7 @@ export default function CallbackSSOPage() {
             sessionStorage.setItem("id_token", keycloak.idToken);
           }
 
-          router.replace("/dashboard");
+          navigate("/dashboard", { replace: true });
         } else if (keycloak.token) {
           sessionStorage.setItem("access_token", keycloak.token);
           document.cookie = `access_token=${keycloak.token}; path=/`;
@@ -59,16 +57,16 @@ export default function CallbackSSOPage() {
             sessionStorage.setItem("id_token", keycloak.idToken);
           }
 
-          router.replace("/dashboard");
+          navigate("/dashboard", { replace: true });
         } else {
-          router.replace("/login?r=F0");
+          navigate("/login?r=F0", { replace: true });
         }
       })
       .catch((err) => {
         console.error("SSO Callback Error:", err);
-        router.replace("/login?r=E0");
+        navigate("/login?r=E0", { replace: true });
       });
-  }, [router]);
+  }, [navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-surface font-body text-on-surface">

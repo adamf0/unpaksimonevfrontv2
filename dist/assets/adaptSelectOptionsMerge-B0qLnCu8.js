@@ -1,0 +1,1 @@
+function o(n,e){const l=new Map;return n.forEach(t=>{const a=String(t[e.valueKey]??"");if(!a)return;const p=e.labelKeys.map(s=>String(t[s]??""));let r="";if(!e.template)r=p.join(" ");else{let s=0;r=e.template.replace(/%s/g,()=>p[s++]??"")}l.has(a)||l.set(a,{value:a,label:r,payload:t})}),Array.from(l.values())}export{o as a};

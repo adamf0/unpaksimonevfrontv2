@@ -3,12 +3,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import React from "react";
 import QuestionForm from "../Organisms/QuestionForm";
 
-// Mock next/image to prevent failing on asset imports
-vi.mock("next/image", () => ({
-  default: ({ src, alt, className }: any) => (
-    <img src={typeof src === "string" ? src : "mock-src"} alt={alt} className={className} />
-  ),
-}));
+
 
 vi.mock("../../Common/Components/Molecules/AnimatedButton", () => ({
   default: ({ children, disabled, className }: any) => (

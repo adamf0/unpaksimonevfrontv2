@@ -7,6 +7,9 @@ export type TemplateItem = {
   bobot: number;
   require: number;
   status: string;
+  fakultas?: string|null;
+  prodi?: string|null;
+  unit?: string|null;
   createdtime?: string;
   created?: string; //admin, fakultas, prodi
   createdBy?: string;

@@ -1,15 +1,14 @@
-"use client";
-
 import { useLayoutEffect } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import QuesionerPage from "../../Module/Quesioner/Page/QuesionerPage";
 
-export default function QuesionerClient({ uuid }: { uuid: string }) {
-  const searchParams = useSearchParams();
-  const router = useRouter();
+export default function QuesionerClient({ uuid: propUuid }: { uuid?: string }) {
+  const { uuid: paramsUuid } = useParams<{ uuid: string }>();
+  const uuid = propUuid || paramsUuid || "";
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   const ctx = searchParams.get("ctx");
-  console.log("QuesionerClient.ctx: ",ctx)
 
   if (typeof window !== "undefined" && ctx) {
     const cleanToken = ctx.replace(/^Bearer\s+/i, "").trim();
@@ -19,9 +18,9 @@ export default function QuesionerClient({ uuid }: { uuid: string }) {
 
   useLayoutEffect(() => {
     if (ctx) {
-      router.replace(`/quesioner/${uuid}`);
+      navigate(`/quesioner/${uuid}`, { replace: true });
     }
-  }, [ctx, uuid, router]);
+  }, [ctx, uuid, navigate]);
 
   return <QuesionerPage uuid={uuid} />;
 }

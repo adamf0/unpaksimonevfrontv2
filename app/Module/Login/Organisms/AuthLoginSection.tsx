@@ -1,78 +1,18 @@
-"use client";
-
-// import RememberMe from "../Molecules/RememberMe";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import apiCall from "../../Common/External/APICall";
 import { useForm } from "react-hook-form";
 import { handleCloudflareError } from "../../Common/Error/axiosErrorHandler";
 import { Suspense, useEffect, useRef } from "react";
 import { useToast } from "../../Common/Context/ToastContext";
 import getTokenExpiry from "../../Common/Service/tokenExpiry";
-import getKeycloak, { startSSOLogin } from "../../Common/Service/keycloak";
+import { startSSOLogin } from "../../Common/Service/keycloak";
 import { cn } from "@/lib/utils";
-import dynamic from "next/dynamic";
 
-const Icon = dynamic(
-  () => import("../../Common/Components/Atoms/Icon"),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="w-6 h-6 rounded bg-surface-container-high animate-pulse" />
-    ),
-  },
-);
-
-const AnimatedButton = dynamic(
-  () =>
-    import(
-      "../../Common/Components/Molecules/AnimatedButton"
-    ),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="w-full h-[64px] rounded-2xl bg-surface-container-high animate-pulse" />
-    ),
-  },
-);
-
-const SocialButton = dynamic(
-  () => import("../Molecules/SocialButton"),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="h-[60px] rounded-2xl bg-surface-container-high animate-pulse" />
-    ),
-  },
-);
-
-const Divider = dynamic(
-  () =>
-    import("../../Common/Components/Molecules/Divider"),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex items-center gap-3 my-6">
-        <div className="h-[1px] flex-1 bg-surface-container-high animate-pulse" />
-        <div className="w-24 h-4 rounded bg-surface-container-high animate-pulse" />
-        <div className="h-[1px] flex-1 bg-surface-container-high animate-pulse" />
-      </div>
-    ),
-  },
-);
-
-const InputField = dynamic(
-  () => import("../Molecules/InputField"),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="space-y-2">
-        <div className="w-32 h-4 rounded bg-surface-container-high animate-pulse" />
-
-        <div className="w-full h-[58px] rounded-2xl bg-surface-container-high animate-pulse" />
-      </div>
-    ),
-  },
-);
+import Icon from "../../Common/Components/Atoms/Icon";
+import AnimatedButton from "../../Common/Components/Molecules/AnimatedButton";
+import SocialButton from "../Molecules/SocialButton";
+import Divider from "../../Common/Components/Molecules/Divider";
+import InputField from "../Molecules/InputField";
 
 type LoginForm = {
   username: string;
@@ -81,8 +21,8 @@ type LoginForm = {
 
 export default function AuthLoginSection() {
   const { pushToast } = useToast();
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const hasShown = useRef(false);
 
   const allowedFields = ["username", "password"];
@@ -96,12 +36,11 @@ export default function AuthLoginSection() {
 
   useEffect(() => {
     const reason = searchParams.get("r");
-    console.log(reason);
-    if (!reason) return;
+    if (!reason || hasShown.current) return;
 
-    let message = "";
     hasShown.current = true;
 
+    let message = "";
     switch (reason) {
       case "Ex":
         message = "Sesi login berakhir";
@@ -117,15 +56,15 @@ export default function AuthLoginSection() {
         break;
     }
 
-    console.log(message);
-    if (message != "") {
+    if (message !== "") {
       pushToast(message);
     }
     sessionStorage.clear();
 
-    // hapus query biar tidak muncul ulang
+    // hapus query parameter dari state router dan URL agar tidak muncul lagi saat direfresh
+    setSearchParams({}, { replace: true });
     window.history.replaceState({}, "", window.location.pathname);
-  }, []);
+  }, [searchParams, setSearchParams, pushToast]);
 
   const handleSSOLogin = async () => {
     await startSSOLogin(`${window.location.origin}/callback_sso`);
@@ -137,7 +76,7 @@ export default function AuthLoginSection() {
       formData.append("username", input.username);
       formData.append("password", input.password);
 
-      const { data } = await apiCall.post("/login", formData); //[pr] beda path
+      const { data } = await apiCall.post("/login", formData);
       const accessToken = data?.access_token;
       const refreshToken = data?.refresh_token;
 
@@ -164,7 +103,7 @@ export default function AuthLoginSection() {
         document.cookie = `access_token=${accessToken}; path=/`;
       }
 
-      router.push("/dashboard");
+      navigate("/dashboard");
     } catch (error: any) {
       if (!error.response) {
         pushToast("Ada masalah pada server");
@@ -274,12 +213,6 @@ export default function AuthLoginSection() {
                 </p>
               )}
             </div>
-
-            {/* <RememberMe
-            id="remember"
-            name="remember"
-            label="Remember this session"
-          /> */}
 
             <AnimatedButton
               type="submit"

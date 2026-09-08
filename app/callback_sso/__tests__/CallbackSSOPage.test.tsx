@@ -4,11 +4,13 @@ import React from "react";
 import CallbackSSOPage from "../page";
 
 const mockReplace = vi.fn();
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({
-    replace: mockReplace,
-  }),
-}));
+vi.mock("react-router-dom", async () => {
+  const actual = await vi.importActual("react-router-dom");
+  return {
+    ...actual,
+    useNavigate: () => mockReplace,
+  };
+});
 
 const mockInit = vi.fn();
 let mockKeycloakInstance: any = null;
@@ -43,7 +45,7 @@ describe("CallbackSSOPage Component", () => {
     expect(screen.getByText("Processing SSO Login...")).toBeDefined();
 
     await waitFor(() => {
-      expect(mockReplace).toHaveBeenCalledWith("/dashboard");
+      expect(mockReplace).toHaveBeenCalledWith("/dashboard", { replace: true });
     });
 
     expect(sessionStorage.getItem("access_token")).toBe("sso-jwt-access-token");
@@ -62,7 +64,7 @@ describe("CallbackSSOPage Component", () => {
     render(<CallbackSSOPage />);
 
     await waitFor(() => {
-      expect(mockReplace).toHaveBeenCalledWith("/login?r=F0");
+      expect(mockReplace).toHaveBeenCalledWith("/login?r=F0", { replace: true });
     });
   });
 
@@ -74,7 +76,7 @@ describe("CallbackSSOPage Component", () => {
     render(<CallbackSSOPage />);
 
     await waitFor(() => {
-      expect(mockReplace).toHaveBeenCalledWith("/login?r=E0");
+      expect(mockReplace).toHaveBeenCalledWith("/login?r=E0", { replace: true });
     });
   });
 });

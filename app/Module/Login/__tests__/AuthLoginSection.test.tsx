@@ -12,33 +12,7 @@ let mockSocialButton: any = null;
 let mockDivider: any = null;
 let mockInputField: any = null;
 
-// Mock next/dynamic to resolve dynamically imported components synchronously
-vi.mock("next/dynamic", () => {
-  return {
-    default: (loader: any) => {
-      const str = loader.toString();
-      return (props: any) => {
-        const React = require("react");
-        if (str.includes("InputField") && mockInputField) {
-          return React.createElement(mockInputField, props);
-        }
-        if (str.includes("Icon") && mockIcon) {
-          return React.createElement(mockIcon, props);
-        }
-        if (str.includes("AnimatedButton") && mockAnimatedButton) {
-          return React.createElement(mockAnimatedButton, props);
-        }
-        if (str.includes("SocialButton") && mockSocialButton) {
-          return React.createElement(mockSocialButton, props);
-        }
-        if (str.includes("Divider") && mockDivider) {
-          return React.createElement(mockDivider, props);
-        }
-        return null;
-      };
-    },
-  };
-});
+
 
 // Mock child components to render synchronously in JSDOM
 vi.mock("../../Common/Components/Atoms/Icon", () => ({

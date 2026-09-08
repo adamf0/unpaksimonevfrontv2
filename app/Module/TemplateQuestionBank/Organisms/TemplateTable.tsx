@@ -47,6 +47,9 @@ export function TemplateTable({
         item.Status == "delete" || !isEmpty(item?.DeletedAt)
           ? "deleted"
           : item.Status,
+      fakultas: item?.Fakultas,
+      prodi: item?.Prodi,
+      unit: item?.Unit,
       createdBy: item?.CreatedBy ?? "",
       deletedtime: item?.DeletedAt,
     };
@@ -65,14 +68,17 @@ export function TemplateTable({
     const level = String(userProfile?.Level ?? "");
     let owner = "admin";
     if (level == "fakultas") {
-      owner = `FAKULTAS ${String(userProfile?.Fakultas ?? "")}`;
+      // owner = `FAKULTAS ${String(userProfile?.Fakultas ?? "")}`;
+      owner = String(userProfile?.Fakultas ?? "");
     } else if (level == "prodi") {
       owner = String(userProfile?.Prodi ?? "");
     }
 
+    console.log(userProfile)
     if (
       String(userProfile?.Level ?? "") == "admin" ||
-      owner == item.createdBy
+      owner == item.fakultas || 
+      owner == item.prodi
     ) {
       if (deleted) {
         return [

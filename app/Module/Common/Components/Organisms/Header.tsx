@@ -1,6 +1,7 @@
 "use client";
 
 import Icon from "../Atoms/Icon";
+import { resolveDisplayRole } from "../../Const/authRoles";
 
 type HeaderProps = {
   onToggleSidebar: () => void;
@@ -16,6 +17,8 @@ export default function Header({
   title,
   user,
 }: HeaderProps) {
+  const displayRole = resolveDisplayRole(user?.role);
+  
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between w-full px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3.5 bg-[#f9f5ff]/85 backdrop-blur-xl border-b border-outline-variant/10 shadow-[0_8px_24px_-4px_rgba(44,42,81,0.05)] gap-4">
       {/* LEFT: HAMBURGER TOGGLE BUTTON & TITLE */}
@@ -53,7 +56,7 @@ export default function Header({
             {user?.name ?? "N/A"}
           </p>
           <span className="inline-block text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-md mt-0.5">
-            {user?.role ?? "-"}
+            {displayRole}
           </span>
         </div>
       </button>

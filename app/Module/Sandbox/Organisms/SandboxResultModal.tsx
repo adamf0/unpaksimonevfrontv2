@@ -27,7 +27,7 @@ export default function SandboxResultModal({
         {/* MODAL HEADER */}
         <div className="text-center space-y-2 pb-[clamp(0.75rem,2vw,1rem)] border-b border-outline-variant/10">
           <div className="w-[clamp(3rem,8vw,4rem)] h-[clamp(3rem,8vw,4rem)] rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-md">
-            <span className="material-symbols-outlined text-[clamp(1.5rem,4vw,2rem)] font-black">
+            <span className="material-symbols-outlined text-[clamp(1.5rem,4vw,2rem)]">
               task_alt
             </span>
           </div>

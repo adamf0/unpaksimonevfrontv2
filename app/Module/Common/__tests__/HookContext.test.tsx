@@ -143,7 +143,7 @@ describe("useTokenWatcher Hook", () => {
     });
 
     expect(sessionStorage.getItem("access_token")).toBeNull(); // cleared
-    expect(mockLocation.href).toBe("/action/logout?r=E00");
+    expect(mockLocation.href).toBe("/action/logout?r=E0");
 
     errSpy.mockRestore();
   });
@@ -163,7 +163,7 @@ describe("useTokenWatcher Hook", () => {
     });
 
     expect(sessionStorage.getItem("access_token")).toBeNull(); // cleared
-    expect(mockLocation.href).toBe("/action/logout?r=E00");
+    expect(mockLocation.href).toBe("/action/logout?r=E0");
 
     warnSpy.mockRestore();
   });

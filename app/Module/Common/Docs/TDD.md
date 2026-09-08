@@ -22,7 +22,7 @@ This document details the test matrices covering positive, negative, and edge ca
 | **tokenExpiry** | Positive | Decodes standard JWT | `"header.payload.signature"` | Expiration time * 1000 |
 | | Negative | Corrupted/Invalid JWT | `"invalid-token"` | `null` |
 | **useTokenWatcher** | Positive | Token refresh swap | Expiry < 30s | Updates storage, sets cookie, clears refresh token |
-| | Negative | Expired token redirect | Expiry reached, no refresh token | Clears storage, redirects to `/action/logout?r=E00` |
+| | Negative | Expired token redirect | Expiry reached, no refresh token | Clears storage, redirects to `/action/logout?r=E0` |
 | **ToastContext** | Positive | Add and dismiss toasts | `pushToast("test")` | Renders notification toast, clears after duration |
 | **CKEditorField** | Positive | Rich text inputs purification | `"<p>Hello <b>World</b></p>"` | Safe HTML output |
 | | Negative | Strip disallowed tags/JS | `"<script>alert(1)</script>"` | Clean text without tags |

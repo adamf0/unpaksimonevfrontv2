@@ -5,67 +5,18 @@ import Icon from "../../Common/Components/Atoms/Icon";
 import { FilterButton } from "../../Common/Components/Molecules/FilterButton";
 import { SearchInput } from "../../Common/Components/Molecules/SearchInput";
 import { Pagination } from "../../Common/Components/Molecules/Pagination";
-import dynamic from "next/dynamic";
+import { CreateBankSoalForm } from "../Organisms/CreateBankSoalForm";
+import { QuickInfoCard } from "../Molecules/QuickInfoCard";
+import { GuideCard } from "../Molecules/GuideCard";
+import { BankSoalTable } from "../Organisms/BankSoalTable";
+import { FilterSidebar } from "../../Common/Components/Template/FilterSidebar";
+import { BankSoalFilterForm } from "../Molecules/BankSoalFilterForm";
 import { useQuestionBankContext } from "../Context/QuestionBankProvider";
 import { HistoryButton } from "../../Common/Components/Molecules/HistoryButton";
 import Modal from "../../Common/Components/Organisms/Modal";
 import { BankSoalTimeForm } from "../Molecules/BankSoalTimeForm";
 import { handleCloudflareError } from "../../Common/Error/axiosErrorHandler";
 import { useToast } from "../../Common/Context/ToastContext";
-
-const CreateBankSoalForm = dynamic(
-  () =>
-    import("../Organisms/CreateBankSoalForm").then(
-      (mod) => mod.CreateBankSoalForm,
-    ),
-  { ssr: false, loading: () => <div>Loading Form...</div> },
-);
-
-const QuickInfoCard = dynamic(
-  () => import("../Molecules/QuickInfoCard").then((mod) => mod.QuickInfoCard),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="bg-surface-container-lowest rounded-xl p-6 indigo-shadow space-y-4 relative overflow-hidden group">
-        Loading Quick Info Card...
-      </div>
-    ),
-  },
-);
-
-const GuideCard = dynamic(
-  () => import("../Molecules/GuideCard").then((m) => m.GuideCard),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="bg-surface-container-lowest rounded-xl bg-gradient-to-br from-primary to-[#2c2a51] rounded-xl p-8 text-on-primary indigo-shadow relative overflow-hidden group">
-        Loading Guide Card...
-      </div>
-    ),
-  },
-);
-
-const BankSoalTable = dynamic(
-  () => import("../Organisms/BankSoalTable").then((m) => m.BankSoalTable),
-  {
-    ssr: false,
-    loading: () => <div className="p-4">Loading Table...</div>,
-  },
-);
-
-const FilterSidebar = dynamic(
-  () =>
-    import("../../Common/Components/Template/FilterSidebar").then(
-      (m) => m.FilterSidebar,
-    ),
-  { ssr: false, loading: () => <div>Loading Filter...</div> },
-);
-
-const BankSoalFilterForm = dynamic(
-  () =>
-    import("../Molecules/BankSoalFilterForm").then((m) => m.BankSoalFilterForm),
-  { ssr: false, loading: () => <div>Loading Filter Form...</div> },
-);
 
 export default function BankSoalTemplate() {
   const {

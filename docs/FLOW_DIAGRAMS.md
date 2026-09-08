@@ -94,7 +94,7 @@ flowchart TD
     DecodeNewExp -- Success --> SaveNewExpiry[Set access_token_exp = newExpiry]
     SaveNewExpiry --> End
     DecodeNewExp -- Fail --> HandleSwapFail[sessionStorage.clear]
-    HandleSwapFail --> LogoutRedirect[window.location.href = /action/logout?r=E00] --> End
+    HandleSwapFail --> LogoutRedirect[window.location.href = /action/logout?r=E0] --> End
     
     CheckExpired -- Yes --> NoRefresh{No refresh_token present?}
     NoRefresh -- Yes --> HandleSwapFail

@@ -2,6 +2,7 @@ import "./mocks/apiMocks";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, act, waitFor } from "@testing-library/react";
 import React from "react";
+import { BrowserRouter } from "react-router-dom";
 
 // Import components
 import Header from "../Components/Organisms/Header";
@@ -15,7 +16,7 @@ import { FilterSidebar } from "../Components/Template/FilterSidebar";
 import UserPanelTemplate from "../Components/Template/UserPanelTemplate";
 
 // Import mock variables
-import { mockPush, mockRedirect, mockGetCookie, mockPathname } from "./mocks/apiMocks";
+import { mockPush, mockPathname, mockAxios } from "./mocks/apiMocks";
 
 describe("Header Organism Component", () => {
   it("should render title and user profile info", () => {
@@ -308,97 +309,38 @@ describe("AdminPanelTemplate Layout Component", () => {
   });
 });
 
-describe("AdminPanelTemplateServer Component (RSC)", () => {
-  const originalFetch = global.fetch;
-
+describe("AdminPanelTemplateServer Component", () => {
   beforeEach(() => {
-    mockRedirect.mockClear();
-    mockGetCookie.mockClear();
+    sessionStorage.clear();
   });
 
-  afterEach(() => {
-    global.fetch = originalFetch;
-  });
-
-  it("should redirect to /action/logout?r=Ex if access_token cookie is missing", async () => {
-    mockGetCookie.mockReturnValue(undefined); // token not found
-
-    await AdminPanelTemplateServer({ children: <div /> });
-
-    expect(mockRedirect).toHaveBeenCalledWith("/action/logout?r=Ex");
-  });
-
-  it("should fetch user whoami details and redirect to F0 if user level is not allowed", async () => {
-    mockGetCookie.mockReturnValue({ value: "test-jwt-token" });
-
-    // Mock fetch response for whoami (Level: mahasiswa, which is disallowed)
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ Name: "Andi", Level: "mahasiswa" }),
+  it("should fetch user profile dynamically from /whoami API endpoint", async () => {
+    mockAxios.get.mockImplementation((url: string) => {
+      if (url === "/whoami" || url.endsWith("/whoami")) {
+        return Promise.resolve({
+          data: {
+            ID: "123",
+            Username: "rian_user",
+            Name: "Dosen Rian",
+            Level: "prodi",
+          },
+        });
+      }
+      return Promise.reject(new Error("Not found"));
     });
 
-    await AdminPanelTemplateServer({ children: <div /> });
+    render(
+      <BrowserRouter>
+        <AdminPanelTemplateServer>
+          <div data-testid="children">Prodi Dashboard</div>
+        </AdminPanelTemplateServer>
+      </BrowserRouter>
+    );
 
-    expect(mockRedirect).toHaveBeenCalledWith("/action/logout?r=F0");
-  });
-
-  it("should redirect to E1 if response is not ok", async () => {
-    mockGetCookie.mockReturnValue({ value: "test-jwt-token" });
-
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: false,
+    await waitFor(() => {
+      expect(screen.getByTestId("children")).toBeDefined();
+      expect(screen.getByText("Dosen Rian")).toBeDefined();
     });
-
-    await AdminPanelTemplateServer({ children: <div /> });
-
-    expect(mockRedirect).toHaveBeenCalledWith("/action/logout?r=E1");
-  });
-
-  it("should redirect to E0 if fetch throws error", async () => {
-    mockGetCookie.mockReturnValue({ value: "test-jwt-token" });
-
-    global.fetch = vi.fn().mockRejectedValue(new Error("Network Error"));
-
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-
-    await AdminPanelTemplateServer({ children: <div /> });
-
-    expect(mockRedirect).toHaveBeenCalledWith("/action/logout?r=E0");
-
-    errSpy.mockRestore();
-  });
-
-  it("should render child templates when user is authenticated with allowed roles", async () => {
-    mockGetCookie.mockReturnValue({ value: "test-jwt-token" });
-
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ Name: "Dosen Rian", Level: "prodi" }),
-    });
-
-    const result = await AdminPanelTemplateServer({
-      children: <div data-testid="rsc-children">Daftar Mata Kuliah</div>,
-    });
-
-    // Check if it renders AdminPanelTemplate wrapping children
-    render(result);
-    expect(screen.getByTestId("rsc-children")).toBeDefined();
-    expect(screen.getByText("Dosen Rian")).toBeDefined();
-  });
-
-  it("should return early with dummy static user if NEXT_EXPORT is true", async () => {
-    const originalEnv = process.env.NEXT_EXPORT;
-    process.env.NEXT_EXPORT = "true";
-
-    const result = await AdminPanelTemplateServer({
-      children: <div data-testid="rsc-children">Static Content</div>,
-    });
-
-    render(result);
-    expect(screen.getByTestId("rsc-children")).toBeDefined();
-    expect(screen.getByText("Static User")).toBeDefined();
-
-    process.env.NEXT_EXPORT = originalEnv;
   });
 });
 

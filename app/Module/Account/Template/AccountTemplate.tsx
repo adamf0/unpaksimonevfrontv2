@@ -1,5 +1,3 @@
-"use client";
-
 import { Suspense, useState } from "react";
 import Icon from "../../Common/Components/Atoms/Icon";
 import { FilterButton } from "../../Common/Components/Molecules/FilterButton";
@@ -10,61 +8,14 @@ import { Pagination } from "../../Common/Components/Molecules/Pagination";
 import { UserItem } from "../Attribut/UserItem";
 import { useAccountContext } from "../Context/AccountProvider";
 import { HistoryButton } from "../../Common/Components/Molecules/HistoryButton";
-import dynamic from "next/dynamic";
 import { useToast } from "../../Common/Context/ToastContext";
 import { handleCloudflareError } from "../../Common/Error/axiosErrorHandler";
 
-const StatsCard = dynamic(
-  () => import("../Molecules/StatsCard").then((mod) => mod.StatsCard),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="bg-surface-container-lowest rounded-xl bg-gradient-to-br from-primary to-[#2c2a51] rounded-xl p-8 text-on-primary indigo-shadow relative overflow-hidden group">
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
-        <div className="relative z-10">Loading Stats...</div>
-      </div>
-    ),
-  },
-);
-
-const SecurityCard = dynamic(
-  () => import("../Molecules/SecurityCard").then((mod) => mod.SecurityCard),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="bg-surface-container-lowest rounded-xl p-6 indigo-shadow space-y-4">
-        Loading Security...
-      </div>
-    ),
-  },
-);
-
-const AccountTable = dynamic(
-  () => import("../Organisms/AccountTable").then((mod) => mod.AccountTable),
-  {
-    ssr: false,
-    loading: () => <div className="p-6">Loading Table...</div>,
-  },
-);
-
-const CreateUserForm = dynamic(
-  () => import("../Organisms/CreateUserForm").then((mod) => mod.CreateUserForm),
-  {
-    ssr: false,
-    loading: () => <div>Loading Form...</div>,
-  },
-);
-
-const AccountFilterForm = dynamic(
-  () =>
-    import("../Molecules/AccountFilterForm").then(
-      (mod) => mod.AccountFilterForm,
-    ),
-  {
-    ssr: false,
-    loading: () => <div>Loading Filter...</div>,
-  },
-);
+import { StatsCard } from "../Molecules/StatsCard";
+import { SecurityCard } from "../Molecules/SecurityCard";
+import { AccountTable } from "../Organisms/AccountTable";
+import { CreateUserForm } from "../Organisms/CreateUserForm";
+import { AccountFilterForm } from "../Molecules/AccountFilterForm";
 
 type ModalType = "delete" | "edit" | "force_delete" | "info" | null;
 
@@ -261,7 +212,7 @@ export default function AccountTemplate() {
 
             <button
               type="button"
-              onClick={resetFilters} //gagal reset accountfiltersform
+              onClick={resetFilters}
               className="w-full py-2 rounded-lg border border-red-300 text-red-600 font-bold hover:bg-red-50 transition"
             >
               Reset Filter

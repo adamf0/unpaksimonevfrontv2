@@ -1,10 +1,8 @@
-"use client";
-
 import Icon from "../../Common/Components/Atoms/Icon";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 
 export default function NotFound() {
-  const router = useRouter();
+  const navigate = useNavigate();
   return (
     <section
       className="animate-fade-in-up"
@@ -27,7 +25,7 @@ export default function NotFound() {
           <div className="mt-12 flex items-center gap-6 text-sm">
             <button
               className="text-primary font-bold flex items-center gap-2 hover:translate-x-[-4px] transition-transform"
-              onClick={() => router.push("/")}
+              onClick={() => navigate("/")}
             >
               <Icon name="arrow_back" className="!text-lg" />
               Go Back

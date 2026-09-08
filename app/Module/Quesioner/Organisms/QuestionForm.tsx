@@ -5,7 +5,6 @@ import { Question } from "../Attribut/Question";
 import RatingScale from "../Molecules/RatingScale";
 import SelectableOption from "../Molecules/SelectableOption";
 import empty_data from "../../../assets/empty_data.png";
-import Image from "next/image";
 
 type Props = {
   filteredData: Question[];
@@ -190,7 +189,7 @@ export default function QuestionForm(props: Props) {
       >
         {/* IMAGE */}
         <div className="flex justify-center">
-          <Image src={empty_data} alt="No Form" className="w-64 max-w-full" />
+          <img src={empty_data} alt="No Form" className="w-64 max-w-full" />
         </div>
 
         {/* TEXT */}

@@ -6,14 +6,17 @@ import { vi } from "vitest";
 export const mockPush = vi.fn();
 export const mockGet = vi.fn().mockReturnValue(null);
 
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({
-    push: mockPush,
-  }),
-  useSearchParams: () => ({
-    get: mockGet,
-  }),
-}));
+vi.mock("react-router-dom", async () => {
+  const actual = await vi.importActual("react-router-dom");
+  return {
+    ...actual,
+    useNavigate: () => mockPush,
+    useSearchParams: () => [
+      { get: mockGet },
+      vi.fn(),
+    ],
+  };
+});
 
 // ========================================================
 // API CALL AXIOS MOCK

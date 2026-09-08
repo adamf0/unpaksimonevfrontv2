@@ -1,6 +1,4 @@
-"use client";
-
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 import Icon from "../../Common/Components/Atoms/Icon";
 
 type Props = {
@@ -16,7 +14,7 @@ export default function Problem({
   code = "CQ-ERROR-992-PX",
   sessionActive = true,
 }: Props) {
-  const router = useRouter();
+  const navigate = useNavigate();
 
   return (
     <section
@@ -54,7 +52,7 @@ export default function Problem({
             </button>
 
             <button
-              onClick={() => router.push("/")}
+              onClick={() => navigate("/")}
               className="px-10 py-5 bg-indigo-50 text-on-primary-container rounded-2xl font-bold text-lg hover:bg-indigo-100 transition-all"
             >
               Go to Dashboard

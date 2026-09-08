@@ -29,7 +29,7 @@ export default function Complete() {
               Your quest update has been synchronized with the campus mainframe.
               All systems are green and your academic progress has been secured.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+            {/* <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
               <button
                 onClick={() => {
                   if (typeof window !== "undefined") {
@@ -41,7 +41,7 @@ export default function Complete() {
                 <Icon name="close" />
                 Tutup Halaman
               </button>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>

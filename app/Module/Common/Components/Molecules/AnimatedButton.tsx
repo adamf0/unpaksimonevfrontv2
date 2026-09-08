@@ -1,12 +1,10 @@
-'use client';
-
 import Icon from '../Atoms/Icon';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 
 type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   icon?: string;
   iconPosition?: 'left' | 'right';
-  href?: string; // 👈 tambah ini
+  href?: string;
 };
 
 export default function AnimatedButton({
@@ -18,13 +16,13 @@ export default function AnimatedButton({
   onClick,
   ...props
 }: Props) {
-  const router = useRouter();
+  const navigate = useNavigate();
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (onClick) onClick(e);
 
     if (href) {
-      router.push(href); // 👈 redirect otomatis
+      navigate(href);
     }
   };
 

@@ -7,7 +7,7 @@ const apiCall = axios.create({
 
 apiCall.interceptors.request.use(
   (config) => {
-    let token = localStorage.getItem("access_token") || sessionStorage.getItem("access_token");
+    let token = sessionStorage.getItem("access_token") || localStorage.getItem("access_token");
 
     if (token) {
       token = token.replace(/^Bearer\s+/i, "").trim();

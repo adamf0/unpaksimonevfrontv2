@@ -1,24 +1,35 @@
 type CreatedByProps = {
   item?: {
+    fakultas?: string|null;
+    prodi?: string|null;
     created?: string;
     createdBy?: string;
   };
 };
 
-const CREATED_MAP: Record<string, (name?: string) => string> = {
-  admin: (name) => name || "(LPM)",
-  fakultas: (name) => `(Fakultas: ${name || "-"})`,
-  prodi: (name) => `(Prodi: ${name || "-"})`,
-};
-
 export function CreatedByLabel({ item }: CreatedByProps) {
   if (!item) return null;
 
-  const formatter = CREATED_MAP[item.created || ""];
+  const role = (item.created || "").toLowerCase();
+  const createdBy = (item.createdBy || "").trim();
 
-  const label = formatter
-    ? formatter(item.createdBy)
-    : item.createdBy || "(LPM)";
+  let label = "(LPM)";
+
+  if (role === "prodi") {
+    label = createdBy ? `(Prodi: ${createdBy})` : "(Prodi: -)";
+  } else if (role === "fakultas") {
+    label = createdBy ? `(Fakultas: ${createdBy})` : "(Fakultas: -)";
+  } else if (role === "admin") {
+    label = createdBy ? createdBy : "(LPM)";
+  } else {
+    if (item.prodi && item.prodi.trim() !== "") {
+      label = `(Prodi: ${item.prodi})`;
+    } else if (item.fakultas && item.fakultas.trim() !== "") {
+      label = `(Fakultas: ${item.fakultas})`;
+    } else {
+      label = createdBy ? createdBy : "(LPM)";
+    }
+  }
 
   return <span className="text-xs text-on-secondary-container">{label}</span>;
 }
