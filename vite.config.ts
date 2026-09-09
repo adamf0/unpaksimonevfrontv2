@@ -46,10 +46,10 @@ export default defineConfig({
   },
   define: {
     "process.env.NEXT_PUBLIC_API_URL": JSON.stringify(
-      process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v2"
+      process.env.NEXT_PUBLIC_API_URL || "/api/v2"
     ),
     "process.env.NEXT_PUBLIC_APP_URL": JSON.stringify(
-      process.env.NEXT_PUBLIC_APP_URL || "http://localhost:4000/"
+      process.env.NEXT_PUBLIC_APP_URL || "/"
     ),
     "process.env.NEXT_PUBLIC_DEMO": JSON.stringify(
       process.env.NEXT_PUBLIC_DEMO || "0"
