@@ -1,1 +1,0 @@
-function p(t){try{if(!t)return null;const r=t.split(".");if(r.length!==3)return null;let e=r[1];e=e.replace(/-/g,"+").replace(/_/g,"/");const n=e.length%4;n&&(e+="=".repeat(4-n));const o=atob(e),l=JSON.parse(o);return l.exp?l.exp*1e3:null}catch(r){return console.error("JWT decode error:",r),null}}export{p as g};
