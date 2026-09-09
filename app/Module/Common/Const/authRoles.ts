@@ -2,6 +2,7 @@ import { getRolesFromToken } from "../Service/tokenExpiry";
 
 export const ADMIN_GROUP_ALIASES = [
   "adm_simonev",
+  "adm_pusat",
 ];
 
 export const FAKULTAS_GROUP_ALIASES = [
@@ -16,17 +17,21 @@ export const DEFAULT_ALLOWED_LEVELS = [
   "admin",
   "fakultas",
   "prodi",
+  "Tendik",
+  "Dosen",
 ];
 
 export function resolveDisplayRole(
   rawLevel: string | null | undefined,
   token?: string | null
 ): string {
-  const level = (rawLevel || "").trim().toLowerCase();
+  const level = (rawLevel || "").trim();
   const normAllowed = DEFAULT_ALLOWED_LEVELS.map((l) => l.toLowerCase());
 
-  if (level && normAllowed.includes(level)) {
-    return level;
+  if (level && normAllowed.includes(level.toLowerCase())) {
+    if (level.toLowerCase() === "tendik") return "Tendik";
+    if (level.toLowerCase() === "dosen") return "Dosen";
+    return level.toLowerCase();
   }
 
   const activeToken =
@@ -48,7 +53,15 @@ export function resolveDisplayRole(
     if (tokenRoles.some((r) => PRODI_GROUP_ALIASES.includes(r))) {
       return "prodi";
     }
+    if (tokenRoles.some((r) => r.toLowerCase() === "tendik")) {
+      return "Tendik";
+    }
+    if (tokenRoles.some((r) => r.toLowerCase() === "dosen")) {
+      return "Dosen";
+    }
   }
 
+  if (level.toLowerCase() === "tendik") return "Tendik";
+  if (level.toLowerCase() === "dosen") return "Dosen";
   return level || "-";
 }
