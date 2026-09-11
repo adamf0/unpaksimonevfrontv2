@@ -45,7 +45,7 @@ export default function App() {
           <Route path="/quesioner/:uuid" element={<QuesionerClient />} />
 
           {/* Admin Routes */}
-          <Route element={<ProtectedRoute allowedLevels={DEFAULT_ALLOWED_LEVELS} redirectTo="/login?r=E0" />}>
+          <Route element={<ProtectedRoute allowedLevels={DEFAULT_ALLOWED_LEVELS} redirectTo="/login?r=F0" />}>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/account" element={<AccountPage />} />
             <Route path="/banksoal" element={<BankSoalPage />} />

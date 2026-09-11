@@ -16,7 +16,7 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   allowedLevels = DEFAULT_ALLOWED_LEVELS,
-  redirectTo = '/login',
+  redirectTo = '/login?r=F0',
 }) => {
   const [loading, setLoading] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);

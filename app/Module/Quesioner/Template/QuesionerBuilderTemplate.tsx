@@ -166,6 +166,9 @@ export default function QuesionerBuilderTemplate({ uuid }: Props) {
               title: state.data?.Judul || "-",
               year: state.data?.Semester || "-",
               semester: state.data?.Semester || "-",
+              startDate: state.data?.TanggalMulai || state.data?.tanggal_mulai,
+              endDate: state.data?.TanggalAkhir || state.data?.tanggal_akhir,
+              listExt: state.data?.ListExt || state.data?.list_ext,
             }}
             identity={{
               audiens: state.userInfo?.Name ?? "",

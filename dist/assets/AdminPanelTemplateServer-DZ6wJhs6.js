@@ -1,4 +1,4 @@
-import{j as t,r as l,u as M,G as U}from"./vendor-react-1Lu0_Y_q.js";import{I as R}from"./Icon-BikUkif0.js";import{r as L,g as I,b as D,A as y,F,P as G,a as P}from"./index-Dq8o0Ykp.js";function K({isOpen:o,MENU_ITEMS:r,BOTTOM_ITEMS:n}){return t.jsxs("aside",{id:"sidebar",className:`
+import{j as t,r as l,u as M,G as U}from"./vendor-react-1Lu0_Y_q.js";import{I as R}from"./Icon-BikUkif0.js";import{r as L,g as I,b as D,A as y,F,P as G,a as P}from"./index-CC4q0hk7.js";function K({isOpen:o,MENU_ITEMS:r,BOTTOM_ITEMS:n}){return t.jsxs("aside",{id:"sidebar",className:`
         fixed left-0 top-0 h-screen h-[100dvh] w-64 bg-[#f3eeff] tonal-shift-no-border z-50 
         transform transition-transform duration-300 
         flex flex-col p-4
