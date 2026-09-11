@@ -9,6 +9,7 @@ type CreatedByProps = {
 
 export function CreatedByLabel({ item }: CreatedByProps) {
   if (!item) return null;
+  console.log(item)
 
   const role = (item.created || "").toLowerCase();
   const createdBy = (item.createdBy || "").trim();
