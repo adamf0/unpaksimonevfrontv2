@@ -56,7 +56,7 @@ export default function RekapRespondenFilter({
               onChange={(e) => onSearchChange(e.target.value)}
               className="w-full bg-surface-container-low px-4 py-3 pl-10 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 border border-transparent transition-all"
             />
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline/60 text-lg">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline/60 text-lg leading-none shrink-0 pointer-events-none">
               search
             </span>
           </div>
@@ -71,12 +71,12 @@ export default function RekapRespondenFilter({
           >
             {exporting ? (
               <>
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin shrink-0" />
                 Processing Job...
               </>
             ) : (
               <>
-                <span className="material-symbols-outlined text-base">
+                <span className="material-symbols-outlined text-base leading-none shrink-0">
                   download_for_offline
                 </span>
                 Export Excel (Job)

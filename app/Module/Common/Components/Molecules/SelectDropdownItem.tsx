@@ -27,7 +27,7 @@ export function SelectDropdownItem({
       ) : (
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {option.icon}
+            {option.icon && <span className="inline-flex items-center justify-center shrink-0">{option.icon}</span>}
             <span>{option.label}</span>
           </div>
 

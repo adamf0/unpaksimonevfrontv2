@@ -17,8 +17,8 @@ export const DEFAULT_ALLOWED_LEVELS = [
   "admin",
   "fakultas",
   "prodi",
-  "Tendik",
-  "Dosen",
+  // "Tendik",
+  // "Dosen",
 ];
 
 export function resolveDisplayRole(

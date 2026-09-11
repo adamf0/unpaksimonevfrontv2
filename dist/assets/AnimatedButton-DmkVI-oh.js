@@ -1,4 +1,4 @@
-import{u as f,j as a}from"./vendor-react-1Lu0_Y_q.js";import{I as n}from"./Icon-DVoYvoHg.js";function p({children:i,icon:t,iconPosition:s="right",className:o="",href:r,onClick:e,...m}){const l=f(),u=c=>{e&&e(c),r&&l(r)};return a.jsxs("button",{...m,onClick:u,className:`
+import{u as f,j as a}from"./vendor-react-1Lu0_Y_q.js";import{I as n}from"./Icon-BikUkif0.js";function p({children:i,icon:t,iconPosition:s="right",className:o="",href:r,onClick:e,...m}){const l=f(),u=c=>{e&&e(c),r&&l(r)};return a.jsxs("button",{...m,onClick:u,className:`
         flex items-center justify-center gap-3
         group
         transition-all duration-300

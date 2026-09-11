@@ -230,7 +230,7 @@ export default function RekapRespondenTable({
                           title="Lihat Detail Kuesioner"
                           className="px-3 py-1.5 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 transition-all font-bold text-xs inline-flex items-center gap-1.5 shadow-sm hover:scale-[1.02] active:scale-[0.98]"
                         >
-                          <span className="material-symbols-outlined text-base">
+                          <span className="material-symbols-outlined text-base leading-none shrink-0">
                             visibility
                           </span>
                           View
