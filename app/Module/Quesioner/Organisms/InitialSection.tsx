@@ -250,7 +250,7 @@ export default function InitialSection({
                 {item.value}
               </div>
               <div className="text-sm text-on-surface-variant">
-                {item.label}
+                {item.label.toLowerCase()=="admin"? "LPM":item.label}
               </div>
             </div>
           ))}
