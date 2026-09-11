@@ -27,7 +27,7 @@ export function CreatedByLabel({ item }: CreatedByProps) {
     } else if (item.fakultas && item.fakultas.trim() !== "") {
       label = `(Fakultas: ${item.fakultas})`;
     } else {
-      label = createdBy!="local" ? createdBy : "(LPM)";
+      label = createdBy ? createdBy : "(LPM)";
     }
   }
 
