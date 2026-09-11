@@ -1,7 +1,7 @@
 type CreatedByProps = {
   item?: {
-    fakultas?: string|null;
-    prodi?: string|null;
+    fakultas?: string | null;
+    prodi?: string | null;
     created?: string;
     createdBy?: string;
   };
@@ -9,27 +9,21 @@ type CreatedByProps = {
 
 export function CreatedByLabel({ item }: CreatedByProps) {
   if (!item) return null;
-  console.log(item)
+  console.log(item);
 
-  const role = (item.created || "").toLowerCase();
+  // const role = (item.created || "").toLowerCase();
   const createdBy = (item.createdBy || "").trim();
 
   let label = "(LPM)";
 
-  if (role === "prodi") {
-    label = createdBy ? `(Prodi: ${createdBy})` : "(Prodi: -)";
-  } else if (role === "fakultas") {
-    label = createdBy ? `(Fakultas: ${createdBy})` : "(Fakultas: -)";
-  } else if (role === "admin") {
-    label = createdBy ? createdBy : "(LPM)";
+  if (item.prodi && item.prodi.trim() !== "") {
+    label = `(Prodi: ${item.prodi})`;
+  } else if (item.fakultas && item.fakultas.trim() !== "") {
+    label = `(Fakultas: ${item.fakultas})`;
+  } else if (createdBy=="local"){
+    label = "(LPM)";
   } else {
-    if (item.prodi && item.prodi.trim() !== "") {
-      label = `(Prodi: ${item.prodi})`;
-    } else if (item.fakultas && item.fakultas.trim() !== "") {
-      label = `(Fakultas: ${item.fakultas})`;
-    } else {
-      label = createdBy ? createdBy : "(LPM)";
-    }
+    label = createdBy ? createdBy : "(?)";
   }
 
   return <span className="text-xs text-on-secondary-container">{label}</span>;
