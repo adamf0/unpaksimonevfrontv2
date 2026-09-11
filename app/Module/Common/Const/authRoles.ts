@@ -2,7 +2,6 @@ import { getRolesFromToken } from "../Service/tokenExpiry";
 
 export const ADMIN_GROUP_ALIASES = [
   "adm_simonev",
-  "adm_pusat",
 ];
 
 export const FAKULTAS_GROUP_ALIASES = [
