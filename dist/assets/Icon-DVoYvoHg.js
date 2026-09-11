@@ -1,0 +1,1 @@
+import{j as r}from"./vendor-react-1Lu0_Y_q.js";function i({name:n="",className:e="",...a}){return r.jsx("span",{"aria-hidden":"true",className:`material-symbols-outlined leading-none ${e}`,...a,children:n})}export{i as I};

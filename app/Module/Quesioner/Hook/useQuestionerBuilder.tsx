@@ -754,29 +754,22 @@ export function useQuestionerBuilder() {
 
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
-      console.log("userInfo",state.userInfo)
-      await Promise.allSettled(
-        payload.map((row) => {
-          const formData = new FormData();
+      console.log("userInfo", state.userInfo);
 
-          formData.append("pertanyaan", row.pertanyaan);
-          formData.append("jawaban", JSON.stringify(row.jawaban));
-          const sid = state.userInfo?.ID || (state.userInfo as any)?.EmployeeID || "";
-          if (sid) {
-            formData.append("sid", sid);
-          }
-          if (state.userInfo?.Resource) {
-            formData.append("resource", state.userInfo.Resource);
-          }
-          if (state.userInfo?.CodeCtx) {
-            formData.append("codectx", state.userInfo.CodeCtx);
-          }
+      const sid = state.userInfo?.ID || (state.userInfo as any)?.EmployeeID || "";
+      const bulkPayload = {
+        sid: sid,
+        resource: state.userInfo?.Resource || "",
+        codectx: state.userInfo?.CodeCtx || "",
+        items: payload.map((row) => ({
+          pertanyaan: row.pertanyaan,
+          jawaban: JSON.stringify(row.jawaban),
+        })),
+      };
 
-          return apiCall.post(
-            `/kuesioner/${state?.data?.UUIDKuesioner}/jawaban`,
-            formData,
-          );
-        }),
+      await apiCall.post(
+        `/kuesioner/${state?.data?.UUIDKuesioner}/jawaban/bulk`,
+        bulkPayload,
       );
       setState((p) => ({
         ...p,
